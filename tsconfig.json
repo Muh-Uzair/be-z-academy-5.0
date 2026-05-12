@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", // Specifies the JavaScript version for the compiled output (modern features allowed)
+    "module": "NodeNext", // Uses Node.js latest module system (best for ESM projects)
+    "lib": ["ES2022"], // Defines which JavaScript library features are available to TypeScript
+    "moduleResolution": "NodeNext", // Tells TypeScript how to resolve modules following Node.js rules
+    "rootDir": "./src", // Root directory where source TypeScript files are located
+    "outDir": "./dist", // Directory where compiled JavaScript files will be output
+
+    "strict": true, // Enables all strict type-checking options (highly recommended)
+    "noUnusedLocals": true, // Error if a local variable is declared but never used
+    "noUnusedParameters": false, // Do not error on unused function parameters (ESLint will handle this)
+    "noImplicitReturns": true, // Requires all code paths in a function to return a value
+    "noFallthroughCasesInSwitch": true, // Prevents fallthrough in switch statements without break
+    "noUncheckedIndexedAccess": true, // Requires checking for undefined when accessing array/object by index
+
+    "esModuleInterop": true, // Improves compatibility between CommonJS and ES modules
+    "skipLibCheck": true, // Skips type checking of declaration files in node_modules (faster builds)
+    "forceConsistentCasingInFileNames": true, // Ensures consistent file name casing (prevents Windows/Mac issues)
+    "resolveJsonModule": true, // Allows importing .json files directly as modules
+    "allowSyntheticDefaultImports": true, // Allows default imports from modules that don't have default export
+
+    "noEmit": false, // Allows TypeScript to emit (generate) JavaScript files
+    "sourceMap": true, // Generates .map files for debugging (shows original TS code in errors)
+    "incremental": true, // Enables incremental compilation for much faster subsequent builds
+    "removeComments": true, // Removes comments from the compiled JavaScript output
+
+    "types": ["node"], // Includes only Node.js built-in type definitions
+    "paths": {
+      // Defines custom path aliases for cleaner imports
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "src/**/*.d.ts"], // Folders and files that TypeScript should compile
+  "exclude": ["node_modules", "dist"], // Folders that TypeScript should ignore during compilation
+
+  "ts-node": {
+    "esm": true
+  }
+}
