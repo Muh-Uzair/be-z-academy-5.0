@@ -1,5 +1,12 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
 
+// Define the Role enum
+enum Role {
+  Admin = "admin",
+  Instructor = "instructor",
+  Student = "student",
+}
+
 const userSchema = new Schema(
   {
     fullName: {
@@ -50,6 +57,11 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+    role: {
+      type: String,
+      required: true,
+      enum: Object.values(Role), // Restrict to enum values
+    },
   },
   {
     timestamps: true,
@@ -61,4 +73,4 @@ type UserType = InferSchemaType<typeof userSchema>;
 const UserModel = models.User || model<UserType>("User", userSchema);
 
 export default UserModel;
-export type { UserType };
+export type { UserType, Role }; // Export Role so you can reuse it
