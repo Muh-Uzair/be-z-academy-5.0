@@ -1,1 +1,1 @@
-1 : verbs would be plural like usersModel, usersRoute
+1 : verbs would be singular like userModel, not userRoute
