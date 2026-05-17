@@ -1,66 +1,100 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
 
-// Define the Role enum
-enum Role {
-  Admin = "admin",
-  Instructor = "instructor",
-  Student = "student",
+export enum CourseLevel {
+  Beginner = "beginner",
+  Intermediate = "intermediate",
+  Advanced = "advanced",
 }
 
-const userSchema = new Schema(
+const courseSchema = new Schema(
   {
-    fullName: {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 5,
+      maxlength: 120,
+    },
+
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 20,
+      maxlength: 5000,
+    },
+
+    thumbnail: {
       type: String,
       required: true,
       trim: true,
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    bio: {
+
+    videoUrl: {
       type: String,
       required: true,
       trim: true,
     },
-    highestEducation: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    yearsOfExperience: {
+
+    price: {
       type: Number,
-      required: false,
-      default: 0,
+      required: true,
+      min: 0,
     },
-    avatar: {
+
+    level: {
       type: String,
-      default: null,
-      trim: true,
+      required: true,
+      enum: Object.values(CourseLevel),
     },
+
+    instructor: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,
     },
-    otp: {
+
+    verificationRejectionReason: {
       type: String,
       default: null,
+      trim: true,
+      maxlength: 500,
     },
-    otpExpires: {
-      type: Date,
-      default: null,
+
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
     },
-    role: {
-      type: String,
-      required: true,
-      enum: Object.values(Role), // Restrict to enum values
+
+    totalReviews: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalStudentsEnrolled: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalDurationInMinutes: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {
@@ -68,9 +102,10 @@ const userSchema = new Schema(
   },
 );
 
-type UserType = InferSchemaType<typeof userSchema>;
+type CourseType = InferSchemaType<typeof courseSchema>;
 
-const UserModel = models.User || model<UserType>("User", userSchema);
+const CourseModel = models.Course || model<CourseType>("Course", courseSchema);
 
-export default UserModel;
-export type { UserType, Role }; // Export Role so you can reuse it
+export default CourseModel;
+
+export type { CourseType };

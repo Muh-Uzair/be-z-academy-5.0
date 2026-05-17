@@ -49,6 +49,12 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    verificationRejectionReason: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 500,
+    },
     otp: {
       type: String,
       default: null,
