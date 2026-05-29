@@ -96,6 +96,29 @@ const courseSchema = new Schema(
       default: 0,
       min: 0,
     },
+
+    totalDurationWatchedInMinutes: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    watchPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+
+    watchedCompletely: {
+      type: Boolean,
+      default: false,
+    },
+
+    mostRecentlySeen: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
