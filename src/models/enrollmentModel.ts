@@ -1,6 +1,6 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
 
-const categorySchema = new Schema(
+const enrollmentSchema = new Schema(
   {
     student: {
       type: Schema.Types.ObjectId,
@@ -56,11 +56,11 @@ const categorySchema = new Schema(
   },
 );
 
-type CategoryType = InferSchemaType<typeof categorySchema>;
+type EnrollmentType = InferSchemaType<typeof enrollmentSchema>;
 
-const CategoryModel =
-  models.Category || model<CategoryType>("Category", categorySchema);
+const EnrollmentModel =
+  models.Enrollment || model<EnrollmentType>("Enrollment", enrollmentSchema);
 
-export default CategoryModel;
+export default EnrollmentModel;
 
-export type { CategoryType };
+export type { EnrollmentType };
