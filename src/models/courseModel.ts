@@ -97,27 +97,24 @@ const courseSchema = new Schema(
       min: 0,
     },
 
-    totalDurationWatchedInMinutes: {
+    totalRevenueInstructor: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    watchPercentage: {
+    totalRevenueAdmin: {
       type: Number,
       default: 0,
       min: 0,
-      max: 100,
     },
 
-    watchedCompletely: {
-      type: Boolean,
-      default: false,
-    },
-
-    mostRecentlySeen: {
-      type: Boolean,
-      default: false,
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
   },
   {

@@ -20,35 +20,53 @@ const enrollmentSchema = new Schema(
       required: true,
     },
 
-    totalPrice: {
-      type: Number,
-      required: true,
-    },
-
-    amountPaid: {
-      type: Number,
-      required: true,
-    },
-
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "paid", "failed"],
-      default: "paid",
-    },
-
-    platformCommission: {
-      type: Number,
-      required: true,
-    },
-
-    instructorRevenue: {
-      type: Number,
+    transaction: {
+      type: Schema.Types.ObjectId,
+      ref: "Transaction",
       required: true,
     },
 
     enrolledAt: {
       type: Date,
       default: Date.now,
+    },
+
+    totalDurationWatchedInMinutes: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    watchPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+
+    watchedCompletely: {
+      type: Boolean,
+      default: false,
+    },
+
+    watchedCompletelyAt: {
+      type: Date,
+      default: null,
+    },
+
+    mostRecentlySeen: {
+      type: Boolean,
+      default: false,
+    },
+
+    certificateIssued: {
+      type: Boolean,
+      default: false,
+    },
+
+    certificateIssuedAt: {
+      type: Date,
+      default: null,
     },
   },
   {
