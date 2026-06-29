@@ -21,8 +21,8 @@
 ### Must Have:
 
 - Admin Dashboard
-- Verify/Reject Instructor Sign ups
-- Verify/Reject Courses
+- Approve/Reject Instructor Sign ups
+- Approve/Reject Courses
 - Manage Categories (Create and Delete only)
 - View All Users (Students + Instructors)
 - Ban/Suspend Users
@@ -55,7 +55,7 @@
 
 ### Must Have:
 
-- Google Signup + Admin Approval
+- Google Signup + Admin Verification
 - Instructor Profile (Name, Email, Avatar, Bio, Education, Experience)
 - Create Course (Title, Description, Thumbnail, Video ≤20MB, Price, Category, Level)
 - Course submitted for Admin Review
@@ -78,7 +78,7 @@
 
 ### Should Have:
 
-- Limited course editing after approval
+- Limited course editing after verification
 
 ---
 
