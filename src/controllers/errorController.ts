@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import AppError from "@src/utils/appError";
@@ -13,7 +15,10 @@ const handleDuplicateKeyError = (err: {
 }): AppError => {
   const field = Object.keys(err.keyValue)[0];
   const value = err.keyValue[field];
-  return new AppError(400, `"${value}" already exists. Please use a different ${field}`);
+  return new AppError(
+    400,
+    `"${value}" already exists. Please use a different ${field}`,
+  );
 };
 
 const handleMongooseValidationError = (

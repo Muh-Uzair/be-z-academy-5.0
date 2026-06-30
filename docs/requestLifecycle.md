@@ -90,12 +90,12 @@ export const signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.body as SignupBody; // already validated & typed by middleware
 
-    await signupService(body);           // delegates business logic to the service
+    const data = await signupService(body); // delegates business logic to the service and captures result
 
     sendResponse(res, 201, {             // sends the success response
       status: "success",
       message: "Signup successful",
-      data: null,
+      data,                              // injects the service's returned data
     });
   },
 );
@@ -103,8 +103,8 @@ export const signup = catchAsync(
 
 **Rule:** Controllers only do three things:
 1. Read from `req` (body, params, query, user)
-2. Call one or more service functions
-3. Call `sendResponse`
+2. Call one or more service functions and capture their returned data
+3. Call `sendResponse` and pass the data along
 
 ---
 
@@ -133,11 +133,14 @@ Without `catchAsync`, an unhandled promise rejection in a controller would crash
 The service contains all **business logic** — database queries, password hashing, token generation, etc. It knows nothing about `req` or `res`.
 
 ```ts
-export const signupService = async (body: SignupBody): Promise<void> => {
+export const signupService = async (body: SignupBody): Promise<any> => {
   // business logic: validate uniqueness, hash password, create user, etc.
 
   // To signal a known failure, throw an AppError:
   throw new AppError(400, "Email already in use");
+
+  // Otherwise, return any data that should be sent in the response:
+  return { user: newUser };
 };
 ```
 
@@ -145,6 +148,7 @@ export const signupService = async (body: SignupBody): Promise<void> => {
 - Services only receive plain data (no Express objects).
 - They throw `AppError` for **expected failures** (e.g. duplicate email, not found).
 - They let unexpected errors bubble up naturally (e.g. a DB connection failure).
+- They **return data**, which the controller receives and places in the HTTP response.
 
 ---
 
@@ -248,7 +252,7 @@ Client sends:  POST /api/v1/auth/signup  { "email": "...", "password": "..." }
        ▼
 [signupService]         business logic
        ├── throws AppError  → caught by catchAsync → next(err) ──► [globalErrorHandler]
-       └── resolves ok      → controller calls sendResponse(res, 201, { ... })
+       └── resolves data    → controller calls sendResponse(res, 201, { ..., data })
        │
        ▼
 [sendResponse]          res.status(201).json({ status, message, data })

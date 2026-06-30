@@ -27,3 +27,17 @@ export const signupSchema = z.discriminatedUnion("role", [
   studentSignupSchema,
   instructorSignupSchema,
 ]);
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  otp: z
+    .union([z.string(), z.number()])
+    .transform((val) => String(val))
+    .refine((val) => /^\d{6}$/.test(val), {
+      message: "OTP must be a 6 digit number",
+    }),
+});
+
+export const resendOtpSchema = z.object({
+  email: z.email({ message: "Invalid email address" }),
+});

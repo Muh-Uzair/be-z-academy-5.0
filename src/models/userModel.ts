@@ -68,6 +68,10 @@ const userSchema = new Schema(
     otp: {
       type: String,
       default: null,
+      validate: {
+        validator: (value: string | null) => value === null || /^\d{6}$/.test(value),
+        message: "OTP must be exactly 6 digits",
+      },
     },
     otpExpires: {
       type: Date,
@@ -92,4 +96,5 @@ type UserType = InferSchemaType<typeof userSchema>;
 const UserModel = models.User || model<UserType>("User", userSchema);
 
 export default UserModel;
-export type { UserType, Role };
+export type { UserType };
+export { Role };

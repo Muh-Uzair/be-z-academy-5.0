@@ -133,6 +133,31 @@ export default EnrollmentModel;
 export type { EnrollmentType };
 ```
 
+## Step 7: Writing APIs
+
+*(This step covers implementing business logic, routes, and controllers.)*
+
+## Step 8: Security
+
+**Action:** Implement security headers, rate limiting, and body parsing limits to protect the application.
+
+**Details:**
+To prevent brute-force attacks and abuse of our API, we implement rate limiting using the `express-rate-limit` middleware. We configured it to limit each IP address to a maximum of 100 requests per hour specifically for routes starting with `/api`. If an IP exceeds this limit, a `429 Too Many Requests` error with a custom message is returned.
+
+We also use `helmet` to automatically set various HTTP headers for robust security (e.g., hiding the `X-Powered-By` header, setting XSS protection, etc.). 
+
+To prevent Denial of Service (DoS) attacks where attackers could send excessively large JSON payloads that consume memory, we update our `express.json()` middleware to enforce a maximum body size of `10kb`.
+
+Finally, we apply data sanitization to clean incoming data. We use `express-mongo-sanitize` to remove any keys containing `$` or `.` from the request, protecting against NoSQL query injection. We also use `xss-clean` to filter out malicious HTML and scripts, protecting against Cross-Site Scripting (XSS) attacks. These middlewares are placed immediately after the body parser.
+
+Furthermore, we use `hpp` (HTTP Parameter Pollution) to protect our backend from crashing due to duplicate query parameters. It ensures our application logic always receives simple strings instead of unexpected arrays, with an option to whitelist specific fields.
+
+**Commands to run:**
+```bash
+npm install express-rate-limit helmet express-mongo-sanitize xss-clean hpp
+npm install -D @types/hpp
+```
+
 ---
 
 ## Conclusion
