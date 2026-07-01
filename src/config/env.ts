@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 dotenv.config({ quiet: true });
 
 const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]),
   PLATFORM_COMMISSION_PERCENTAGE: z.coerce.number(),
   PORT: z.coerce.number(),
   APP_NAME: z.string(),
@@ -15,6 +16,8 @@ const envSchema = z.object({
   EMAIL_USER: z.string(),
   EMAIL_PASS: z.string(),
   EMAIL_FROM: z.string(),
+  JWT_ACCESS_SECRET: z.string(),
+  JWT_REFRESH_SECRET: z.string(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

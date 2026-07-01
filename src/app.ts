@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from "express";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import authRouter from "@src/routes/authRoutes";
+import userRouter from "@src/routes/userRoutes";
 import AppError from "@src/utils/appError";
 import globalErrorHandler from "@src/controllers/errorController";
 import sendResponse from "@src/utils/sendResponse";
@@ -33,6 +35,9 @@ app.use(morgan("dev"));
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: "10kb" }));
 
+// Cookie parser, reading cookies into req.cookies
+app.use(cookieParser());
+
 // ─── Security Middleware ──────────────────────────────────────────────────────
 
 // Data sanitization against NoSQL query injection
@@ -50,7 +55,11 @@ app.use((req, res, next) => {
     if (!obj) return;
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        obj[key] = xssClean(obj[key]);
+        if (typeof obj[key] === "string") {
+          obj[key] = xssClean(obj[key]);
+        } else if (typeof obj[key] === "object") {
+          sanitizeObject(obj[key]);
+        }
       }
     }
   };
@@ -85,15 +94,16 @@ app.use("/api", limiter);
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
-app.get("/", (_req: Request, res: Response) => {
+app.get("/health", (_req: Request, res: Response) => {
   sendResponse(res, 200, {
     status: "success",
-    message: "Welcome to zAcademy 5.0 backend",
+    message: "zAcademy 5.0 backend is running",
     data: null,
   });
 });
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
 
 // ─── Unhandled Routes ─────────────────────────────────────────────────────────
 

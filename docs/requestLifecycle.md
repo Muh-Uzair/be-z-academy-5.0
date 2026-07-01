@@ -226,10 +226,51 @@ sendResponse(res, statusCode, {
   status: "success" | "fail" | "error",
   message: string,
   data: unknown,
+  pagination?: Pagination, // only present on paginated list endpoints
 });
 ```
 
 Every response from this API — success or error — follows this same shape.
+
+### Pagination Shape
+
+**File:** [`src/utils/sendResponse.ts`](../src/utils/sendResponse.ts)
+
+Any endpoint that returns a paginated list (e.g. `GET /api/v1/users/instructors`) must attach an optional `pagination` field matching this exact interface:
+
+```ts
+interface Pagination {
+  page: number;
+  limit: number;
+  totalDocuments: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+```
+
+Example response for `GET /api/v1/users/instructors?page=2&limit=10`:
+
+```json
+{
+  "status": "success",
+  "message": "Instructors fetched successfully",
+  "data": [ /* array of instructor documents */ ],
+  "pagination": {
+    "page": 2,
+    "limit": 10,
+    "totalDocuments": 23,
+    "totalPages": 3,
+    "hasNextPage": true,
+    "hasPrevPage": true
+  }
+}
+```
+
+**Key points:**
+- `pagination` is optional on `ApiResponse` — non-list endpoints simply omit it.
+- The service computes `pagination` (via a `$count` aggregation alongside the `$skip`/`$limit` stage), the controller just forwards it as a sibling of `data` — it does **not** get nested inside `data`.
+- Because the field is typed as an exact interface (not `Record<string, unknown>` or `any`), passing an incomplete or mistyped pagination object as an inline literal at the `sendResponse` call site will fail TypeScript compilation. This only works if the value reaching `sendResponse` still carries a concrete type — if it passes through a function typed as `Promise<any>` along the way (e.g. a service return type), the type checking is lost by the time it reaches `sendResponse`.
 
 ---
 

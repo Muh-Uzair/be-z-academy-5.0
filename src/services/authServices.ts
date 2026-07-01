@@ -1,8 +1,18 @@
-import { SignupBody, VerifyOtpBody, ResendOtpBody } from "@src/types/authTypes";
+import {
+  SignupBody,
+  VerifyOtpBody,
+  ResendOtpBody,
+  SigninBody,
+} from "@src/types/authTypes";
 import AppError from "@src/utils/appError";
 import UserModel from "@src/models/userModel";
 import bcrypt from "bcryptjs";
 import { sendOtpEmail } from "@src/utils/email";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "@src/utils/jwt";
 
 export const signupService = async (body: SignupBody): Promise<any> => {
   // 1. Check if email already exists
@@ -15,14 +25,23 @@ export const signupService = async (body: SignupBody): Promise<any> => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(body.password, salt);
 
-  // 3. Generate 6-digit random OTP
+  // 3. Instructors are verified by Admin, not by OTP
+  if (body.role === "instructor") {
+    await UserModel.create({
+      ...body,
+      password: hashedPassword,
+    });
+
+    return null;
+  }
+
+  // 4. Generate 6-digit random OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // 4. Calculate OTP expiry (10 minutes from now)
-  // const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-  const otpExpires = new Date(Date.now() + 10 * 1000);
+  // 5. Calculate OTP expiry (10 minutes from now)
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-  // 5. Create user
+  // 6. Create user
   await UserModel.create({
     ...body,
     password: hashedPassword,
@@ -30,7 +49,7 @@ export const signupService = async (body: SignupBody): Promise<any> => {
     otpExpires,
   });
 
-  // 6. Send OTP via email
+  // 7. Send OTP via email
   await sendOtpEmail({
     email: body.email,
     otp,
@@ -102,4 +121,64 @@ export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
   });
 
   return null;
+};
+
+export const signinService = async (body: SigninBody): Promise<any> => {
+  // 1. Find user by email
+  const user = await UserModel.findOne({ email: body.email });
+  if (!user) {
+    throw new AppError(401, "Invalid email or password");
+  }
+
+  // 2. Check password
+  const isPasswordCorrect = await bcrypt.compare(body.password, user.password);
+  if (!isPasswordCorrect) {
+    throw new AppError(401, "Invalid email or password");
+  }
+
+  // 3. Check if account is verified
+  if (!user.isVerified) {
+    const message =
+      user.role === "instructor"
+        ? "Your account is pending Admin approval"
+        : "Please verify your account before signing in";
+    throw new AppError(403, message);
+  }
+
+  // 4. Issue tokens
+  const payload = { id: user._id.toString(), role: user.role };
+  const accessToken = signAccessToken(payload);
+  const refreshToken = signRefreshToken(payload);
+
+  return { accessToken, refreshToken };
+};
+
+export const rotateTokenService = async (
+  refreshToken: string | undefined,
+): Promise<any> => {
+  // 1. Ensure refresh token was provided
+  if (!refreshToken) {
+    throw new AppError(401, "Refresh token is missing");
+  }
+
+  // 2. Verify refresh token
+  let decoded;
+  try {
+    decoded = verifyRefreshToken(refreshToken);
+  } catch {
+    throw new AppError(401, "Invalid or expired refresh token");
+  }
+
+  // 3. Ensure user still exists
+  const user = await UserModel.findById(decoded.id);
+  if (!user) {
+    throw new AppError(401, "User no longer exists");
+  }
+
+  // 4. Issue new access and refresh tokens
+  const payload = { id: user._id.toString(), role: user.role };
+  const newAccessToken = signAccessToken(payload);
+  const newRefreshToken = signRefreshToken(payload);
+
+  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 };

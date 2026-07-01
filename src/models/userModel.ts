@@ -34,9 +34,9 @@ const userSchema = new Schema(
     },
     bio: {
       type: String,
+      required: [true, "Bio is required"],
       trim: true,
       maxlength: [500, "Bio cannot exceed 500 characters"],
-      default: null,
     },
     highestEducation: {
       type: String,

@@ -1,9 +1,19 @@
 import { Response } from "express";
 
+interface Pagination {
+  page: number;
+  limit: number;
+  totalDocuments: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 interface ApiResponse {
   status: "success" | "fail" | "error";
   message: string;
   data: unknown;
+  pagination?: Pagination;
 }
 
 const sendResponse = (
@@ -15,4 +25,4 @@ const sendResponse = (
 };
 
 export default sendResponse;
-export type { ApiResponse };
+export type { ApiResponse, Pagination };
