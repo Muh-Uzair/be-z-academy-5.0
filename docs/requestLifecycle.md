@@ -225,18 +225,17 @@ A tiny helper that enforces a consistent JSON response shape across the entire A
 sendResponse(res, statusCode, {
   status: "success" | "fail" | "error",
   message: string,
-  data: unknown,
-  pagination?: Pagination, // only present on paginated list endpoints
+  data: unknown, // always an object — e.g. { instructors }, { instructor }, { instructors, pagination }
 });
 ```
 
-Every response from this API — success or error — follows this same shape.
+Every response from this API — success or error — follows this same shape. `data` is always an **enveloped object** with named key(s), never a bare array or primitive (e.g. `data: { instructors }` rather than `data: instructors`).
 
 ### Pagination Shape
 
-**File:** [`src/utils/sendResponse.ts`](../src/utils/sendResponse.ts)
+**File:** [`src/utils/sendResponse.ts`](../src/utils/sendResponse.ts) (exports the `Pagination` interface, used for typing only)
 
-Any endpoint that returns a paginated list (e.g. `GET /api/v1/users/instructors`) must attach an optional `pagination` field matching this exact interface:
+Any endpoint that returns a paginated list (e.g. `GET /api/v1/users/instructors`) nests a `pagination` field inside `data`, alongside the list itself, matching this exact interface:
 
 ```ts
 interface Pagination {
@@ -255,22 +254,24 @@ Example response for `GET /api/v1/users/instructors?page=2&limit=10`:
 {
   "status": "success",
   "message": "Instructors fetched successfully",
-  "data": [ /* array of instructor documents */ ],
-  "pagination": {
-    "page": 2,
-    "limit": 10,
-    "totalDocuments": 23,
-    "totalPages": 3,
-    "hasNextPage": true,
-    "hasPrevPage": true
+  "data": {
+    "instructors": [ /* array of instructor documents */ ],
+    "pagination": {
+      "page": 2,
+      "limit": 10,
+      "totalDocuments": 23,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPrevPage": true
+    }
   }
 }
 ```
 
 **Key points:**
-- `pagination` is optional on `ApiResponse` — non-list endpoints simply omit it.
-- The service computes `pagination` (via a `$count` aggregation alongside the `$skip`/`$limit` stage), the controller just forwards it as a sibling of `data` — it does **not** get nested inside `data`.
-- Because the field is typed as an exact interface (not `Record<string, unknown>` or `any`), passing an incomplete or mistyped pagination object as an inline literal at the `sendResponse` call site will fail TypeScript compilation. This only works if the value reaching `sendResponse` still carries a concrete type — if it passes through a function typed as `Promise<any>` along the way (e.g. a service return type), the type checking is lost by the time it reaches `sendResponse`.
+- `pagination` lives inside `data`, as a sibling of the list field (e.g. `data: { instructors, pagination }`) — it is **not** a top-level field on the response.
+- The service computes `pagination` (via a `$count` aggregation alongside the `$skip`/`$limit` stage); the controller nests it into the `data` object it builds.
+- Because `sendResponse`'s `data` is typed as `unknown`, TypeScript does **not** validate the shape of `pagination` (or anything else inside `data`) at the `sendResponse` call site — the `Pagination` interface is available to import for manual annotation if stricter checking is ever wanted, but it isn't enforced automatically.
 
 ---
 

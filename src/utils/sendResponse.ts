@@ -13,7 +13,6 @@ interface ApiResponse {
   status: "success" | "fail" | "error";
   message: string;
   data: unknown;
-  pagination?: Pagination;
 }
 
 const sendResponse = (

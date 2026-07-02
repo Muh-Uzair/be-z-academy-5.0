@@ -121,3 +121,82 @@ export const sendOtpEmail = async (options: {
   });
 };
 
+export const sendVerificationStatusEmail = async (options: {
+  email: string;
+  fullName: string;
+  isVerified: boolean;
+  rejectionReason?: string | null;
+}) => {
+  const html = options.isVerified
+    ? `
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background-color:#134d3c;padding:36px 48px;text-align:center;">
+              <h1 style="margin:0;font-size:26px;font-weight:800;color:#ffffff;">You're verified! 🎉</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px 48px;">
+              <p style="margin:0 0 16px;font-size:16px;color:#134d3c;font-weight:700;">Hi, ${options.fullName}!</p>
+              <p style="margin:0;font-size:15px;color:#6b7280;line-height:1.7;">
+                Congratulations — your account has been reviewed and approved by our Admin team. You can now sign in and continue using zAcademy.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+    : `
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background-color:#7f1d1d;padding:36px 48px;text-align:center;">
+              <h1 style="margin:0;font-size:26px;font-weight:800;color:#ffffff;">Account not approved</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px 48px;">
+              <p style="margin:0 0 16px;font-size:16px;color:#134d3c;font-weight:700;">Hi, ${options.fullName}!</p>
+              <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.7;">
+                Your account was reviewed by our Admin team and was not approved at this time.
+              </p>
+              ${
+                options.rejectionReason
+                  ? `<p style="margin:0;font-size:14px;color:#7f1d1d;background-color:#fef2f2;border-left:3px solid #7f1d1d;padding:14px 18px;border-radius:0 8px 8px 0;">${options.rejectionReason}</p>`
+                  : ""
+              }
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  await transporter.sendMail({
+    from: `zAcademy <${env.EMAIL_FROM}>`,
+    to: options.email,
+    subject: options.isVerified
+      ? "✅ Your zAcademy account is verified"
+      : "Your zAcademy account verification status",
+    html,
+  });
+};
+

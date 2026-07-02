@@ -125,7 +125,7 @@ export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
 
 export const signinService = async (body: SigninBody): Promise<any> => {
   // 1. Find user by email
-  const user = await UserModel.findOne({ email: body.email });
+  const user = await UserModel.findOne({ email: body.email }).select("+password");
   if (!user) {
     throw new AppError(401, "Invalid email or password");
   }
