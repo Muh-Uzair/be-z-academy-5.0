@@ -6,14 +6,14 @@ export const categoryIdParamsSchema = z.object({
 
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1, { error: "Name is required" }),
-  image: z.string().trim().min(1, { error: "Image is required" }),
+  imageKey: z.string().trim().min(1, { error: "Image key is required" }),
   description: z.string().trim().min(1, { error: "Description is required" }),
 });
 
 export const updateCategorySchema = z
   .object({
     name: z.string().trim().min(1).optional(),
-    image: z.string().trim().min(1).optional(),
+    imageKey: z.string().trim().min(1).optional(),
     description: z.string().trim().min(1).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {

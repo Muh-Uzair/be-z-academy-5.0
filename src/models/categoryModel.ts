@@ -11,9 +11,9 @@ const categorySchema = new Schema(
       maxlength: [50, "Name cannot exceed 50 characters"],
     },
 
-    image: {
+    imageKey: {
       type: String,
-      required: [true, "Image is required"],
+      required: [true, "Image key is required"],
       trim: true,
     },
 
