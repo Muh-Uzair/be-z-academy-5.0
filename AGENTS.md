@@ -1,0 +1,2 @@
+1 : Do not access my env files, if you want to make any variables in it just give me the names of the variables I will copy and paste it my self in the env
+2 : if you have confusion about any thing or any thing is not in you context just study the files in docs folder

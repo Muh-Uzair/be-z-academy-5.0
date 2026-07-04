@@ -3,6 +3,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import authRouter from "@src/routes/authRoutes";
 import userRouter from "@src/routes/userRoutes";
+import categoryRouter from "@src/routes/categoryRoutes";
 import AppError from "@src/utils/appError";
 import globalErrorHandler from "@src/controllers/errorController";
 import sendResponse from "@src/utils/sendResponse";
@@ -104,6 +105,7 @@ app.get("/health", (_req: Request, res: Response) => {
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/categories", categoryRouter);
 
 // ─── Unhandled Routes ─────────────────────────────────────────────────────────
 
