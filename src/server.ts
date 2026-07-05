@@ -1,6 +1,6 @@
 import { env } from "@src/config/env";
-import app from "@src/app";
 import { connectDB } from "@src/config/db";
+import app from "@src/app";
 
 const PORT = env.PORT;
 

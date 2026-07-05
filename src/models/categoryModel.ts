@@ -1,4 +1,5 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
+import { getPublicS3Url } from "@src/services/s3Services";
 
 const categorySchema = new Schema(
   {
@@ -27,8 +28,28 @@ const categorySchema = new Schema(
   },
   {
     timestamps: true,
+    id: false,
   },
 );
+
+categorySchema.virtual("imageUrl").get(function () {
+  return getPublicS3Url(this.imageKey);
+});
+
+categorySchema.set("toJSON", {
+  virtuals: true,
+  transform: (_doc, ret: Record<string, unknown>) => {
+    delete ret.imageKey;
+    return ret;
+  },
+});
+
+categorySchema.post("aggregate", function (docs) {
+  docs.forEach((doc) => {
+    doc.imageUrl = getPublicS3Url(doc.imageKey);
+    delete doc.imageKey;
+  });
+});
 
 type CategoryType = InferSchemaType<typeof categorySchema>;
 

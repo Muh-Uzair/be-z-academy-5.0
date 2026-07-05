@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import { env } from "@src/config/env";
 
+mongoose.plugin((schema) => {
+  schema.set("versionKey", false);
+});
+
 export const connectDB = async () => {
   try {
     const conn = await mongoose.connect(env.DB_CONNECTION_STRING, {
