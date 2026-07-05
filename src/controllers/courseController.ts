@@ -23,12 +23,13 @@ export const uploadCourseThumbnail = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.body as UploadCourseThumbnailBody;
 
-    const { uploadUrl, key } = await getCourseThumbnailUploadUrlService(body);
+    const { uploadUrl, fields, key } =
+      await getCourseThumbnailUploadUrlService(body);
 
     sendResponse(res, 200, {
       status: "success",
       message: "Course thumbnail upload URL generated successfully",
-      data: { uploadUrl, key },
+      data: { uploadUrl, fields, key },
     });
   },
 );

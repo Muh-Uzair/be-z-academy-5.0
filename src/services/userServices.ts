@@ -10,6 +10,7 @@ import {
 export const getInstructorsService = async (
   query: GetInstructorsQuery,
 ): Promise<any> => {
+  // Step 1: Build the base pipeline, always scoped to the instructor role
   const pipeline: PipelineStage[] = [];
 
   const matchStage: Record<string, unknown> = { role: "instructor" };
@@ -19,6 +20,7 @@ export const getInstructorsService = async (
 
   pipeline.push({ $match: matchStage });
 
+  // Step 2: Apply the optional search filter
   if (query.search) {
     pipeline.push({
       $match: {
@@ -30,16 +32,20 @@ export const getInstructorsService = async (
     });
   }
 
+  // Step 3: Clone the pipeline for a total count before pagination is applied
   const countPipeline = [...pipeline, { $count: "total" }];
 
+  // Step 4: Apply pagination to the main pipeline
   pipeline.push({ $skip: (query.page - 1) * query.limit });
   pipeline.push({ $limit: query.limit });
 
+  // Step 5: Run both pipelines in parallel
   const [instructors, countResult] = await Promise.all([
     UserModel.aggregate(pipeline),
     UserModel.aggregate(countPipeline),
   ]);
 
+  // Step 6: Compute pagination metadata
   const totalDocuments = countResult[0]?.total ?? 0;
   const totalPages = Math.ceil(totalDocuments / query.limit);
 
@@ -60,8 +66,10 @@ export const getUserByIdService = async (
   id: string,
   role: Role,
 ): Promise<any> => {
+  // Step 1: Find the user, scoped to the expected role
   const user = await UserModel.findOne({ _id: id, role });
 
+  // Step 2: Ensure it exists
   if (!user) {
     throw new AppError(404, `${role} not found`);
   }
@@ -73,11 +81,13 @@ export const updateUserService = async (
   id: string,
   updateData: Record<string, unknown>,
 ): Promise<any> => {
+  // Step 1: Apply the update
   const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   });
 
+  // Step 2: Ensure the user existed
   if (!updatedUser) {
     throw new AppError(404, "User not found");
   }
@@ -90,13 +100,13 @@ export const updateUserVerificationService = async (
   role: Role,
   body: UpdateInstructorVerificationBody,
 ): Promise<any> => {
-  // 1. Ensure the user exists and has the expected role
+  // Step 1: Ensure the user exists and has the expected role
   const user = await UserModel.findOne({ _id: id, role });
   if (!user) {
     throw new AppError(404, `${role} not found`);
   }
 
-  // 2. Guard against redundant verify/unverify calls
+  // Step 2: Guard against redundant verify/unverify calls
   if (user.isVerified === body.isVerified) {
     const message = body.isVerified
       ? `${user.role} is already verified`
@@ -104,10 +114,10 @@ export const updateUserVerificationService = async (
     throw new AppError(400, message);
   }
 
-  // 3. Update the user
+  // Step 3: Update the user
   const updatedUser = await updateUserService(id, body);
 
-  // 4. Notify the user by email
+  // Step 4: Notify the user by email
   await sendVerificationStatusEmail({
     email: updatedUser.email,
     fullName: updatedUser.fullName,

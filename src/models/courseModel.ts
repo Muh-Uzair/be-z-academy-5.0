@@ -127,12 +127,12 @@ const courseSchema = new Schema(
   },
 );
 
+// videoKey is intentionally NOT exposed as a virtual/public URL here — the
+// video is private, so a signed GET URL must be generated per-request in the
+// service layer (async), which mongoose virtuals/aggregate hooks cannot do.
+
 courseSchema.virtual("thumbnailUrl").get(function () {
   return getPublicS3Url(this.thumbnailKey);
-});
-
-courseSchema.virtual("videoUrl").get(function () {
-  return getPublicS3Url(this.videoKey);
 });
 
 courseSchema.set("toJSON", {
@@ -147,9 +147,7 @@ courseSchema.set("toJSON", {
 courseSchema.post("aggregate", function (docs) {
   docs.forEach((doc) => {
     doc.thumbnailUrl = getPublicS3Url(doc.thumbnailKey);
-    doc.videoUrl = getPublicS3Url(doc.videoKey);
     delete doc.thumbnailKey;
-    delete doc.videoKey;
   });
 });
 

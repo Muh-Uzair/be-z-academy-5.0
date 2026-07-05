@@ -21,12 +21,13 @@ export const uploadCategoryImage = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.body as UploadCategoryImageBody;
 
-    const { uploadUrl, key } = await getCategoryImageUploadUrlService(body);
+    const { uploadUrl, fields, key } =
+      await getCategoryImageUploadUrlService(body);
 
     sendResponse(res, 200, {
       status: "success",
       message: "Category image upload URL generated successfully",
-      data: { uploadUrl, key },
+      data: { uploadUrl, fields, key },
     });
   },
 );

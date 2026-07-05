@@ -1,24 +1,29 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { s3Client } from "@src/config/s3";
 import { env } from "@src/config/env";
 
-export const getPresignedPutUrlService = async (
-  key: string,
+const MIME_TYPE_TO_EXTENSION: Record<string, string> = {
+  "image/jpeg": "jpeg",
+  "image/png": "png",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+};
+
+export const buildS3ObjectKey = (
+  folder: string,
+  fileName: string,
   fileType: string,
-): Promise<{ uploadUrl: string; key: string }> => {
-  const command = new PutObjectCommand({
-    Bucket: env.AWS_S3_BUCKET_NAME,
-    Key: key,
-    ContentType: fileType,
-  });
+  uniqueId: string,
+): string => {
+  // Step 1: Strip any extension the client may have already included
+  const baseName = fileName.replace(/\.[^/.]+$/, "");
 
-  const uploadUrl = await getSignedUrl(s3Client, command, {
-    expiresIn: 300,
-  });
+  // Step 2: Derive the correct extension from the validated MIME type
+  const extension = MIME_TYPE_TO_EXTENSION[fileType];
 
-  return { uploadUrl, key };
+  return `${folder}/${uniqueId}-${baseName}.${extension}`;
 };
 
 export const getPresignedPostUrlService = async (
@@ -30,6 +35,7 @@ export const getPresignedPostUrlService = async (
   fields: Record<string, string>;
   key: string;
 }> => {
+  // Step 1: Build a presigned POST policy that enforces content type and max size
   const { url, fields } = await createPresignedPost(s3Client, {
     Bucket: env.AWS_S3_BUCKET_NAME,
     Key: key,
@@ -43,7 +49,33 @@ export const getPresignedPostUrlService = async (
     Expires: 900,
   });
 
+  // Step 2: Return the form fields the client must submit alongside the file
   return { uploadUrl: url, fields, key };
+};
+
+export const getPresignedGetUrlService = async (
+  key: string,
+  expiresIn = 3600,
+): Promise<string> => {
+  // Step 1: Build the GET command for the private object
+  const command = new GetObjectCommand({
+    Bucket: env.AWS_S3_BUCKET_NAME,
+    Key: key,
+  });
+
+  // Step 2: Sign the command into a time-limited read URL
+  return getSignedUrl(s3Client, command, { expiresIn });
+};
+
+export const deleteS3ObjectService = async (key: string): Promise<void> => {
+  // Step 1: Build the delete command for the given key
+  const command = new DeleteObjectCommand({
+    Bucket: env.AWS_S3_BUCKET_NAME,
+    Key: key,
+  });
+
+  // Step 2: Send the delete request to S3
+  await s3Client.send(command);
 };
 
 export const getPublicS3Url = (key: string): string => {

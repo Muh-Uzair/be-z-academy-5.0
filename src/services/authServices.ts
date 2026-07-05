@@ -15,17 +15,17 @@ import {
 } from "@src/utils/jwt";
 
 export const signupService = async (body: SignupBody): Promise<any> => {
-  // 1. Check if email already exists
+  // Step 1: Check if email already exists
   const existingUser = await UserModel.findOne({ email: body.email });
   if (existingUser) {
     throw new AppError(400, "Email already in use");
   }
 
-  // 2. Hash the password
+  // Step 2: Hash the password
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(body.password, salt);
 
-  // 3. Instructors are verified by Admin, not by OTP
+  // Step 3: Instructors are verified by Admin, not by OTP
   if (body.role === "instructor") {
     await UserModel.create({
       ...body,
@@ -35,13 +35,13 @@ export const signupService = async (body: SignupBody): Promise<any> => {
     return null;
   }
 
-  // 4. Generate 6-digit random OTP
+  // Step 4: Generate 6-digit random OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // 5. Calculate OTP expiry (10 minutes from now)
+  // Step 5: Calculate OTP expiry (10 minutes from now)
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-  // 6. Create user
+  // Step 6: Create user
   await UserModel.create({
     ...body,
     password: hashedPassword,
@@ -49,7 +49,7 @@ export const signupService = async (body: SignupBody): Promise<any> => {
     otpExpires,
   });
 
-  // 7. Send OTP via email
+  // Step 7: Send OTP via email
   await sendOtpEmail({
     email: body.email,
     otp,
@@ -60,28 +60,28 @@ export const signupService = async (body: SignupBody): Promise<any> => {
 };
 
 export const verifyOtpService = async (body: VerifyOtpBody): Promise<any> => {
-  // 1. Find user by email
+  // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
   if (!user) {
     throw new AppError(404, "User not found");
   }
 
-  // 2. Check if already verified
+  // Step 2: Check if already verified
   if (user.isVerified) {
     throw new AppError(400, "Account is already verified");
   }
 
-  // 3. Verify OTP
+  // Step 3: Verify OTP
   if (user.otp !== body.otp) {
     throw new AppError(400, "Invalid OTP");
   }
 
-  // 4. Check if OTP is expired
+  // Step 4: Check if OTP is expired
   if (!user.otpExpires || user.otpExpires.getTime() < Date.now()) {
     throw new AppError(400, "OTP has expired");
   }
 
-  // 5. Mark user as verified and clear OTP fields
+  // Step 5: Mark user as verified and clear OTP fields
   user.isVerified = true;
   user.otp = null;
   user.otpExpires = null;
@@ -91,29 +91,29 @@ export const verifyOtpService = async (body: VerifyOtpBody): Promise<any> => {
 };
 
 export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
-  // 1. Find user by email
+  // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
   if (!user) {
     throw new AppError(404, "User not found");
   }
 
-  // 2. Check if already verified
+  // Step 2: Check if already verified
   if (user.isVerified) {
     throw new AppError(400, "Account is already verified");
   }
 
-  // 3. Generate 6-digit random OTP
+  // Step 3: Generate 6-digit random OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // 4. Calculate OTP expiry (10 minutes from now)
+  // Step 4: Calculate OTP expiry (10 minutes from now)
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-  // 5. Update user
+  // Step 5: Update user
   user.otp = otp;
   user.otpExpires = otpExpires;
   await user.save();
 
-  // 6. Send OTP via email
+  // Step 6: Send OTP via email
   await sendOtpEmail({
     email: user.email,
     otp,
@@ -124,19 +124,19 @@ export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
 };
 
 export const signinService = async (body: SigninBody): Promise<any> => {
-  // 1. Find user by email
+  // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email }).select("+password");
   if (!user) {
     throw new AppError(401, "Invalid email or password");
   }
 
-  // 2. Check password
+  // Step 2: Check password
   const isPasswordCorrect = await bcrypt.compare(body.password, user.password);
   if (!isPasswordCorrect) {
     throw new AppError(401, "Invalid email or password");
   }
 
-  // 3. Check if account is verified
+  // Step 3: Check if account is verified
   if (!user.isVerified) {
     const message =
       user.role === "instructor"
@@ -145,7 +145,7 @@ export const signinService = async (body: SigninBody): Promise<any> => {
     throw new AppError(403, message);
   }
 
-  // 4. Issue tokens
+  // Step 4: Issue tokens
   const payload = { id: user._id.toString(), role: user.role };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
@@ -156,12 +156,12 @@ export const signinService = async (body: SigninBody): Promise<any> => {
 export const rotateTokenService = async (
   refreshToken: string | undefined,
 ): Promise<any> => {
-  // 1. Ensure refresh token was provided
+  // Step 1: Ensure refresh token was provided
   if (!refreshToken) {
     throw new AppError(401, "Refresh token is missing");
   }
 
-  // 2. Verify refresh token
+  // Step 2: Verify refresh token
   let decoded;
   try {
     decoded = verifyRefreshToken(refreshToken);
@@ -169,13 +169,13 @@ export const rotateTokenService = async (
     throw new AppError(401, "Invalid or expired refresh token");
   }
 
-  // 3. Ensure user still exists
+  // Step 3: Ensure user still exists
   const user = await UserModel.findById(decoded.id);
   if (!user) {
     throw new AppError(401, "User no longer exists");
   }
 
-  // 4. Issue new access and refresh tokens
+  // Step 4: Issue new access and refresh tokens
   const payload = { id: user._id.toString(), role: user.role };
   const newAccessToken = signAccessToken(payload);
   const newRefreshToken = signRefreshToken(payload);

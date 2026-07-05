@@ -33,14 +33,13 @@ export const updateCourseSchema = z
     error: "At least one field must be provided to update the course",
   });
 
+const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png"] as const;
+
 export const uploadCourseThumbnailSchema = z.object({
   fileName: z.string().trim().min(1, { error: "File name is required" }),
-  fileType: z
-    .string()
-    .trim()
-    .refine((val) => val.startsWith("image/"), {
-      error: "File type must be an image",
-    }),
+  fileType: z.enum(ALLOWED_IMAGE_FILE_TYPES, {
+    error: "Thumbnail must be a JPEG or PNG image",
+  }),
 });
 
 const ALLOWED_VIDEO_FILE_TYPES = ["video/mp4", "video/webm"] as const;
