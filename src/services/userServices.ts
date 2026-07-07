@@ -114,8 +114,11 @@ export const updateUserVerificationService = async (
     throw new AppError(400, message);
   }
 
-  // Step 3: Update the user
-  const updatedUser = await updateUserService(id, body);
+  // Step 3: Update the user, tracking the rejection timestamp when rejecting
+  const updatedUser = await updateUserService(id, {
+    ...body,
+    ...(body.isVerified ? {} : { lastVerificationRejectedAt: new Date() }),
+  });
 
   // Step 4: Notify the user by email
   await sendVerificationStatusEmail({

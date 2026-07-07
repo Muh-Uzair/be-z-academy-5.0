@@ -22,8 +22,7 @@ const userSchema = new Schema(
       trim: true,
       lowercase: true,
       validate: {
-        validator: (value: string) =>
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+        validator: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
         message: "Please provide a valid email address",
       },
     },
@@ -56,7 +55,7 @@ const userSchema = new Schema(
       default: null,
       trim: true,
     },
-  isVerified: {
+    isVerified: {
       type: Boolean,
       default: false,
     },
@@ -66,11 +65,16 @@ const userSchema = new Schema(
       trim: true,
       maxlength: [500, "Rejection reason cannot exceed 500 characters"],
     },
+    lastVerificationRejectedAt: {
+      type: Date,
+      default: null,
+    },
     otp: {
       type: String,
       default: null,
       validate: {
-        validator: (value: string | null) => value === null || /^\d{6}$/.test(value),
+        validator: (value: string | null) =>
+          value === null || /^\d{6}$/.test(value),
         message: "OTP must be exactly 6 digits",
       },
     },

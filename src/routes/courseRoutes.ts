@@ -3,14 +3,15 @@ import {
   uploadCourseThumbnail,
   uploadCourseVideo,
   createCourse,
-  getMyCourses,
-  getMyCourseDetails,
-  updateMyCourse,
-  deleteMyCourse,
+  getCourses,
+  getCourseDetails,
+  updateCourse,
+  deleteCourse,
 } from "@src/controllers/courseController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protect from "@src/middlewares/protectMiddleware";
-import restrictTo from "@src/middlewares/restrictToMiddleware";
+import protectMiddleware from "@src/middlewares/protectMiddleware";
+import optionalAuthMiddleware from "@src/middlewares/optionalAuthMiddleware";
+import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
 import { Role } from "@src/models/userModel";
 import {
   courseIdParamsSchema,
@@ -23,67 +24,67 @@ import {
 
 const courseRouter = Router();
 
+// ─── Admin Routes ─────────────────────────────────────────────────────────────
+
 // ─── Instructor Routes ────────────────────────────────────────────────────────
 
 courseRouter.post(
   "/upload-thumbnail",
-  protect,
-  restrictTo(Role.Instructor),
+  protectMiddleware,
+  restrictToMiddleware(Role.Instructor),
   validationMiddleware(uploadCourseThumbnailSchema, "body"),
   uploadCourseThumbnail,
 );
 
 courseRouter.post(
   "/upload-video",
-  protect,
-  restrictTo(Role.Instructor),
+  protectMiddleware,
+  restrictToMiddleware(Role.Instructor),
   validationMiddleware(uploadCourseVideoSchema, "body"),
   uploadCourseVideo,
 );
 
 courseRouter.post(
   "/",
-  protect,
-  restrictTo(Role.Instructor),
+  protectMiddleware,
+  restrictToMiddleware(Role.Instructor),
   validationMiddleware(createCourseSchema, "body"),
   createCourse,
 );
 
-courseRouter.get(
-  "/",
-  protect,
-  restrictTo(Role.Instructor),
-  validationMiddleware(getCoursesQuerySchema, "query"),
-  getMyCourses,
-);
-
-courseRouter.get(
-  "/:id",
-  protect,
-  restrictTo(Role.Instructor),
-  validationMiddleware(courseIdParamsSchema, "params"),
-  getMyCourseDetails,
-);
-
 courseRouter.patch(
   "/:id",
-  protect,
-  restrictTo(Role.Instructor),
+  protectMiddleware,
+  restrictToMiddleware(Role.Instructor),
   validationMiddleware(courseIdParamsSchema, "params"),
   validationMiddleware(updateCourseSchema, "body"),
-  updateMyCourse,
+  updateCourse,
 );
 
 courseRouter.delete(
   "/:id",
-  protect,
-  restrictTo(Role.Instructor),
+  protectMiddleware,
+  restrictToMiddleware(Role.Instructor),
   validationMiddleware(courseIdParamsSchema, "params"),
-  deleteMyCourse,
+  deleteCourse,
 );
 
-// ─── Admin Routes ─────────────────────────────────────────────────────────────
+// ─── Student Routes ───────────────────────────────────────────────────────────
 
 // ─── Shared Routes ────────────────────────────────────────────────────────────
+
+courseRouter.get(
+  "/",
+  optionalAuthMiddleware,
+  validationMiddleware(getCoursesQuerySchema, "query"),
+  getCourses,
+);
+
+courseRouter.get(
+  "/:id",
+  optionalAuthMiddleware,
+  validationMiddleware(courseIdParamsSchema, "params"),
+  getCourseDetails,
+);
 
 export default courseRouter;

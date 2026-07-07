@@ -1,6 +1,7 @@
 import { PipelineStage, Types } from "mongoose";
 import { randomUUID } from "crypto";
 import CourseModel from "@src/models/courseModel";
+import { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import {
   getPresignedPostUrlService,
@@ -57,7 +58,11 @@ export const getCourseThumbnailUploadUrlService = async (
   );
 
   // Step 2: Generate a presigned POST policy capped at the max image size
-  return getPresignedPostUrlService(key, body.fileType, MAX_IMAGE_SIZE_IN_BYTES);
+  return getPresignedPostUrlService(
+    key,
+    body.fileType,
+    MAX_IMAGE_SIZE_IN_BYTES,
+  );
 };
 
 export const getCourseVideoUploadUrlService = async (
@@ -94,23 +99,79 @@ export const createCourseService = async (
   return withSignedVideoUrl(course);
 };
 
-export const getInstructorCoursesService = async (
-  instructorId: string,
+// FUNCTION
+export const getCoursesService = async (
   query: GetCoursesQuery,
+  user?: { id: string; role: string },
 ): Promise<any> => {
-  // Step 1: Scope the pipeline to the requesting instructor's own courses
+  // Step 1: Build the pipeline
   const pipeline: PipelineStage[] = [
     {
-      $match: {
-        instructor: new Types.ObjectId(instructorId),
-      },
+      $match: {},
     },
   ];
 
-  // Step 2: Apply optional isVerified and search filters
+  // Step 2 : Deal with roles
+  const role = user?.role;
+
+  if (role && role === Role.Admin && user.id) {
+    console.log("Admin accessing courses");
+  }
+
+  if (role && role === Role.Instructor && user.id) {
+    console.log("Instructor accessing courses");
+
+    pipeline.push({
+      $match: {
+        instructor: new Types.ObjectId(user.id),
+      },
+    });
+  }
+
+  if (role && role === Role.Student && user.id) {
+    console.log("Student accessing courses");
+  }
+
+  if (!role) {
+    console.log("Unauthenticated user accessing courses");
+  }
+
+  // Step 3: Apply optional isVerified and search filters
   if (typeof query.isVerified === "boolean") {
+    console.log("Filtering courses by isVerified:", query.isVerified);
+
     pipeline.push({ $match: { isVerified: query.isVerified } });
   }
+
+  if (query.verificationRejectionReason === null) {
+    pipeline.push({
+      $match: {
+        verificationRejectionReason: null,
+      },
+    });
+  }
+
+  pipeline.push(
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "categoryDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$category",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        category: 0,
+      },
+    },
+  );
 
   if (query.search) {
     pipeline.push({
@@ -120,25 +181,27 @@ export const getInstructorCoursesService = async (
     });
   }
 
-  // Step 3: Clone the pipeline for a total count before pagination is applied
+  // Step 4: Clone the pipeline for a total count before pagination is applied
   const countPipeline: PipelineStage[] = [...pipeline, { $count: "total" }];
 
-  // Step 4: Apply sorting and pagination to the main pipeline
+  // Step 5: Apply sorting and pagination to the main pipeline
   pipeline.push({ $sort: { createdAt: -1 } });
   pipeline.push({ $skip: (query.page - 1) * query.limit });
   pipeline.push({ $limit: query.limit });
 
-  // Step 5: Run both pipelines in parallel
+  console.log("pipeline ------------------------------------- \n", pipeline);
+
+  // Step 6: Run both pipelines in parallel
   const [courses, countResult] = await Promise.all([
     CourseModel.aggregate(pipeline),
     CourseModel.aggregate(countPipeline),
   ]);
 
-  // Step 6: Compute pagination metadata
+  // Step 7: Compute pagination metadata
   const totalDocuments = countResult[0]?.total ?? 0;
   const totalPages = Math.ceil(totalDocuments / query.limit);
 
-  // Step 7: Attach a signed video URL to every course in the page
+  // Step 8: Attach a signed video URL to every course in the page
   const coursesWithVideoUrls = await Promise.all(
     courses.map((course) => withSignedVideoUrl(course)),
   );
@@ -156,6 +219,7 @@ export const getInstructorCoursesService = async (
   };
 };
 
+// FUNCTION
 const getOwnedCourseOrThrow = async (id: string, instructorId: string) => {
   // Step 1: Find the course by id
   const course = await CourseModel.findById(id);
@@ -172,18 +236,19 @@ const getOwnedCourseOrThrow = async (id: string, instructorId: string) => {
   return course;
 };
 
-export const getInstructorCourseByIdService = async (
-  id: string,
-  instructorId: string,
-): Promise<any> => {
-  // Step 1: Fetch the course, enforcing ownership
-  const course = await getOwnedCourseOrThrow(id, instructorId);
+export const getCourseByIdService = async (id: string): Promise<any> => {
+  // Step 1: Fetch the course by id
+  const course = await CourseModel.findById(id);
+
+  if (!course) {
+    throw new AppError(404, "Course not found");
+  }
 
   // Step 2: Attach a signed video URL before returning
   return withSignedVideoUrl(course);
 };
 
-export const updateInstructorCourseService = async (
+export const updateCourseService = async (
   id: string,
   instructorId: string,
   body: UpdateCourseBody,
@@ -218,7 +283,7 @@ export const updateInstructorCourseService = async (
   return withSignedVideoUrl(updatedCourse);
 };
 
-export const deleteInstructorCourseService = async (
+export const deleteCourseService = async (
   id: string,
   instructorId: string,
 ): Promise<any> => {

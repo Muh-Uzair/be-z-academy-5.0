@@ -5,8 +5,8 @@ import {
   updateInstructorVerification,
 } from "@src/controllers/userController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protect from "@src/middlewares/protectMiddleware";
-import restrictTo from "@src/middlewares/restrictToMiddleware";
+import protectMiddleware from "@src/middlewares/protectMiddleware";
+import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
 import { Role } from "@src/models/userModel";
 import {
   getInstructorsQuerySchema,
@@ -20,24 +20,24 @@ const userRouter = Router();
 
 userRouter.get(
   "/instructors",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(getInstructorsQuerySchema, "query"),
   getInstructors,
 );
 
 userRouter.get(
   "/instructors/:id",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(instructorIdParamsSchema, "params"),
   getInstructorDetails,
 );
 
 userRouter.patch(
   "/instructors/:id/verification",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(instructorIdParamsSchema, "params"),
   validationMiddleware(updateInstructorVerificationSchema, "body"),
   updateInstructorVerification,

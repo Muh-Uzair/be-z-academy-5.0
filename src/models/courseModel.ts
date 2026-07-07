@@ -76,9 +76,14 @@ const courseSchema = new Schema(
       maxlength: [500, "Rejection reason cannot exceed 500 characters"],
     },
 
+    lastVerificationRejectedAt: {
+      type: Date,
+      default: null,
+    },
+
     averageRating: {
       type: Number,
-      default: 0,
+    default: 0,
       min: [0, "Average rating cannot be negative"],
       max: [5, "Average rating cannot exceed 5"],
     },
@@ -126,6 +131,8 @@ const courseSchema = new Schema(
     id: false,
   },
 );
+
+courseSchema.index({ title: 1, instructor: 1 }, { unique: true });
 
 // videoKey is intentionally NOT exposed as a virtual/public URL here — the
 // video is private, so a signed GET URL must be generated per-request in the

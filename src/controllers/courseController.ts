@@ -4,10 +4,10 @@ import {
   getCourseThumbnailUploadUrlService,
   getCourseVideoUploadUrlService,
   createCourseService,
-  getInstructorCoursesService,
-  getInstructorCourseByIdService,
-  updateInstructorCourseService,
-  deleteInstructorCourseService,
+  getCoursesService,
+  getCourseByIdService,
+  updateCourseService,
+  deleteCourseService,
 } from "@src/services/courseServices";
 import {
   CourseIdParams,
@@ -64,15 +64,11 @@ export const createCourse = catchAsync(
   },
 );
 
-export const getMyCourses = catchAsync(
+export const getCourses = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetCoursesQuery;
-    const instructorId = req.user!.id;
 
-    const { courses, pagination } = await getInstructorCoursesService(
-      instructorId,
-      query,
-    );
+    const { courses, pagination } = await getCoursesService(query, req.user);
 
     sendResponse(res, 200, {
       status: "success",
@@ -82,12 +78,11 @@ export const getMyCourses = catchAsync(
   },
 );
 
-export const getMyCourseDetails = catchAsync(
+export const getCourseDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
-    const instructorId = req.user!.id;
 
-    const course = await getInstructorCourseByIdService(id, instructorId);
+    const course = await getCourseByIdService(id);
 
     sendResponse(res, 200, {
       status: "success",
@@ -97,13 +92,13 @@ export const getMyCourseDetails = catchAsync(
   },
 );
 
-export const updateMyCourse = catchAsync(
+export const updateCourse = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
     const body = req.body as UpdateCourseBody;
     const instructorId = req.user!.id;
 
-    const course = await updateInstructorCourseService(id, instructorId, body);
+    const course = await updateCourseService(id, instructorId, body);
 
     sendResponse(res, 200, {
       status: "success",
@@ -113,12 +108,12 @@ export const updateMyCourse = catchAsync(
   },
 );
 
-export const deleteMyCourse = catchAsync(
+export const deleteCourse = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
     const instructorId = req.user!.id;
 
-    await deleteInstructorCourseService(id, instructorId);
+    await deleteCourseService(id, instructorId);
 
     sendResponse(res, 200, {
       status: "success",

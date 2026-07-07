@@ -7,7 +7,7 @@ import {
   rotateToken,
 } from "@src/controllers/authController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
-import restrictTo from "@src/middlewares/restrictToMiddleware";
+import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
 import { Role } from "@src/models/userModel";
 import {
   signupSchema,
@@ -22,13 +22,13 @@ authRouter.post("/signup", validationMiddleware(signupSchema), signup);
 authRouter.post(
   "/verify-otp",
   validationMiddleware(verifyOtpSchema),
-  restrictTo(Role.Student),
+  restrictToMiddleware(Role.Student),
   verifyOtp,
 );
 authRouter.post(
   "/resend-otp",
   validationMiddleware(resendOtpSchema),
-  restrictTo(Role.Student),
+  restrictToMiddleware(Role.Student),
   resendOtp,
 );
 authRouter.post("/signin", validationMiddleware(signinSchema), signin);

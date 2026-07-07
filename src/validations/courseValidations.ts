@@ -53,7 +53,14 @@ export const uploadCourseVideoSchema = z.object({
 
 export const getCoursesQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
-  isVerified: z.coerce.boolean().optional(),
+  isVerified: z
+    .enum(["true", "false"], { error: "isVerified must be true or false" })
+    .transform((val) => val === "true")
+    .optional(),
+  verificationRejectionReason: z
+    .literal("null", { error: "verificationRejectionReason must be null" })
+    .transform(() => null)
+    .optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).default(10),
 });

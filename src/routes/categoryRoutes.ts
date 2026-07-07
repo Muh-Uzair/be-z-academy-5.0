@@ -8,8 +8,8 @@ import {
   uploadCategoryImage,
 } from "@src/controllers/categoryController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protect from "@src/middlewares/protectMiddleware";
-import restrictTo from "@src/middlewares/restrictToMiddleware";
+import protectMiddleware from "@src/middlewares/protectMiddleware";
+import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
 import { Role } from "@src/models/userModel";
 import {
   categoryIdParamsSchema,
@@ -23,38 +23,38 @@ const categoryRouter = Router();
 
 categoryRouter.post(
   "/upload-image",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(uploadCategoryImageSchema, "body"),
   uploadCategoryImage,
 );
 
 categoryRouter.post(
   "/",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(createCategorySchema, "body"),
   createCategory,
 );
 
 categoryRouter.get(
   "/",
-  protect,
+  protectMiddleware,
   validationMiddleware(getCategoriesQuerySchema, "query"),
   getCategories,
 );
 
 categoryRouter.get(
   "/:id",
-  protect,
+  protectMiddleware,
   validationMiddleware(categoryIdParamsSchema, "params"),
   getCategoryDetails,
 );
 
 categoryRouter.patch(
   "/:id",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(categoryIdParamsSchema, "params"),
   validationMiddleware(updateCategorySchema, "body"),
   updateCategory,
@@ -62,8 +62,8 @@ categoryRouter.patch(
 
 categoryRouter.delete(
   "/:id",
-  protect,
-  restrictTo(Role.Admin),
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
   validationMiddleware(categoryIdParamsSchema, "params"),
   deleteCategory,
 );
