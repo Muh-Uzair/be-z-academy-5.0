@@ -12,6 +12,7 @@ import {
 import {
   CreateCourseBody,
   UpdateCourseBody,
+  UpdateCourseVerificationBody,
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
@@ -280,6 +281,38 @@ export const updateCourseService = async (
   await Promise.all(staleKeys.map((key) => deleteS3ObjectService(key)));
 
   // Step 5: Attach a signed video URL before returning
+  return withSignedVideoUrl(updatedCourse);
+};
+
+export const updateCourseVerificationService = async (
+  id: string,
+  body: UpdateCourseVerificationBody,
+): Promise<any> => {
+  // Step 1: Ensure the course exists
+  const course = await CourseModel.findById(id);
+  if (!course) {
+    throw new AppError(404, "Course not found");
+  }
+
+  // Step 2: Guard against redundant verify/unverify calls
+  if (course.isVerified === body.isVerified) {
+    const message = body.isVerified
+      ? "Course is already verified"
+      : "Course is already unverified";
+    throw new AppError(400, message);
+  }
+
+  // Step 3: Update the course, tracking the rejection timestamp when rejecting
+  const updatedCourse = await CourseModel.findByIdAndUpdate(
+    id,
+    {
+      ...body,
+      ...(body.isVerified ? {} : { lastVerificationRejectedAt: new Date() }),
+    },
+    { new: true, runValidators: true },
+  );
+
+  // Step 4: Attach a signed video URL before returning
   return withSignedVideoUrl(updatedCourse);
 };
 

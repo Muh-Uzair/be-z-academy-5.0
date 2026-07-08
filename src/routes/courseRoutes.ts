@@ -6,6 +6,7 @@ import {
   getCourses,
   getCourseDetails,
   updateCourse,
+  updateCourseVerification,
   deleteCourse,
 } from "@src/controllers/courseController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
@@ -17,6 +18,7 @@ import {
   courseIdParamsSchema,
   createCourseSchema,
   updateCourseSchema,
+  updateCourseVerificationSchema,
   uploadCourseThumbnailSchema,
   uploadCourseVideoSchema,
   getCoursesQuerySchema,
@@ -25,6 +27,15 @@ import {
 const courseRouter = Router();
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
+
+courseRouter.patch(
+  "/:id/verification",
+  protectMiddleware,
+  restrictToMiddleware(Role.Admin),
+  validationMiddleware(courseIdParamsSchema, "params"),
+  validationMiddleware(updateCourseVerificationSchema, "body"),
+  updateCourseVerification,
+);
 
 // ─── Instructor Routes ────────────────────────────────────────────────────────
 

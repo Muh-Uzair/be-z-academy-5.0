@@ -7,12 +7,14 @@ import {
   getCoursesService,
   getCourseByIdService,
   updateCourseService,
+  updateCourseVerificationService,
   deleteCourseService,
 } from "@src/services/courseServices";
 import {
   CourseIdParams,
   CreateCourseBody,
   UpdateCourseBody,
+  UpdateCourseVerificationBody,
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
@@ -103,6 +105,23 @@ export const updateCourse = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Course updated successfully",
+      data: { course },
+    });
+  },
+);
+
+export const updateCourseVerification = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as CourseIdParams;
+    const body = req.body as UpdateCourseVerificationBody;
+
+    const course = await updateCourseVerificationService(id, body);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: body.isVerified
+        ? "Course approved successfully"
+        : "Course rejected successfully",
       data: { course },
     });
   },

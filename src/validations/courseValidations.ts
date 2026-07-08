@@ -17,6 +17,16 @@ export const createCourseSchema = z.object({
   videoKey: z.string().trim().min(1, { error: "Video is required" }),
 });
 
+export const updateCourseVerificationSchema = z
+  .object({
+    isVerified: z.boolean({ error: "isVerified must be a boolean" }),
+    verificationRejectionReason: z.string().trim().min(1).nullable().optional(),
+  })
+  .refine((data) => data.isVerified || !!data.verificationRejectionReason, {
+    error: "Rejection reason is required when rejecting a course",
+    path: ["verificationRejectionReason"],
+  });
+
 export const updateCourseSchema = z
   .object({
     title: z.string().trim().min(5).optional(),
