@@ -11,6 +11,7 @@ const MIME_TYPE_TO_EXTENSION: Record<string, string> = {
   "video/webm": "webm",
 };
 
+// FUNCTION
 export const buildS3ObjectKey = (
   folder: string,
   fileName: string,
@@ -26,6 +27,7 @@ export const buildS3ObjectKey = (
   return `${folder}/${uniqueId}-${baseName}.${extension}`;
 };
 
+// FUNCTION
 export const getPresignedPostUrlService = async (
   key: string,
   fileType: string,
@@ -53,6 +55,7 @@ export const getPresignedPostUrlService = async (
   return { uploadUrl: url, fields, key };
 };
 
+// FUNCTION
 export const getPresignedGetUrlService = async (
   key: string,
   expiresIn = 3600,
@@ -67,6 +70,7 @@ export const getPresignedGetUrlService = async (
   return getSignedUrl(s3Client, command, { expiresIn });
 };
 
+// FUNCTION
 export const deleteS3ObjectService = async (key: string): Promise<void> => {
   // Step 1: Build the delete command for the given key
   const command = new DeleteObjectCommand({
@@ -78,6 +82,7 @@ export const deleteS3ObjectService = async (key: string): Promise<void> => {
   await s3Client.send(command);
 };
 
+// FUNCTION
 export const getPublicS3Url = (key: string): string => {
   return `https://${env.AWS_S3_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
 };

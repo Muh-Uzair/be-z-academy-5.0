@@ -17,6 +17,7 @@ import {
 
 const MAX_IMAGE_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5MB
 
+// FUNCTION
 export const getCategoryImageUploadUrlService = async (
   body: UploadCategoryImageBody,
 ): Promise<any> => {
@@ -32,6 +33,7 @@ export const getCategoryImageUploadUrlService = async (
   return getPresignedPostUrlService(key, body.fileType, MAX_IMAGE_SIZE_IN_BYTES);
 };
 
+// FUNCTION
 export const createCategoryService = async (
   body: CreateCategoryBody,
 ): Promise<any> => {
@@ -41,6 +43,7 @@ export const createCategoryService = async (
   return category;
 };
 
+// FUNCTION
 export const getCategoriesService = async (
   query: GetCategoriesQuery,
 ): Promise<any> => {
@@ -86,6 +89,7 @@ export const getCategoriesService = async (
   };
 };
 
+// FUNCTION
 export const getCategoryByIdService = async (id: string): Promise<any> => {
   // Step 1: Find the category by id
   const category = await CategoryModel.findById(id);
@@ -98,6 +102,7 @@ export const getCategoryByIdService = async (id: string): Promise<any> => {
   return category;
 };
 
+// FUNCTION
 export const updateCategoryService = async (
   id: string,
   body: UpdateCategoryBody,
@@ -125,6 +130,7 @@ export const updateCategoryService = async (
   return updatedCategory;
 };
 
+// FUNCTION
 export const deleteCategoryService = async (id: string): Promise<any> => {
   // Step 1: Ensure the category exists
   const category = await CategoryModel.findById(id);

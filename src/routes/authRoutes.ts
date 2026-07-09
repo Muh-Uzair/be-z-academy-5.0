@@ -5,8 +5,10 @@ import {
   resendOtp,
   signin,
   rotateToken,
+  getMe,
 } from "@src/controllers/authController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
+import protectMiddleware from "@src/middlewares/protectMiddleware";
 import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
 import { Role } from "@src/models/userModel";
 import {
@@ -33,5 +35,6 @@ authRouter.post(
 );
 authRouter.post("/signin", validationMiddleware(signinSchema), signin);
 authRouter.post("/rotate-token", rotateToken);
+authRouter.get("/me", protectMiddleware, getMe);
 
 export default authRouter;

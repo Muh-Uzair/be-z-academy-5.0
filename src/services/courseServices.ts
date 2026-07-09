@@ -31,6 +31,7 @@ const buildSlug = (title: string): string => {
   return `${base}-${randomUUID().slice(0, 8)}`;
 };
 
+// FUNCTION
 const withSignedVideoUrl = async (course: any): Promise<any> => {
   // Step 1: Convert to a plain object (applies toJSON's thumbnailKey/videoKey cleanup)
   const plain = typeof course.toJSON === "function" ? course.toJSON() : course;
@@ -47,6 +48,7 @@ const withSignedVideoUrl = async (course: any): Promise<any> => {
   return { ...plain, videoUrl };
 };
 
+// FUNCTION
 export const getCourseThumbnailUploadUrlService = async (
   body: UploadCourseThumbnailBody,
 ): Promise<any> => {
@@ -66,6 +68,7 @@ export const getCourseThumbnailUploadUrlService = async (
   );
 };
 
+// FUNCTION
 export const getCourseVideoUploadUrlService = async (
   body: UploadCourseVideoBody,
 ): Promise<any> => {
@@ -85,6 +88,7 @@ export const getCourseVideoUploadUrlService = async (
   );
 };
 
+// FUNCTION
 export const createCourseService = async (
   instructorId: string,
   body: CreateCourseBody,
@@ -115,13 +119,13 @@ export const getCoursesService = async (
   // Step 2 : Deal with roles
   const role = user?.role;
 
+  // making changes according to admin
   if (role && role === Role.Admin && user.id) {
     console.log("Admin accessing courses");
   }
 
+  // making changes according to instructor
   if (role && role === Role.Instructor && user.id) {
-    console.log("Instructor accessing courses");
-
     pipeline.push({
       $match: {
         instructor: new Types.ObjectId(user.id),
@@ -129,21 +133,26 @@ export const getCoursesService = async (
     });
   }
 
+  // making changes according to student
   if (role && role === Role.Student && user.id) {
-    console.log("Student accessing courses");
+    pipeline.push({
+      $match: { isVerified: true, verificationRejectionReason: null },
+    });
   }
 
+  // making changes according to unauthenticated users
   if (!role) {
-    console.log("Unauthenticated user accessing courses");
+    pipeline.push({
+      $match: { isVerified: true, verificationRejectionReason: null },
+    });
   }
 
   // Step 3: Apply optional isVerified and search filters
   if (typeof query.isVerified === "boolean") {
-    console.log("Filtering courses by isVerified:", query.isVerified);
-
     pipeline.push({ $match: { isVerified: query.isVerified } });
   }
 
+  // Step 4 : Apply optional verificationRejectionReason filter
   if (query.verificationRejectionReason === null) {
     pipeline.push({
       $match: {
@@ -152,6 +161,7 @@ export const getCoursesService = async (
     });
   }
 
+  // Step 5: Lookup the category details and unwind the result
   pipeline.push(
     {
       $lookup: {
@@ -174,6 +184,7 @@ export const getCoursesService = async (
     },
   );
 
+  // Step 6: Apply optional search filter on the title
   if (query.search) {
     pipeline.push({
       $match: {
@@ -182,27 +193,27 @@ export const getCoursesService = async (
     });
   }
 
-  // Step 4: Clone the pipeline for a total count before pagination is applied
+  // Step 7: Clone the pipeline for a total count before pagination is applied
   const countPipeline: PipelineStage[] = [...pipeline, { $count: "total" }];
 
-  // Step 5: Apply sorting and pagination to the main pipeline
+  // Step 8: Apply sorting and pagination to the main pipeline
   pipeline.push({ $sort: { createdAt: -1 } });
   pipeline.push({ $skip: (query.page - 1) * query.limit });
   pipeline.push({ $limit: query.limit });
 
-  console.log("pipeline ------------------------------------- \n", pipeline);
+  // console.log("pipeline ------------------------------------- \n", pipeline);
 
-  // Step 6: Run both pipelines in parallel
+  // Step 9: Run both pipelines in parallel
   const [courses, countResult] = await Promise.all([
     CourseModel.aggregate(pipeline),
     CourseModel.aggregate(countPipeline),
   ]);
 
-  // Step 7: Compute pagination metadata
+  // Step 10: Compute pagination metadata
   const totalDocuments = countResult[0]?.total ?? 0;
   const totalPages = Math.ceil(totalDocuments / query.limit);
 
-  // Step 8: Attach a signed video URL to every course in the page
+  // Step 11: Attach a signed video URL to every course in the page
   const coursesWithVideoUrls = await Promise.all(
     courses.map((course) => withSignedVideoUrl(course)),
   );
@@ -237,6 +248,7 @@ const getOwnedCourseOrThrow = async (id: string, instructorId: string) => {
   return course;
 };
 
+// FUNCTION
 export const getCourseByIdService = async (id: string): Promise<any> => {
   // Step 1: Fetch the course by id
   const course = await CourseModel.findById(id);
@@ -249,6 +261,7 @@ export const getCourseByIdService = async (id: string): Promise<any> => {
   return withSignedVideoUrl(course);
 };
 
+// FUNCTION
 export const updateCourseService = async (
   id: string,
   instructorId: string,
@@ -284,6 +297,7 @@ export const updateCourseService = async (
   return withSignedVideoUrl(updatedCourse);
 };
 
+// FUNCTION
 export const updateCourseVerificationService = async (
   id: string,
   body: UpdateCourseVerificationBody,
@@ -316,6 +330,7 @@ export const updateCourseVerificationService = async (
   return withSignedVideoUrl(updatedCourse);
 };
 
+// FUNCTION
 export const deleteCourseService = async (
   id: string,
   instructorId: string,

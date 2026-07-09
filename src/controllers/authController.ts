@@ -7,7 +7,9 @@ import {
   signinService,
   rotateTokenService,
 } from "@src/services/authServices";
+import { getUserByIdService } from "@src/services/userServices";
 import { SignupBody, VerifyOtpBody, ResendOtpBody, SigninBody } from "@src/types/authTypes";
+import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
 import { setAuthCookies } from "@src/utils/cookies";
 
@@ -69,6 +71,20 @@ export const signin = catchAsync(
       status: "success",
       message: "Signed in successfully",
       data: null,
+    });
+  },
+);
+
+export const getMe = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id, role } = req.user!;
+
+    const user = await getUserByIdService(id, role as Role);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Current user fetched successfully",
+      data: { user },
     });
   },
 );

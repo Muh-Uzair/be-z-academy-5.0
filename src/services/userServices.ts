@@ -7,6 +7,7 @@ import {
   UpdateInstructorVerificationBody,
 } from "@src/types/userTypes";
 
+// FUNCTION
 export const getInstructorsService = async (
   query: GetInstructorsQuery,
 ): Promise<any> => {
@@ -62,6 +63,7 @@ export const getInstructorsService = async (
   };
 };
 
+// FUNCTION
 export const getUserByIdService = async (
   id: string,
   role: Role,
@@ -77,6 +79,7 @@ export const getUserByIdService = async (
   return user;
 };
 
+// FUNCTION
 export const updateUserService = async (
   id: string,
   updateData: Record<string, unknown>,
@@ -95,6 +98,7 @@ export const updateUserService = async (
   return updatedUser;
 };
 
+// FUNCTION
 export const updateUserVerificationService = async (
   id: string,
   role: Role,

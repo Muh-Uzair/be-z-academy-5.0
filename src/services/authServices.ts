@@ -14,6 +14,7 @@ import {
   verifyRefreshToken,
 } from "@src/utils/jwt";
 
+// FUNCTION
 export const signupService = async (body: SignupBody): Promise<any> => {
   // Step 1: Check if email already exists
   const existingUser = await UserModel.findOne({ email: body.email });
@@ -59,6 +60,7 @@ export const signupService = async (body: SignupBody): Promise<any> => {
   return null;
 };
 
+// FUNCTION
 export const verifyOtpService = async (body: VerifyOtpBody): Promise<any> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
@@ -90,6 +92,7 @@ export const verifyOtpService = async (body: VerifyOtpBody): Promise<any> => {
   return null;
 };
 
+// FUNCTION
 export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
@@ -123,6 +126,7 @@ export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
   return null;
 };
 
+// FUNCTION
 export const signinService = async (body: SigninBody): Promise<any> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email }).select("+password");
@@ -153,6 +157,7 @@ export const signinService = async (body: SigninBody): Promise<any> => {
   return { accessToken, refreshToken };
 };
 
+// FUNCTION
 export const rotateTokenService = async (
   refreshToken: string | undefined,
 ): Promise<any> => {
