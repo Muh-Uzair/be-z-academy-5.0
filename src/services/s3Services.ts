@@ -3,13 +3,11 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { s3Client } from "@src/config/s3";
 import { env } from "@src/config/env";
-
-const MIME_TYPE_TO_EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpeg",
-  "image/png": "png",
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-};
+import {
+  MIME_TYPE_TO_EXTENSION,
+  PRESIGNED_POST_EXPIRES_IN_SECONDS,
+  PRESIGNED_GET_DEFAULT_EXPIRES_IN_SECONDS,
+} from "@src/constants/s3Constants";
 
 // FUNCTION
 export const buildS3ObjectKey = (
@@ -48,7 +46,7 @@ export const getPresignedPostUrlService = async (
     Fields: {
       "Content-Type": fileType,
     },
-    Expires: 900,
+    Expires: PRESIGNED_POST_EXPIRES_IN_SECONDS,
   });
 
   // Step 2: Return the form fields the client must submit alongside the file
@@ -58,7 +56,7 @@ export const getPresignedPostUrlService = async (
 // FUNCTION
 export const getPresignedGetUrlService = async (
   key: string,
-  expiresIn = 3600,
+  expiresIn = PRESIGNED_GET_DEFAULT_EXPIRES_IN_SECONDS,
 ): Promise<string> => {
   // Step 1: Build the GET command for the private object
   const command = new GetObjectCommand({

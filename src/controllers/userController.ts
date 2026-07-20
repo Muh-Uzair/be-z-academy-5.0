@@ -5,6 +5,7 @@ import {
   getUserByIdService,
   updateUserVerificationService,
 } from "@src/services/userServices";
+import { getInstructorOnboardingLinkService } from "@src/services/stripeServices";
 import {
   GetInstructorsQuery,
   InstructorIdParams,
@@ -37,6 +38,20 @@ export const getInstructorDetails = catchAsync(
       status: "success",
       message: "Instructor details fetched successfully",
       data: { instructor },
+    });
+  },
+);
+
+export const getInstructorOnboardingLink = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const instructorId = req.user!.id;
+
+    const data = await getInstructorOnboardingLinkService(instructorId);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Stripe onboarding link generated successfully",
+      data,
     });
   },
 );

@@ -90,6 +90,15 @@ const userSchema = new Schema(
         message: "Role must be one of: admin, instructor, student",
       },
     },
+    stripeAccountId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    stripeOnboardingComplete: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

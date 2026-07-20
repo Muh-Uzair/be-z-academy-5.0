@@ -123,7 +123,7 @@ app.all(
   },
 );
 
-// 
+//
 
 // ─── Global Error Handler (must be last) ─────────────────────────────────────
 

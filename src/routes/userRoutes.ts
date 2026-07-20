@@ -3,6 +3,7 @@ import {
   getInstructors,
   getInstructorDetails,
   updateInstructorVerification,
+  getInstructorOnboardingLink,
 } from "@src/controllers/userController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
 import protectMiddleware from "@src/middlewares/protectMiddleware";
@@ -27,7 +28,7 @@ userRouter.get(
 );
 
 userRouter.get(
-  "/instructors/:id",
+  "/instructor/:id",
   protectMiddleware,
   restrictToMiddleware(Role.Admin),
   validationMiddleware(instructorIdParamsSchema, "params"),
@@ -35,7 +36,7 @@ userRouter.get(
 );
 
 userRouter.patch(
-  "/instructors/:id/verification",
+  "/instructor/:id/verification",
   protectMiddleware,
   restrictToMiddleware(Role.Admin),
   validationMiddleware(instructorIdParamsSchema, "params"),
@@ -44,6 +45,13 @@ userRouter.patch(
 );
 
 // ─── Instructor Routes ────────────────────────────────────────────────────────
+
+userRouter.get(
+  "/get-instructor-onboarding-link",
+  protectMiddleware,
+  restrictToMiddleware(Role.Instructor),
+  getInstructorOnboardingLink,
+);
 
 // ─── Student Routes ───────────────────────────────────────────────────────────
 

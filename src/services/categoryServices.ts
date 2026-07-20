@@ -14,8 +14,10 @@ import {
   UploadCategoryImageBody,
   GetCategoriesQuery,
 } from "@src/types/categoryTypes";
-
-const MAX_IMAGE_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5MB
+import {
+  CATEGORY_MAX_IMAGE_SIZE_IN_BYTES,
+  CATEGORY_IMAGE_S3_FOLDER,
+} from "@src/constants/categoryConstants";
 
 // FUNCTION
 export const getCategoryImageUploadUrlService = async (
@@ -23,14 +25,18 @@ export const getCategoryImageUploadUrlService = async (
 ): Promise<any> => {
   // Step 1: Build a unique S3 key for the image, with the correct extension
   const key = buildS3ObjectKey(
-    "5.0/categories/images",
+    CATEGORY_IMAGE_S3_FOLDER,
     body.fileName,
     body.fileType,
     randomUUID(),
   );
 
   // Step 2: Generate a presigned POST policy capped at the max image size
-  return getPresignedPostUrlService(key, body.fileType, MAX_IMAGE_SIZE_IN_BYTES);
+  return getPresignedPostUrlService(
+    key,
+    body.fileType,
+    CATEGORY_MAX_IMAGE_SIZE_IN_BYTES,
+  );
 };
 
 // FUNCTION

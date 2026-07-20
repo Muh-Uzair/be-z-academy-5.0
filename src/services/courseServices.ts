@@ -17,19 +17,13 @@ import {
   UploadCourseVideoBody,
   GetCoursesQuery,
 } from "@src/types/courseTypes";
-
-const MAX_VIDEO_SIZE_IN_BYTES = 20 * 1024 * 1024; // 20MB
-const MAX_IMAGE_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5MB
-
-const buildSlug = (title: string): string => {
-  const base = title
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-
-  return `${base}-${randomUUID().slice(0, 8)}`;
-};
+import {
+  COURSE_MAX_VIDEO_SIZE_IN_BYTES,
+  COURSE_MAX_IMAGE_SIZE_IN_BYTES,
+  COURSE_THUMBNAIL_S3_FOLDER,
+  COURSE_VIDEO_S3_FOLDER,
+} from "@src/constants/courseConstants";
+import { buildSlug } from "@src/utils/courseUtils";
 
 // FUNCTION
 const withSignedVideoUrl = async (course: any): Promise<any> => {
@@ -54,7 +48,7 @@ export const getCourseThumbnailUploadUrlService = async (
 ): Promise<any> => {
   // Step 1: Build a unique S3 key for the thumbnail, with the correct extension
   const key = buildS3ObjectKey(
-    "5.0/courses/thumbnails",
+    COURSE_THUMBNAIL_S3_FOLDER,
     body.fileName,
     body.fileType,
     randomUUID(),
@@ -64,7 +58,7 @@ export const getCourseThumbnailUploadUrlService = async (
   return getPresignedPostUrlService(
     key,
     body.fileType,
-    MAX_IMAGE_SIZE_IN_BYTES,
+    COURSE_MAX_IMAGE_SIZE_IN_BYTES,
   );
 };
 
@@ -74,7 +68,7 @@ export const getCourseVideoUploadUrlService = async (
 ): Promise<any> => {
   // Step 1: Build a unique S3 key for the video, with the correct extension
   const key = buildS3ObjectKey(
-    "5.0/courses/videos",
+    COURSE_VIDEO_S3_FOLDER,
     body.fileName,
     body.fileType,
     randomUUID(),
@@ -84,7 +78,7 @@ export const getCourseVideoUploadUrlService = async (
   return getPresignedPostUrlService(
     key,
     body.fileType,
-    MAX_VIDEO_SIZE_IN_BYTES,
+    COURSE_MAX_VIDEO_SIZE_IN_BYTES,
   );
 };
 

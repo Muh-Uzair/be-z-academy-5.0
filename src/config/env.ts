@@ -11,8 +11,8 @@ const envSchema = z.object({
   DB_CONNECTION_STRING: z.string(),
   DB_USER_NAME: z.string(),
   DB_PASSWORD: z.string(),
-  EMAIL_HOST: z.string(),
-  EMAIL_PORT: z.coerce.number(),
+  // EMAIL_HOST: z.string(),
+  // EMAIL_PORT: z.coerce.number(),
   EMAIL_USER: z.string(),
   EMAIL_PASS: z.string(),
   EMAIL_FROM: z.string(),
@@ -22,6 +22,9 @@ const envSchema = z.object({
   AWS_ACCESS_KEY_ID: z.string(),
   AWS_SECRET_ACCESS_KEY: z.string(),
   AWS_S3_BUCKET_NAME: z.string(),
+  STRIPE_PUBLISHABLE_KEY: z.string(),
+  STRIPE_SECRET_KEY: z.string(),
+  STRIPE_WEBHOOK_SECRET: z.string(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
