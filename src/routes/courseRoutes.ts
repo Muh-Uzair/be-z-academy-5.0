@@ -13,6 +13,7 @@ import validationMiddleware from "@src/middlewares/validationMiddleware";
 import protectMiddleware from "@src/middlewares/protectMiddleware";
 import optionalAuthMiddleware from "@src/middlewares/optionalAuthMiddleware";
 import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
+import requireStripeOnboarding from "@src/middlewares/courseMiddlewares";
 import { Role } from "@src/models/userModel";
 import {
   courseIdParamsSchema,
@@ -59,6 +60,7 @@ courseRouter.post(
   "/",
   protectMiddleware,
   restrictToMiddleware(Role.Instructor),
+  requireStripeOnboarding,
   validationMiddleware(createCourseSchema, "body"),
   createCourse,
 );

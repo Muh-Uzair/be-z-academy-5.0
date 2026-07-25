@@ -5,6 +5,7 @@ import authRouter from "@src/routes/authRoutes";
 import userRouter from "@src/routes/userRoutes";
 import categoryRouter from "@src/routes/categoryRoutes";
 import courseRouter from "@src/routes/courseRoutes";
+import stripeRouter from "@src/routes/stripeRoutes";
 import AppError from "@src/utils/appError";
 import globalErrorHandler from "@src/controllers/errorController";
 import sendResponse from "@src/utils/sendResponse";
@@ -32,7 +33,14 @@ process.on("unhandledRejection", (err: Error) => {
 
 const app = express();
 
+// Trust the proxy (e.g., Cloudflare Tunnel) so rate limiter and IP-based modules work correctly
+app.set("trust proxy", 1);
+
 app.use(morgan("dev"));
+
+// Stripe webhook needs the raw request body for signature verification, so
+// it must be mounted before the JSON body parser consumes/parses it.
+app.use("/api/v1/stripe", stripeRouter);
 
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: "10kb" }));

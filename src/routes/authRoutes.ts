@@ -26,7 +26,7 @@ authRouter.post(
   validationMiddleware(verifyOtpSchema),
   restrictToMiddleware(Role.Student),
   verifyOtp,
-);
+);  
 authRouter.post(
   "/resend-otp",
   validationMiddleware(resendOtpSchema),

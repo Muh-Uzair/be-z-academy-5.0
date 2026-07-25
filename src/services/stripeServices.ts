@@ -43,4 +43,21 @@ export const getInstructorOnboardingLinkService = async (
   return { url: accountLink.url };
 };
 
+// FUNCTION
+export const handleAccountUpdatedEventService = async (
+  account: Stripe.Account,
+): Promise<void> => {
+  // Step 1: Check if the account has completed onboarding.
+  // We consider onboarding complete if they are able to receive payouts or charges.
+  const isComplete = account.payouts_enabled || account.charges_enabled || account.details_submitted;
 
+  if (!isComplete) {
+    return; // They haven't finished yet
+  }
+
+  // Step 2: Mark the instructor's onboarding as complete in the database
+  await UserModel.updateOne(
+    { stripeAccountId: account.id, role: Role.Instructor },
+    { $set: { stripeOnboardingComplete: true } },
+  );
+};

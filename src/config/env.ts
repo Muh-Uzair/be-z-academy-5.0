@@ -24,7 +24,7 @@ const envSchema = z.object({
   AWS_S3_BUCKET_NAME: z.string(),
   STRIPE_PUBLISHABLE_KEY: z.string(),
   STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_SECRET: z.string(),
+  STRIPE_WEBHOOK_SECRET: z.string(),  
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
