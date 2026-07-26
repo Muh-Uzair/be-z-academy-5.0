@@ -10,6 +10,7 @@ import {
   updateCourseVerificationService,
   deleteCourseService,
   createCoursePaymentIntentService,
+  requestCourseRefundService,
 } from "@src/services/courseServices";
 import {
   CourseIdParams,
@@ -153,6 +154,21 @@ export const deleteCourse = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Course deleted successfully",
+      data: null,
+    });
+  },
+);
+
+export const requestCourseRefund = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as CourseIdParams;
+    const studentId = req.user!.id;
+
+    await requestCourseRefundService(studentId, id);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Refund initiated successfully. Your money will be returned within 5-10 business days",
       data: null,
     });
   },

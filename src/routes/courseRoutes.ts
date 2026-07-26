@@ -9,6 +9,7 @@ import {
   updateCourseVerification,
   deleteCourse,
   createCoursePaymentIntent,
+  requestCourseRefund,
 } from "@src/controllers/courseController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
 import protectMiddleware from "@src/middlewares/protectMiddleware";
@@ -91,6 +92,14 @@ courseRouter.post(
   restrictToMiddleware(Role.Student),
   validationMiddleware(courseIdParamsSchema, "params"),
   createCoursePaymentIntent,
+);
+
+courseRouter.post(
+  "/:id/refund",
+  protectMiddleware,
+  restrictToMiddleware(Role.Student),
+  validationMiddleware(courseIdParamsSchema, "params"),
+  requestCourseRefund,
 );
 
 // ─── Shared Routes ────────────────────────────────────────────────────────────

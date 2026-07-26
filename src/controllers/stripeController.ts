@@ -7,6 +7,7 @@ import AppError from "@src/utils/appError";
 import {
   handleAccountUpdatedEventService,
   handlePaymentIntentSucceededService,
+  handleChargeRefundedService,
 } from "@src/services/stripeServices";
 
 export const handleStripeWebhook = catchAsync(
@@ -44,6 +45,10 @@ export const handleStripeWebhook = catchAsync(
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log("Payment intent succeeded:", paymentIntent.id);
       await handlePaymentIntentSucceededService(paymentIntent);
+    } else if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      console.log("Charge refunded:", charge.id);
+      await handleChargeRefundedService(charge);
     } else {
       console.log("Unhandled Stripe webhook event type:", event.type);
     }

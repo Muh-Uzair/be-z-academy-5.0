@@ -120,3 +120,42 @@ export const handlePaymentIntentSucceededService = async (
     `Successfully created Transaction and Enrollment for student ${studentId} in course ${courseId}`,
   );
 };
+
+// FUNCTION
+export const handleChargeRefundedService = async (
+  charge: Stripe.Charge,
+): Promise<void> => {
+  // Step 1: Find the transaction using the Stripe charge ID
+  const transaction = await TransactionModel.findOne({
+    stripeChargeId: charge.id,
+  });
+
+  if (!transaction) {
+    console.error(
+      `No transaction found for charge ${charge.id}. Cannot process refund.`,
+    );
+    return;
+  }
+
+  // Step 2: Guard against processing the same refund webhook twice
+  if (transaction.paymentStatus === "refunded") {
+    console.log(`Transaction ${transaction.transactionId} already marked as refunded. Skipping.`);
+    return;
+  }
+
+  // Step 3: Mark the transaction as refunded
+  await TransactionModel.updateOne(
+    { _id: transaction._id },
+    { $set: { paymentStatus: "refunded" } },
+  );
+
+  // Step 4: Delete the enrollment so the student loses access to the course
+  await EnrollmentModel.deleteOne({
+    student: transaction.student,
+    course: transaction.course,
+  });
+
+  console.log(
+    `Refund processed successfully. Transaction ${transaction.transactionId} marked as refunded and enrollment removed.`,
+  );
+};

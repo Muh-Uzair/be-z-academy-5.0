@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import CourseModel from "@src/models/courseModel";
 import UserModel, { Role } from "@src/models/userModel";
 import EnrollmentModel from "@src/models/enrollmentModel";
+import TransactionModel from "@src/models/transactionModel";
 import { stripe } from "@src/config/stripe";
 import { env } from "@src/config/env";
 import AppError from "@src/utils/appError";
@@ -411,4 +412,81 @@ export const deleteCourseService = async (
   ]);
 
   return null;
+};
+
+// FUNCTION
+export const requestCourseRefundService = async (
+  studentId: string,
+  courseId: string,
+): Promise<void> => {
+  // Step 1: Find the enrollment to confirm the student is enrolled
+  const enrollment = await EnrollmentModel.findOne({
+    student: studentId,
+    course: courseId,
+  });
+
+  if (!enrollment) {
+    throw new AppError(404, "You are not enrolled in this course");
+  }
+
+  // Step 2: Find the linked transaction
+  const transaction = await TransactionModel.findById(enrollment.transaction);
+
+  if (!transaction) {
+    throw new AppError(404, "No payment record found for this enrollment");
+  }
+
+  // Step 3: Ensure the transaction is in a refundable state (paid)
+  if (transaction.paymentStatus !== "paid") {
+    throw new AppError(
+      400,
+      transaction.paymentStatus === "refunded"
+        ? "This course has already been refunded"
+        : "This payment is not eligible for a refund",
+    );
+  }
+
+  // Step 4: Enforce the 7-day refund window
+  const REFUND_WINDOW_DAYS = 7;
+  const now = new Date();
+  const paidAt = new Date(transaction.amountPaidAt as Date);
+  const daysSincePurchase =
+    (now.getTime() - paidAt.getTime()) / (1000 * 60 * 60 * 24);
+
+  if (daysSincePurchase > REFUND_WINDOW_DAYS) {
+    throw new AppError(
+      400,
+      `Refund window has expired. Refunds are only allowed within ${REFUND_WINDOW_DAYS} days of purchase`,
+    );
+  }
+
+  // Step 5: Ensure the student hasn't watched too much of the course (>30%)
+  if (enrollment.watchPercentage > 30) {
+    throw new AppError(
+      400,
+      "You have watched more than 30% of the course and are no longer eligible for a refund",
+    );
+  }
+
+  // Step 6: The stripeChargeId is required to issue a refund
+  if (!transaction.stripeChargeId) {
+    throw new AppError(
+      500,
+      "Unable to process refund: no charge reference found",
+    );
+  }
+
+  // Step 7: Call Stripe to issue the refund.
+  // - reverse_transfer: true  → pulls the 95% back from the instructor's connected account
+  // - refund_application_fee: true → pulls the 5% admin commission back from the platform balance
+  // Together, the student receives 100% back to their card.
+  await stripe.refunds.create({
+    charge: transaction.stripeChargeId,
+    reverse_transfer: true,
+    refund_application_fee: true,
+  });
+
+  // Note: We do NOT update the DB here.
+  // The DB update (marking transaction as 'refunded' and removing enrollment)
+  // happens in the 'charge.refunded' webhook handler to guarantee consistency.
 };
