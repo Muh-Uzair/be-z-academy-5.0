@@ -10,6 +10,16 @@ const transactionSchema = new Schema(
       unique: true,
     },
 
+    stripeChargeId: {
+      type: String,
+      default: null,
+    },
+
+    currency: {
+      type: String,
+      default: "usd",
+    },
+
     student: {
       type: Schema.Types.ObjectId,
       ref: "User",

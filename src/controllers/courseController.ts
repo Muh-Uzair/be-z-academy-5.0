@@ -9,6 +9,7 @@ import {
   updateCourseService,
   updateCourseVerificationService,
   deleteCourseService,
+  createCoursePaymentIntentService,
 } from "@src/services/courseServices";
 import {
   CourseIdParams,
@@ -123,6 +124,21 @@ export const updateCourseVerification = catchAsync(
         ? "Course approved successfully"
         : "Course rejected successfully",
       data: { course },
+    });
+  },
+);
+
+export const createCoursePaymentIntent = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as CourseIdParams;
+    const studentId = req.user!.id;
+
+    const data = await createCoursePaymentIntentService(studentId, id);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Payment intent created successfully",
+      data,
     });
   },
 );

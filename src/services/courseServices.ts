@@ -1,7 +1,10 @@
 import { PipelineStage, Types } from "mongoose";
 import { randomUUID } from "crypto";
 import CourseModel from "@src/models/courseModel";
-import { Role } from "@src/models/userModel";
+import UserModel, { Role } from "@src/models/userModel";
+import EnrollmentModel from "@src/models/enrollmentModel";
+import { stripe } from "@src/config/stripe";
+import { env } from "@src/config/env";
 import AppError from "@src/utils/appError";
 import {
   getPresignedPostUrlService,
@@ -24,6 +27,72 @@ import {
   COURSE_VIDEO_S3_FOLDER,
 } from "@src/constants/courseConstants";
 import { buildSlug } from "@src/utils/courseUtils";
+
+// FUNCTION
+export const createCoursePaymentIntentService = async (
+  studentId: string,
+  courseId: string,
+): Promise<any> => {
+  // Step 1: Ensure the course exists and is verified/live
+  const course = await CourseModel.findOne({
+    _id: courseId,
+    isVerified: true,
+  });
+
+  if (!course) {
+    throw new AppError(404, "Course not found");
+  }
+
+  // Step 2: Ensure the student is not already enrolled in this course
+  const existingEnrollment = await EnrollmentModel.findOne({
+    student: studentId,
+    course: courseId,
+  });
+
+  if (existingEnrollment) {
+    throw new AppError(400, "You are already enrolled in this course");
+  }
+
+  // Step 3: Ensure the course's instructor has completed Stripe onboarding
+  const instructor = await UserModel.findOne({
+    _id: course.instructor,
+    role: Role.Instructor,
+  });
+
+  if (!instructor || !instructor.stripeAccountId || !instructor.stripeOnboardingComplete) {
+    throw new AppError(
+      400,
+      "This course's instructor has not completed payment onboarding yet",
+    );
+  }
+
+  // Step 4: Calculate the admin commission and instructor revenue split
+  const amountInCents = Math.round(course.price * 100);
+  const adminCommission = Math.round(
+    (amountInCents * env.PLATFORM_COMMISSION_PERCENTAGE) / 100,
+  );
+
+  // Step 5: Create a Stripe PaymentIntent on the platform account with
+  // transfer_data.destination set to the instructor's connected account and
+  // application_fee_amount set to the admin's commission cut
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amountInCents,
+    currency: "usd",
+    application_fee_amount: adminCommission,
+    transfer_data: {
+      destination: instructor.stripeAccountId,
+    },
+    metadata: {
+      courseId: courseId, // Used parameter instead of course.id
+      studentId,
+      instructorId: instructor.id,
+    },
+  });
+
+  // Step 6: Return the client secret (and any other data the browser needs
+  // to confirm the payment) to the controller
+  return { clientSecret: paymentIntent.client_secret };
+};
 
 // FUNCTION
 const withSignedVideoUrl = async (course: any): Promise<any> => {

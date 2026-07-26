@@ -4,7 +4,10 @@ import { stripe } from "@src/config/stripe";
 import { env } from "@src/config/env";
 import catchAsync from "@src/utils/catchAsync";
 import AppError from "@src/utils/appError";
-import { handleAccountUpdatedEventService } from "@src/services/stripeServices";
+import {
+  handleAccountUpdatedEventService,
+  handlePaymentIntentSucceededService,
+} from "@src/services/stripeServices";
 
 export const handleStripeWebhook = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -37,6 +40,10 @@ export const handleStripeWebhook = catchAsync(
       const account = event.data.object as Stripe.Account;
       console.log("Account updated:", account.id);
       await handleAccountUpdatedEventService(account);
+    } else if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      console.log("Payment intent succeeded:", paymentIntent.id);
+      await handlePaymentIntentSucceededService(paymentIntent);
     } else {
       console.log("Unhandled Stripe webhook event type:", event.type);
     }

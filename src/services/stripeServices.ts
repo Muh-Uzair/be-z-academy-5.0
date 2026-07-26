@@ -3,7 +3,8 @@ import { stripe } from "@src/config/stripe";
 import UserModel, { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import { STRIPE_ONBOARDING_URL } from "@src/constants/stripeConstants";
-
+import TransactionModel from "@src/models/transactionModel";
+import EnrollmentModel from "@src/models/enrollmentModel";
 // FUNCTION
 export const getInstructorOnboardingLinkService = async (
   instructorId: string,
@@ -59,5 +60,63 @@ export const handleAccountUpdatedEventService = async (
   await UserModel.updateOne(
     { stripeAccountId: account.id, role: Role.Instructor },
     { $set: { stripeOnboardingComplete: true } },
+  );
+};
+
+// FUNCTION
+export const handlePaymentIntentSucceededService = async (
+  paymentIntent: Stripe.PaymentIntent,
+): Promise<void> => {
+  const { courseId, studentId, instructorId } = paymentIntent.metadata;
+
+  if (!courseId || !studentId || !instructorId) {
+    console.error(
+      "Missing metadata in PaymentIntent. Cannot create Transaction and Enrollment.",
+      paymentIntent.id,
+    );
+    return;
+  }
+
+  // Calculate dollar amounts from the Stripe cents
+  const totalPrice = paymentIntent.amount / 100;
+  // If application_fee_amount is null, default to 0
+  const adminCommission = (paymentIntent.application_fee_amount || 0) / 100;
+  const instructorRevenue = totalPrice - adminCommission;
+
+  // Stripe can sometimes send the same webhook twice. 
+  // Let's check if we already processed this payment to avoid duplicates.
+  const existingTransaction = await TransactionModel.findOne({ transactionId: paymentIntent.id });
+  if (existingTransaction) {
+    console.log(`Transaction ${paymentIntent.id} already processed. Skipping.`);
+    return;
+  }
+
+  // Step 1: Create a new Transaction record
+  const transaction = await TransactionModel.create({
+    transactionId: paymentIntent.id,
+    student: studentId,
+    course: courseId,
+    instructor: instructorId,
+    totalPrice,
+    amountPaid: totalPrice,
+    amountPaidAt: new Date(),
+    paymentStatus: "paid",
+    adminCommission,
+    instructorRevenue,
+    currency: paymentIntent.currency,
+    stripeChargeId: typeof paymentIntent.latest_charge === "string" ? paymentIntent.latest_charge : paymentIntent.latest_charge?.id || null,
+  });
+
+  // Step 2: Create a new Enrollment record
+  await EnrollmentModel.create({
+    student: studentId,
+    course: courseId,
+    instructor: instructorId,
+    transaction: transaction._id,
+    enrolledAt: new Date(),
+  });
+
+  console.log(
+    `Successfully created Transaction and Enrollment for student ${studentId} in course ${courseId}`,
   );
 };

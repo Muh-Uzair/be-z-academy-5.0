@@ -8,6 +8,7 @@ import {
   updateCourse,
   updateCourseVerification,
   deleteCourse,
+  createCoursePaymentIntent,
 } from "@src/controllers/courseController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
 import protectMiddleware from "@src/middlewares/protectMiddleware";
@@ -83,6 +84,14 @@ courseRouter.delete(
 );
 
 // ─── Student Routes ───────────────────────────────────────────────────────────
+
+courseRouter.post(
+  "/:id/payment-intent",
+  protectMiddleware,
+  restrictToMiddleware(Role.Student),
+  validationMiddleware(courseIdParamsSchema, "params"),
+  createCoursePaymentIntent,
+);
 
 // ─── Shared Routes ────────────────────────────────────────────────────────────
 
