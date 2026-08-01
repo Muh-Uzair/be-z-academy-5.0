@@ -4,12 +4,14 @@ import {
   getInstructorsService,
   getUserByIdService,
   updateUserVerificationService,
+  updateOwnProfileService,
 } from "@src/services/userServices";
 import { getInstructorOnboardingLinkService } from "@src/services/stripeServices";
 import {
   GetInstructorsQuery,
   InstructorIdParams,
   UpdateInstructorVerificationBody,
+  UpdateProfileBody,
 } from "@src/types/userTypes";
 import sendResponse from "@src/utils/sendResponse";
 import { Role } from "@src/models/userModel";
@@ -52,6 +54,21 @@ export const getInstructorOnboardingLink = catchAsync(
       status: "success",
       message: "Stripe onboarding link generated successfully",
       data,
+    });
+  },
+);
+
+export const updateProfile = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id, role } = req.user!;
+    const body = req.body as UpdateProfileBody;
+
+    const user = await updateOwnProfileService(id, role, body);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Profile updated successfully",
+      data: { user },
     });
   },
 );

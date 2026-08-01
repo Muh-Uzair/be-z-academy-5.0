@@ -11,3 +11,16 @@ export const USER_YEARS_OF_EXPERIENCE_MIN = 0;
 export const USER_YEARS_OF_EXPERIENCE_MAX = 60;
 
 export const USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH = 500;
+
+// Fields each role is allowed to change through the shared update-profile API.
+export const PROFILE_UPDATABLE_FIELDS = {
+  admin: ["fullName", "avatar"],
+  instructor: [
+    "avatar",
+    "fullName",
+    "highestEducation",
+    "yearsOfExperience",
+    "bio",
+  ],
+  student: ["avatar", "fullName", "highestEducation", "bio"],
+} as const;

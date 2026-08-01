@@ -2,9 +2,11 @@ import { PipelineStage } from "mongoose";
 import UserModel, { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import { sendVerificationStatusEmail } from "@src/utils/email";
+import { PROFILE_UPDATABLE_FIELDS } from "@src/constants/userConstants";
 import {
   GetInstructorsQuery,
   UpdateInstructorVerificationBody,
+  UpdateProfileBody,
 } from "@src/types/userTypes";
 
 // FUNCTION
@@ -96,6 +98,29 @@ export const updateUserService = async (
   }
 
   return updatedUser;
+};
+
+// FUNCTION
+export const updateOwnProfileService = async (
+  id: string,
+  role: Role,
+  body: UpdateProfileBody,
+): Promise<any> => {
+  // Step 1: Keep only the fields this role is permitted to change
+  const allowedFields = PROFILE_UPDATABLE_FIELDS[role] as readonly string[];
+  const disallowedFields = Object.keys(body).filter(
+    (field) => !allowedFields.includes(field),
+  );
+
+  if (disallowedFields.length > 0) {
+    throw new AppError(
+      403,
+      `${role}s are not allowed to update: ${disallowedFields.join(", ")}`,
+    );
+  }
+
+  // Step 2: Apply the update
+  return updateUserService(id, body);
 };
 
 // FUNCTION

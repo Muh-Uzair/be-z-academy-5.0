@@ -4,6 +4,7 @@ import {
   getInstructorDetails,
   updateInstructorVerification,
   getInstructorOnboardingLink,
+  updateProfile,
 } from "@src/controllers/userController";
 import validationMiddleware from "@src/middlewares/validationMiddleware";
 import protectMiddleware from "@src/middlewares/protectMiddleware";
@@ -13,6 +14,7 @@ import {
   getInstructorsQuerySchema,
   instructorIdParamsSchema,
   updateInstructorVerificationSchema,
+  updateProfileSchema,
 } from "@src/validations/userValidations";
 
 const userRouter = Router();
@@ -56,5 +58,12 @@ userRouter.get(
 // ─── Student Routes ───────────────────────────────────────────────────────────
 
 // ─── Shared Routes ────────────────────────────────────────────────────────────
+
+userRouter.patch(
+  "/update-profile",
+  protectMiddleware,
+  validationMiddleware(updateProfileSchema, "body"),
+  updateProfile,
+);
 
 export default userRouter;

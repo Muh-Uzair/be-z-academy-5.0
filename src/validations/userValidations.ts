@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH } from "@src/constants/userConstants";
+import {
+  USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
+  USER_FULL_NAME_MIN_LENGTH,
+  USER_FULL_NAME_MAX_LENGTH,
+  USER_BIO_MAX_LENGTH,
+  USER_HIGHEST_EDUCATION_MAX_LENGTH,
+  USER_YEARS_OF_EXPERIENCE_MIN,
+  USER_YEARS_OF_EXPERIENCE_MAX,
+} from "@src/constants/userConstants";
 
 export const instructorIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Instructor id is required" }),
@@ -30,3 +38,50 @@ export const getInstructorsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).default(10),
 });
+
+// ─── Shared: Update Own Profile ────────────────────────────────────────────────
+// Superset of every role's editable fields; userServices.ts strips fields the
+// requester's role isn't permitted to change before hitting the database.
+
+export const updateProfileSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(USER_FULL_NAME_MIN_LENGTH, {
+        error: `Full name must be at least ${USER_FULL_NAME_MIN_LENGTH} characters`,
+      })
+      .max(USER_FULL_NAME_MAX_LENGTH, {
+        error: `Full name cannot exceed ${USER_FULL_NAME_MAX_LENGTH} characters`,
+      })
+      .optional(),
+    avatar: z.string().trim().min(1).nullable().optional(),
+    bio: z
+      .string()
+      .trim()
+      .min(1, { error: "Bio is required" })
+      .max(USER_BIO_MAX_LENGTH, {
+        error: `Bio cannot exceed ${USER_BIO_MAX_LENGTH} characters`,
+      })
+      .optional(),
+    highestEducation: z
+      .string()
+      .trim()
+      .min(1, { error: "Highest education is required" })
+      .max(USER_HIGHEST_EDUCATION_MAX_LENGTH, {
+        error: `Highest education cannot exceed ${USER_HIGHEST_EDUCATION_MAX_LENGTH} characters`,
+      })
+      .optional(),
+    yearsOfExperience: z
+      .number({ error: "Years of experience must be a number" })
+      .min(USER_YEARS_OF_EXPERIENCE_MIN, {
+        error: "Years of experience cannot be negative",
+      })
+      .max(USER_YEARS_OF_EXPERIENCE_MAX, {
+        error: `Years of experience cannot exceed ${USER_YEARS_OF_EXPERIENCE_MAX}`,
+      })
+      .optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    error: "At least one field must be provided to update the profile",
+  });
