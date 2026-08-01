@@ -6,9 +6,9 @@ import {
   getInstructorOnboardingLink,
   updateProfile,
 } from "@src/controllers/userController";
-import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protectMiddleware from "@src/middlewares/protectMiddleware";
-import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
+import validation from "@src/middlewares/validation";
+import protect from "@src/middlewares/protect";
+import restrictTo from "@src/middlewares/restrictTo";
 import { Role } from "@src/models/userModel";
 import {
   getInstructorsQuerySchema,
@@ -23,26 +23,26 @@ const userRouter = Router();
 
 userRouter.get(
   "/instructors",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(getInstructorsQuerySchema, "query"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(getInstructorsQuerySchema, "query"),
   getInstructors,
 );
 
 userRouter.get(
   "/instructor/:id",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(instructorIdParamsSchema, "params"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(instructorIdParamsSchema, "params"),
   getInstructorDetails,
 );
 
 userRouter.patch(
   "/instructor/:id/verification",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(instructorIdParamsSchema, "params"),
-  validationMiddleware(updateInstructorVerificationSchema, "body"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(instructorIdParamsSchema, "params"),
+  validation(updateInstructorVerificationSchema, "body"),
   updateInstructorVerification,
 );
 
@@ -50,8 +50,8 @@ userRouter.patch(
 
 userRouter.get(
   "/get-instructor-onboarding-link",
-  protectMiddleware,
-  restrictToMiddleware(Role.Instructor),
+  protect,
+  restrictTo(Role.Instructor),
   getInstructorOnboardingLink,
 );
 
@@ -61,8 +61,8 @@ userRouter.get(
 
 userRouter.patch(
   "/update-profile",
-  protectMiddleware,
-  validationMiddleware(updateProfileSchema, "body"),
+  protect,
+  validation(updateProfileSchema, "body"),
   updateProfile,
 );
 

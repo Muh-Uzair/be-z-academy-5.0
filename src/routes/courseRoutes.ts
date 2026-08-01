@@ -11,10 +11,10 @@ import {
   createCoursePaymentIntent,
   requestCourseRefund,
 } from "@src/controllers/courseController";
-import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protectMiddleware from "@src/middlewares/protectMiddleware";
-import optionalAuthMiddleware from "@src/middlewares/optionalAuthMiddleware";
-import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
+import validation from "@src/middlewares/validation";
+import protect from "@src/middlewares/protect";
+import optionalAuth from "@src/middlewares/optionalAuth";
+import restrictTo from "@src/middlewares/restrictTo";
 import requireStripeOnboarding from "@src/middlewares/courseMiddlewares";
 import { Role } from "@src/models/userModel";
 import {
@@ -33,10 +33,10 @@ const courseRouter = Router();
 
 courseRouter.patch(
   "/:id/verification",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(courseIdParamsSchema, "params"),
-  validationMiddleware(updateCourseVerificationSchema, "body"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(courseIdParamsSchema, "params"),
+  validation(updateCourseVerificationSchema, "body"),
   updateCourseVerification,
 );
 
@@ -44,43 +44,43 @@ courseRouter.patch(
 
 courseRouter.post(
   "/upload-thumbnail",
-  protectMiddleware,
-  restrictToMiddleware(Role.Instructor),
-  validationMiddleware(uploadCourseThumbnailSchema, "body"),
+  protect,
+  restrictTo(Role.Instructor),
+  validation(uploadCourseThumbnailSchema, "body"),
   uploadCourseThumbnail,
 );
 
 courseRouter.post(
   "/upload-video",
-  protectMiddleware,
-  restrictToMiddleware(Role.Instructor),
-  validationMiddleware(uploadCourseVideoSchema, "body"),
+  protect,
+  restrictTo(Role.Instructor),
+  validation(uploadCourseVideoSchema, "body"),
   uploadCourseVideo,
 );
 
 courseRouter.post(
   "/",
-  protectMiddleware,
-  restrictToMiddleware(Role.Instructor),
+  protect,
+  restrictTo(Role.Instructor),
   requireStripeOnboarding,
-  validationMiddleware(createCourseSchema, "body"),
+  validation(createCourseSchema, "body"),
   createCourse,
 );
 
 courseRouter.patch(
   "/:id",
-  protectMiddleware,
-  restrictToMiddleware(Role.Instructor),
-  validationMiddleware(courseIdParamsSchema, "params"),
-  validationMiddleware(updateCourseSchema, "body"),
+  protect,
+  restrictTo(Role.Instructor),
+  validation(courseIdParamsSchema, "params"),
+  validation(updateCourseSchema, "body"),
   updateCourse,
 );
 
 courseRouter.delete(
   "/:id",
-  protectMiddleware,
-  restrictToMiddleware(Role.Instructor),
-  validationMiddleware(courseIdParamsSchema, "params"),
+  protect,
+  restrictTo(Role.Instructor),
+  validation(courseIdParamsSchema, "params"),
   deleteCourse,
 );
 
@@ -88,17 +88,17 @@ courseRouter.delete(
 
 courseRouter.post(
   "/:id/payment-intent",
-  protectMiddleware,
-  restrictToMiddleware(Role.Student),
-  validationMiddleware(courseIdParamsSchema, "params"),
+  protect,
+  restrictTo(Role.Student),
+  validation(courseIdParamsSchema, "params"),
   createCoursePaymentIntent,
 );
 
 courseRouter.post(
   "/:id/refund",
-  protectMiddleware,
-  restrictToMiddleware(Role.Student),
-  validationMiddleware(courseIdParamsSchema, "params"),
+  protect,
+  restrictTo(Role.Student),
+  validation(courseIdParamsSchema, "params"),
   requestCourseRefund,
 );
 
@@ -106,15 +106,15 @@ courseRouter.post(
 
 courseRouter.get(
   "/",
-  optionalAuthMiddleware,
-  validationMiddleware(getCoursesQuerySchema, "query"),
+  optionalAuth,
+  validation(getCoursesQuerySchema, "query"),
   getCourses,
 );
 
 courseRouter.get(
   "/:id",
-  optionalAuthMiddleware,
-  validationMiddleware(courseIdParamsSchema, "params"),
+  optionalAuth,
+  validation(courseIdParamsSchema, "params"),
   getCourseDetails,
 );
 

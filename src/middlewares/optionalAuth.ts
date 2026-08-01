@@ -6,7 +6,7 @@ import { verifyAccessToken } from "@src/utils/jwt";
  * Unlike protect, it never blocks the request - missing/invalid tokens are
  * ignored so both logged-in and anonymous users can hit the same route.
  */
-const optionalAuthMiddleware = (req: Request, _res: Response, next: NextFunction): void => {
+const optionalAuth = (req: Request, _res: Response, next: NextFunction): void => {
   const accessToken = req.cookies?.accessToken as string | undefined;
 
   if (!accessToken) {
@@ -23,4 +23,4 @@ const optionalAuthMiddleware = (req: Request, _res: Response, next: NextFunction
   next();
 };
 
-export default optionalAuthMiddleware;
+export default optionalAuth;

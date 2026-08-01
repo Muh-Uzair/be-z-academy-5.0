@@ -7,9 +7,9 @@ import {
   deleteCategory,
   uploadCategoryImage,
 } from "@src/controllers/categoryController";
-import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protectMiddleware from "@src/middlewares/protectMiddleware";
-import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
+import validation from "@src/middlewares/validation";
+import protect from "@src/middlewares/protect";
+import restrictTo from "@src/middlewares/restrictTo";
 import { Role } from "@src/models/userModel";
 import {
   categoryIdParamsSchema,
@@ -23,48 +23,48 @@ const categoryRouter = Router();
 
 categoryRouter.post(
   "/upload-image",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(uploadCategoryImageSchema, "body"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(uploadCategoryImageSchema, "body"),
   uploadCategoryImage,
 );
 
 categoryRouter.post(
   "/",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(createCategorySchema, "body"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(createCategorySchema, "body"),
   createCategory,
 );
 
 categoryRouter.get(
   "/",
-  protectMiddleware,
-  validationMiddleware(getCategoriesQuerySchema, "query"),
+  protect,
+  validation(getCategoriesQuerySchema, "query"),
   getCategories,
 );
 
 categoryRouter.get(
   "/:id",
-  protectMiddleware,
-  validationMiddleware(categoryIdParamsSchema, "params"),
+  protect,
+  validation(categoryIdParamsSchema, "params"),
   getCategoryDetails,
 );
 
 categoryRouter.patch(
   "/:id",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(categoryIdParamsSchema, "params"),
-  validationMiddleware(updateCategorySchema, "body"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(categoryIdParamsSchema, "params"),
+  validation(updateCategorySchema, "body"),
   updateCategory,
 );
 
 categoryRouter.delete(
   "/:id",
-  protectMiddleware,
-  restrictToMiddleware(Role.Admin),
-  validationMiddleware(categoryIdParamsSchema, "params"),
+  protect,
+  restrictTo(Role.Admin),
+  validation(categoryIdParamsSchema, "params"),
   deleteCategory,
 );
 

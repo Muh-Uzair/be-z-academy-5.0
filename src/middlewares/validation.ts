@@ -4,7 +4,7 @@ import AppError from "@src/utils/appError";
 
 type ValidationSource = "body" | "query" | "params";
 
-const validationMiddleware = (
+const validation = (
   schema: ZodSchema,
   source: ValidationSource = "body",
 ): RequestHandler => {
@@ -36,4 +36,4 @@ const validationMiddleware = (
   };
 };
 
-export default validationMiddleware;
+export default validation;

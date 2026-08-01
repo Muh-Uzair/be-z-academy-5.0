@@ -6,6 +6,9 @@ import userRouter from "@src/routes/userRoutes";
 import categoryRouter from "@src/routes/categoryRoutes";
 import courseRouter from "@src/routes/courseRoutes";
 import stripeRouter from "@src/routes/stripeRoutes";
+import enrollmentRouter from "@src/routes/enrollmentRoutes";
+import transactionRouter from "@src/routes/transactionRoutes";
+import reviewRouter from "@src/routes/reviewRoutes";
 import AppError from "@src/utils/appError";
 import globalErrorHandler from "@src/controllers/errorController";
 import sendResponse from "@src/utils/sendResponse";
@@ -116,6 +119,9 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/courses", courseRouter);
+app.use("/api/v1/enrollments", enrollmentRouter);
+app.use("/api/v1/transactions", transactionRouter);
+app.use("/api/v1/reviews", reviewRouter);
 
 // ─── Unhandled Routes ─────────────────────────────────────────────────────────
 

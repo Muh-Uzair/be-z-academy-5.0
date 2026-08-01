@@ -5,7 +5,7 @@ import UserModel from "@src/models/userModel";
 
 /**
  * Ensures the instructor has completed Stripe onboarding before they can create a course.
- * Must run after protectMiddleware (relies on req.user.id).
+ * Must run after protect (relies on req.user.id).
  */
 const requireStripeOnboarding = catchAsync(
   async (req: Request, _res: Response, next: NextFunction): Promise<void> => {

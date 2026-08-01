@@ -7,9 +7,9 @@ import {
   rotateToken,
   getMe,
 } from "@src/controllers/authController";
-import validationMiddleware from "@src/middlewares/validationMiddleware";
-import protectMiddleware from "@src/middlewares/protectMiddleware";
-import restrictToMiddleware from "@src/middlewares/restrictToMiddleware";
+import validation from "@src/middlewares/validation";
+import protect from "@src/middlewares/protect";
+import restrictTo from "@src/middlewares/restrictTo";
 import { Role } from "@src/models/userModel";
 import {
   signupSchema,
@@ -20,21 +20,21 @@ import {
 
 const authRouter = Router();
 
-authRouter.post("/signup", validationMiddleware(signupSchema), signup);
+authRouter.post("/signup", validation(signupSchema), signup);
 authRouter.post(
   "/verify-otp",
-  validationMiddleware(verifyOtpSchema),
-  restrictToMiddleware(Role.Student),
+  validation(verifyOtpSchema),
+  restrictTo(Role.Student),
   verifyOtp,
 );  
 authRouter.post(
   "/resend-otp",
-  validationMiddleware(resendOtpSchema),
-  restrictToMiddleware(Role.Student),
+  validation(resendOtpSchema),
+  restrictTo(Role.Student),
   resendOtp,
 );
-authRouter.post("/signin", validationMiddleware(signinSchema), signin);
+authRouter.post("/signin", validation(signinSchema), signin);
 authRouter.post("/rotate-token", rotateToken);
-authRouter.get("/me", protectMiddleware, getMe);
+authRouter.get("/me", protect, getMe);
 
 export default authRouter;

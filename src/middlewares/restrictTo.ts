@@ -7,7 +7,7 @@ import UserModel, { Role } from "@src/models/userModel";
  * - For authenticated routes, it checks \`req.user.role\`.
  * - For unauthenticated routes (like verify-otp), it looks up the role using \`req.validatedBody.email\`.
  */
-const restrictToMiddleware = (...roles: Role[]) => {
+const restrictTo = (...roles: Role[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       let userRole: Role | undefined;
@@ -49,4 +49,4 @@ const restrictToMiddleware = (...roles: Role[]) => {
   };
 };
 
-export default restrictToMiddleware;
+export default restrictTo;

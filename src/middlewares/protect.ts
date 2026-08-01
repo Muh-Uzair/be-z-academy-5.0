@@ -6,7 +6,7 @@ import { verifyAccessToken } from "@src/utils/jwt";
  * Verifies the accessToken cookie and attaches the decoded user (id, role) to req.user.
  * Must run before any middleware/controller that relies on req.user (e.g. restrictTo).
  */
-const protectMiddleware = (
+const protect = (
   req: Request,
   _res: Response,
   next: NextFunction,
@@ -28,4 +28,4 @@ const protectMiddleware = (
   }
 };
 
-export default protectMiddleware;
+export default protect;
