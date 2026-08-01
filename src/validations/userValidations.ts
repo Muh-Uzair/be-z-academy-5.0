@@ -35,8 +35,11 @@ export const getInstructorsQuerySchema = z.object({
     .transform((val) => val === "true")
     .optional(),
   search: z.string().trim().min(1).optional(),
+  projection: z.string().trim().min(1).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).default(10),
+  sortBy: z.string().trim().min(1).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
 // ─── Shared: Update Own Profile ────────────────────────────────────────────────

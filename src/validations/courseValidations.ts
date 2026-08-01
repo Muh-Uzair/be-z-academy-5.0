@@ -102,6 +102,7 @@ export const uploadCourseVideoSchema = z.object({
 
 export const getCoursesQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
+  projection: z.string().trim().min(1).optional(),
   isVerified: z
     .enum(["true", "false"], { error: "isVerified must be true or false" })
     .transform((val) => val === "true")
@@ -112,4 +113,6 @@ export const getCoursesQuerySchema = z.object({
     .optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).default(10),
+  sortBy: z.string().trim().min(1).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });

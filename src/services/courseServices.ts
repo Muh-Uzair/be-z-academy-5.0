@@ -7,6 +7,7 @@ import TransactionModel from "@src/models/transactionModel";
 import { stripe } from "@src/config/stripe";
 import { env } from "@src/config/env";
 import AppError from "@src/utils/appError";
+import APIFeatures from "@src/utils/apiFeatures";
 import {
   getPresignedPostUrlService,
   getPresignedGetUrlService,
@@ -173,12 +174,8 @@ export const getCoursesService = async (
   query: GetCoursesQuery,
   user?: { id: string; role: string },
 ): Promise<any> => {
-  // Step 1: Build the pipeline
-  const pipeline: PipelineStage[] = [
-    {
-      $match: {},
-    },
-  ];
+  // Step 1: Build the base pipeline
+  const basePipeline: PipelineStage[] = [{ $match: {} }];
 
   // Step 2 : Deal with roles
   const role = user?.role;
@@ -190,7 +187,7 @@ export const getCoursesService = async (
 
   // making changes according to instructor
   if (role && role === Role.Instructor && user.id) {
-    pipeline.push({
+    basePipeline.push({
       $match: {
         instructor: new Types.ObjectId(user.id),
       },
@@ -199,34 +196,31 @@ export const getCoursesService = async (
 
   // making changes according to student
   if (role && role === Role.Student && user.id) {
-    pipeline.push({
+    basePipeline.push({
       $match: { isVerified: true, verificationRejectionReason: null },
     });
   }
 
   // making changes according to unauthenticated users
   if (!role) {
-    pipeline.push({
+    basePipeline.push({
       $match: { isVerified: true, verificationRejectionReason: null },
     });
   }
 
-  // Step 3: Apply optional isVerified and search filters
-  if (typeof query.isVerified === "boolean") {
-    pipeline.push({ $match: { isVerified: query.isVerified } });
-  }
-
-  // Step 4 : Apply optional verificationRejectionReason filter
+  // Step 3 : Apply optional verificationRejectionReason filter
+  // (a literal-null query filter, so the generic .filter() below can't
+  // express it - that method skips null values on purpose)
   if (query.verificationRejectionReason === null) {
-    pipeline.push({
+    basePipeline.push({
       $match: {
         verificationRejectionReason: null,
       },
     });
   }
 
-  // Step 5: Lookup the category details and unwind the result
-  pipeline.push(
+  // Step 4: Lookup the category details and unwind the result
+  basePipeline.push(
     {
       $lookup: {
         from: "categories",
@@ -248,50 +242,27 @@ export const getCoursesService = async (
     },
   );
 
-  // Step 6: Apply optional search filter on the title
-  if (query.search) {
-    pipeline.push({
-      $match: {
-        title: { $regex: query.search, $options: "i" },
-      },
-    });
-  }
+  // Step 5: Layer the query-driven filter, search, sort, projection and pagination stages
+  const { data: courses, pagination } = await new APIFeatures(
+    CourseModel,
+    query,
+    basePipeline,
+  )
+    .filter(["isVerified"])
+    .search(["title"])
+    .sort()
+    .projection()
+    .paginate()
+    .exec();
 
-  // Step 7: Clone the pipeline for a total count before pagination is applied
-  const countPipeline: PipelineStage[] = [...pipeline, { $count: "total" }];
-
-  // Step 8: Apply sorting and pagination to the main pipeline
-  pipeline.push({ $sort: { createdAt: -1 } });
-  pipeline.push({ $skip: (query.page - 1) * query.limit });
-  pipeline.push({ $limit: query.limit });
-
-  // console.log("pipeline ------------------------------------- \n", pipeline);
-
-  // Step 9: Run both pipelines in parallel
-  const [courses, countResult] = await Promise.all([
-    CourseModel.aggregate(pipeline),
-    CourseModel.aggregate(countPipeline),
-  ]);
-
-  // Step 10: Compute pagination metadata
-  const totalDocuments = countResult[0]?.total ?? 0;
-  const totalPages = Math.ceil(totalDocuments / query.limit);
-
-  // Step 11: Attach a signed video URL to every course in the page
+  // Step 6: Attach a signed video URL to every course in the page
   const coursesWithVideoUrls = await Promise.all(
     courses.map((course) => withSignedVideoUrl(course)),
   );
 
   return {
     courses: coursesWithVideoUrls,
-    pagination: {
-      page: query.page,
-      limit: query.limit,
-      totalDocuments,
-      totalPages,
-      hasNextPage: query.page < totalPages,
-      hasPrevPage: query.page > 1,
-    },
+    pagination,
   };
 };
 

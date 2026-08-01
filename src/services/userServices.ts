@@ -3,6 +3,7 @@ import UserModel, { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import { sendVerificationStatusEmail } from "@src/utils/email";
 import { PROFILE_UPDATABLE_FIELDS } from "@src/constants/userConstants";
+import APIFeatures from "@src/utils/apiFeatures";
 import {
   GetInstructorsQuery,
   UpdateInstructorVerificationBody,
@@ -13,56 +14,23 @@ import {
 export const getInstructorsService = async (
   query: GetInstructorsQuery,
 ): Promise<any> => {
-  // Step 1: Build the base pipeline, always scoped to the instructor role
-  const pipeline: PipelineStage[] = [];
+  // Step 1: Scope the base pipeline to the instructor role
+  const basePipeline: PipelineStage[] = [{ $match: { role: "instructor" } }];
 
-  const matchStage: Record<string, unknown> = { role: "instructor" };
-  if (query.isVerified !== undefined) {
-    matchStage.isVerified = query.isVerified;
-  }
+  // Step 2: Layer the query-driven filter, search, sort, projection and pagination stages
+  const { data: instructors, pagination } = await new APIFeatures(
+    UserModel,
+    query,
+    basePipeline,
+  )
+    .filter(["isVerified"])
+    .search(["fullName", "email"])
+    .sort()
+    .projection()
+    .paginate()
+    .exec();
 
-  pipeline.push({ $match: matchStage });
-
-  // Step 2: Apply the optional search filter
-  if (query.search) {
-    pipeline.push({
-      $match: {
-        $or: [
-          { fullName: { $regex: query.search, $options: "i" } },
-          { email: { $regex: query.search, $options: "i" } },
-        ],
-      },
-    });
-  }
-
-  // Step 3: Clone the pipeline for a total count before pagination is applied
-  const countPipeline = [...pipeline, { $count: "total" }];
-
-  // Step 4: Apply pagination to the main pipeline
-  pipeline.push({ $skip: (query.page - 1) * query.limit });
-  pipeline.push({ $limit: query.limit });
-
-  // Step 5: Run both pipelines in parallel
-  const [instructors, countResult] = await Promise.all([
-    UserModel.aggregate(pipeline),
-    UserModel.aggregate(countPipeline),
-  ]);
-
-  // Step 6: Compute pagination metadata
-  const totalDocuments = countResult[0]?.total ?? 0;
-  const totalPages = Math.ceil(totalDocuments / query.limit);
-
-  return {
-    instructors,
-    pagination: {
-      page: query.page,
-      limit: query.limit,
-      totalDocuments,
-      totalPages,
-      hasNextPage: query.page < totalPages,
-      hasPrevPage: query.page > 1,
-    },
-  };
+  return { instructors, pagination };
 };
 
 // FUNCTION
