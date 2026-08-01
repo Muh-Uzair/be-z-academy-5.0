@@ -61,7 +61,7 @@ export const getInstructorOnboardingLink = catchAsync(
 export const updateProfile = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id, role } = req.user!;
-    const body = req.body as UpdateProfileBody;
+    const body = req.validatedBody as UpdateProfileBody;
 
     const user = await updateOwnProfileService(id, role, body);
 
@@ -76,7 +76,7 @@ export const updateProfile = catchAsync(
 export const updateInstructorVerification = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as InstructorIdParams;
-    const body = req.body as UpdateInstructorVerificationBody;
+    const body = req.validatedBody as UpdateInstructorVerificationBody;
 
     const instructor = await updateUserVerificationService(
       id,

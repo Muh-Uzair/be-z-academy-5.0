@@ -25,7 +25,7 @@ import sendResponse from "@src/utils/sendResponse";
 
 export const uploadCourseThumbnail = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as UploadCourseThumbnailBody;
+    const body = req.validatedBody as UploadCourseThumbnailBody;
 
     const { uploadUrl, fields, key } =
       await getCourseThumbnailUploadUrlService(body);
@@ -40,7 +40,7 @@ export const uploadCourseThumbnail = catchAsync(
 
 export const uploadCourseVideo = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as UploadCourseVideoBody;
+    const body = req.validatedBody as UploadCourseVideoBody;
 
     const { uploadUrl, fields, key } =
       await getCourseVideoUploadUrlService(body);
@@ -55,7 +55,7 @@ export const uploadCourseVideo = catchAsync(
 
 export const createCourse = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as CreateCourseBody;
+    const body = req.validatedBody as CreateCourseBody;
     const instructorId = req.user!.id;
 
     const course = await createCourseService(instructorId, body);
@@ -99,7 +99,7 @@ export const getCourseDetails = catchAsync(
 export const updateCourse = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
-    const body = req.body as UpdateCourseBody;
+    const body = req.validatedBody as UpdateCourseBody;
     const instructorId = req.user!.id;
 
     const course = await updateCourseService(id, instructorId, body);
@@ -115,7 +115,7 @@ export const updateCourse = catchAsync(
 export const updateCourseVerification = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
-    const body = req.body as UpdateCourseVerificationBody;
+    const body = req.validatedBody as UpdateCourseVerificationBody;
 
     const course = await updateCourseVerificationService(id, body);
 

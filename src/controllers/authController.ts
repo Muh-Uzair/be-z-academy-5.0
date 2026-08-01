@@ -15,7 +15,7 @@ import { setAuthCookies } from "@src/utils/cookies";
 
 export const  signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as SignupBody;
+    const body = req.validatedBody as SignupBody;
 
     const data = await signupService(body);
 
@@ -34,7 +34,7 @@ export const  signup = catchAsync(
 
 export const verifyOtp = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as VerifyOtpBody;
+    const body = req.validatedBody as VerifyOtpBody;
 
     const data = await verifyOtpService(body);
 
@@ -48,7 +48,7 @@ export const verifyOtp = catchAsync(
 
 export const resendOtp = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as ResendOtpBody;
+    const body = req.validatedBody as ResendOtpBody;
 
     const data = await resendOtpService(body);
 
@@ -62,7 +62,7 @@ export const resendOtp = catchAsync(
 
 export const signin = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as SigninBody;
+    const body = req.validatedBody as SigninBody;
 
     const { accessToken, refreshToken } = await signinService(body);
     setAuthCookies(res, accessToken, refreshToken);

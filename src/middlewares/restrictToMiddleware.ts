@@ -5,7 +5,7 @@ import UserModel, { Role } from "@src/models/userModel";
 /**
  * Restricts access to specific roles.
  * - For authenticated routes, it checks \`req.user.role\`.
- * - For unauthenticated routes (like verify-otp), it looks up the role using \`req.body.email\`.
+ * - For unauthenticated routes (like verify-otp), it looks up the role using \`req.validatedBody.email\`.
  */
 const restrictToMiddleware = (...roles: Role[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -17,11 +17,11 @@ const restrictToMiddleware = (...roles: Role[]) => {
       if (reqUser && reqUser.role) {
         userRole = reqUser.role as Role;
       }
-      // 2. Fallback for unauthenticated routes: Check if there is an email in the body to identify the user
-      else if (req.body && req.body.email) {
-        const user = await UserModel.findOne({ email: req.body.email }).select(
-          "role",
-        );
+      // 2. Fallback for unauthenticated routes: Check if there is an email in the validated body to identify the user
+      else if (req.validatedBody && req.validatedBody.email) {
+        const user = await UserModel.findOne({
+          email: req.validatedBody.email,
+        }).select("role");
         if (user) {
           userRole = user.role as Role;
         }

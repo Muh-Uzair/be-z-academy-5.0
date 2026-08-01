@@ -19,7 +19,7 @@ import sendResponse from "@src/utils/sendResponse";
 
 export const uploadCategoryImage = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as UploadCategoryImageBody;
+    const body = req.validatedBody as UploadCategoryImageBody;
 
     const { uploadUrl, fields, key } =
       await getCategoryImageUploadUrlService(body);
@@ -34,7 +34,7 @@ export const uploadCategoryImage = catchAsync(
 
 export const createCategory = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as CreateCategoryBody;
+    const body = req.validatedBody as CreateCategoryBody;
 
     const category = await createCategoryService(body);
 
@@ -77,7 +77,7 @@ export const getCategoryDetails = catchAsync(
 export const updateCategory = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CategoryIdParams;
-    const body = req.body as UpdateCategoryBody;
+    const body = req.validatedBody as UpdateCategoryBody;
 
     const category = await updateCategoryService(id, body);
 

@@ -22,7 +22,7 @@ const validationMiddleware = (
     }
 
     if (source === "body") {
-      req.body = result.data;
+      req.validatedBody = result.data as Record<string, unknown>;
     } else if (source === "query") {
       // req.query is a getter in Express 5 that re-parses req.url on every
       // access, so mutating/reassigning it does not persist. Store the
