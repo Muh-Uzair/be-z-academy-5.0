@@ -1,20 +1,26 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
+import {
+  REVIEW_RATING_MIN,
+  REVIEW_RATING_MAX,
+  REVIEW_FEEDBACK_MIN_LENGTH,
+  REVIEW_FEEDBACK_MAX_LENGTH,
+} from "@src/constants/reviewConstants";
 
 const reviewSchema = new Schema(
   {
     rating: {
       type: Number,
       required: true,
-      min: 1,
-      max: 5,
+      min: REVIEW_RATING_MIN,
+      max: REVIEW_RATING_MAX,
     },
 
     feedback: {
       type: String,
       required: true,
       trim: true,
-      minlength: 10,
-      maxlength: 1000,
+      minlength: REVIEW_FEEDBACK_MIN_LENGTH,
+      maxlength: REVIEW_FEEDBACK_MAX_LENGTH,
     },
 
     reviewBy: {

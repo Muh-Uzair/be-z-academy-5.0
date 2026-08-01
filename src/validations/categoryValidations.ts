@@ -1,20 +1,52 @@
 import { z } from "zod";
+import {
+  CATEGORY_NAME_MIN_LENGTH,
+  CATEGORY_NAME_MAX_LENGTH,
+  CATEGORY_DESCRIPTION_MIN_LENGTH,
+  CATEGORY_DESCRIPTION_MAX_LENGTH,
+} from "@src/constants/categoryConstants";
 
 export const categoryIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Category id is required" }),
 });
 
 export const createCategorySchema = z.object({
-  name: z.string().trim().min(1, { error: "Name is required" }),
+  name: z
+    .string()
+    .trim()
+    .min(CATEGORY_NAME_MIN_LENGTH, {
+      error: `Name must be at least ${CATEGORY_NAME_MIN_LENGTH} characters`,
+    })
+    .max(CATEGORY_NAME_MAX_LENGTH, {
+      error: `Name cannot exceed ${CATEGORY_NAME_MAX_LENGTH} characters`,
+    }),
   imageKey: z.string().trim().min(1, { error: "Image key is required" }),
-  description: z.string().trim().min(1, { error: "Description is required" }),
+  description: z
+    .string()
+    .trim()
+    .min(CATEGORY_DESCRIPTION_MIN_LENGTH, {
+      error: `Description must be at least ${CATEGORY_DESCRIPTION_MIN_LENGTH} characters`,
+    })
+    .max(CATEGORY_DESCRIPTION_MAX_LENGTH, {
+      error: `Description cannot exceed ${CATEGORY_DESCRIPTION_MAX_LENGTH} characters`,
+    }),
 });
 
 export const updateCategorySchema = z
   .object({
-    name: z.string().trim().min(1).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(CATEGORY_NAME_MIN_LENGTH)
+      .max(CATEGORY_NAME_MAX_LENGTH)
+      .optional(),
     imageKey: z.string().trim().min(1).optional(),
-    description: z.string().trim().min(1).optional(),
+    description: z
+      .string()
+      .trim()
+      .min(CATEGORY_DESCRIPTION_MIN_LENGTH)
+      .max(CATEGORY_DESCRIPTION_MAX_LENGTH)
+      .optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     error: "At least one field must be provided to update the category",

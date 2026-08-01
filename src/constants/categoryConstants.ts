@@ -1,3 +1,9 @@
 export const CATEGORY_MAX_IMAGE_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5MB
 
 export const CATEGORY_IMAGE_S3_FOLDER = "5.0/categories/images";
+
+export const CATEGORY_NAME_MIN_LENGTH = 2;
+export const CATEGORY_NAME_MAX_LENGTH = 50;
+
+export const CATEGORY_DESCRIPTION_MIN_LENGTH = 10;
+export const CATEGORY_DESCRIPTION_MAX_LENGTH = 500;

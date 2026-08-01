@@ -1,4 +1,5 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
+import { MESSAGE_CONTENT_MAX_LENGTH } from "@src/constants/messageConstants";
 
 enum MessageType {
   TEXT = "text",
@@ -45,7 +46,7 @@ const messageSchema = new Schema(
     content: {
       type: String,
       required: true,
-      maxlength: 5000,
+      maxlength: MESSAGE_CONTENT_MAX_LENGTH,
     },
 
     messageType: {

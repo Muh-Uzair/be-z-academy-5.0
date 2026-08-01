@@ -1,5 +1,11 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
 import { getPublicS3Url } from "@src/services/s3Services";
+import {
+  CATEGORY_NAME_MIN_LENGTH,
+  CATEGORY_NAME_MAX_LENGTH,
+  CATEGORY_DESCRIPTION_MIN_LENGTH,
+  CATEGORY_DESCRIPTION_MAX_LENGTH,
+} from "@src/constants/categoryConstants";
 
 const categorySchema = new Schema(
   {
@@ -8,8 +14,14 @@ const categorySchema = new Schema(
       required: [true, "Name is required"],
       unique: true,
       trim: true,
-      minlength: [2, "Name must be at least 2 characters"],
-      maxlength: [50, "Name cannot exceed 50 characters"],
+      minlength: [
+        CATEGORY_NAME_MIN_LENGTH,
+        `Name must be at least ${CATEGORY_NAME_MIN_LENGTH} characters`,
+      ],
+      maxlength: [
+        CATEGORY_NAME_MAX_LENGTH,
+        `Name cannot exceed ${CATEGORY_NAME_MAX_LENGTH} characters`,
+      ],
     },
 
     imageKey: {
@@ -22,8 +34,14 @@ const categorySchema = new Schema(
       type: String,
       required: [true, "Description is required"],
       trim: true,
-      minlength: [10, "Description must be at least 10 characters"],
-      maxlength: [500, "Description cannot exceed 500 characters"],
+      minlength: [
+        CATEGORY_DESCRIPTION_MIN_LENGTH,
+        `Description must be at least ${CATEGORY_DESCRIPTION_MIN_LENGTH} characters`,
+      ],
+      maxlength: [
+        CATEGORY_DESCRIPTION_MAX_LENGTH,
+        `Description cannot exceed ${CATEGORY_DESCRIPTION_MAX_LENGTH} characters`,
+      ],
     },
   },
   {

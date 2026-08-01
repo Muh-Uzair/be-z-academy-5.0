@@ -1,5 +1,14 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
 import { getPublicS3Url } from "@src/services/s3Services";
+import {
+  COURSE_TITLE_MIN_LENGTH,
+  COURSE_TITLE_MAX_LENGTH,
+  COURSE_DESCRIPTION_MIN_LENGTH,
+  COURSE_DESCRIPTION_MAX_LENGTH,
+  COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
+  COURSE_AVERAGE_RATING_MIN,
+  COURSE_AVERAGE_RATING_MAX,
+} from "@src/constants/courseConstants";
 
 export enum CourseLevel {
   Beginner = "beginner",
@@ -13,16 +22,28 @@ const courseSchema = new Schema(
       type: String,
       required: [true, "Title is required"],
       trim: true,
-      minlength: [5, "Title must be at least 5 characters"],
-      maxlength: [120, "Title cannot exceed 120 characters"],
+      minlength: [
+        COURSE_TITLE_MIN_LENGTH,
+        `Title must be at least ${COURSE_TITLE_MIN_LENGTH} characters`,
+      ],
+      maxlength: [
+        COURSE_TITLE_MAX_LENGTH,
+        `Title cannot exceed ${COURSE_TITLE_MAX_LENGTH} characters`,
+      ],
     },
 
     description: {
       type: String,
       required: [true, "Description is required"],
       trim: true,
-      minlength: [20, "Description must be at least 20 characters"],
-      maxlength: [5000, "Description cannot exceed 5000 characters"],
+      minlength: [
+        COURSE_DESCRIPTION_MIN_LENGTH,
+        `Description must be at least ${COURSE_DESCRIPTION_MIN_LENGTH} characters`,
+      ],
+      maxlength: [
+        COURSE_DESCRIPTION_MAX_LENGTH,
+        `Description cannot exceed ${COURSE_DESCRIPTION_MAX_LENGTH} characters`,
+      ],
     },
 
     thumbnailKey: {
@@ -73,7 +94,10 @@ const courseSchema = new Schema(
       type: String,
       default: null,
       trim: true,
-      maxlength: [500, "Rejection reason cannot exceed 500 characters"],
+      maxlength: [
+        COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
+        `Rejection reason cannot exceed ${COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH} characters`,
+      ],
     },
 
     lastVerificationRejectedAt: {
@@ -83,9 +107,15 @@ const courseSchema = new Schema(
 
     averageRating: {
       type: Number,
-    default: 0,
-      min: [0, "Average rating cannot be negative"],
-      max: [5, "Average rating cannot exceed 5"],
+      default: 0,
+      min: [
+        COURSE_AVERAGE_RATING_MIN,
+        "Average rating cannot be negative",
+      ],
+      max: [
+        COURSE_AVERAGE_RATING_MAX,
+        `Average rating cannot exceed ${COURSE_AVERAGE_RATING_MAX}`,
+      ],
     },
 
     totalReviews: {

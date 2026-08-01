@@ -3,3 +3,14 @@ export const COURSE_MAX_IMAGE_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5MB
 
 export const COURSE_THUMBNAIL_S3_FOLDER = "5.0/courses/thumbnails";
 export const COURSE_VIDEO_S3_FOLDER = "5.0/courses/videos";
+
+export const COURSE_TITLE_MIN_LENGTH = 5;
+export const COURSE_TITLE_MAX_LENGTH = 120;
+
+export const COURSE_DESCRIPTION_MIN_LENGTH = 20;
+export const COURSE_DESCRIPTION_MAX_LENGTH = 5000;
+
+export const COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH = 500;
+
+export const COURSE_AVERAGE_RATING_MIN = 0;
+export const COURSE_AVERAGE_RATING_MAX = 5;

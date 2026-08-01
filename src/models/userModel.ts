@@ -1,4 +1,14 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
+import {
+  USER_FULL_NAME_MIN_LENGTH,
+  USER_FULL_NAME_MAX_LENGTH,
+  USER_PASSWORD_MIN_LENGTH,
+  USER_BIO_MAX_LENGTH,
+  USER_HIGHEST_EDUCATION_MAX_LENGTH,
+  USER_YEARS_OF_EXPERIENCE_MIN,
+  USER_YEARS_OF_EXPERIENCE_MAX,
+  USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
+} from "@src/constants/userConstants";
 
 enum Role {
   Admin = "admin",
@@ -12,8 +22,14 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Full name is required"],
       trim: true,
-      minlength: [2, "Full name must be at least 2 characters"],
-      maxlength: [100, "Full name cannot exceed 100 characters"],
+      minlength: [
+        USER_FULL_NAME_MIN_LENGTH,
+        `Full name must be at least ${USER_FULL_NAME_MIN_LENGTH} characters`,
+      ],
+      maxlength: [
+        USER_FULL_NAME_MAX_LENGTH,
+        `Full name cannot exceed ${USER_FULL_NAME_MAX_LENGTH} characters`,
+      ],
     },
     email: {
       type: String,
@@ -29,26 +45,41 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [8, "Password must be at least 8 characters"],
+      minlength: [
+        USER_PASSWORD_MIN_LENGTH,
+        `Password must be at least ${USER_PASSWORD_MIN_LENGTH} characters`,
+      ],
       select: false,
     },
     bio: {
       type: String,
       required: [true, "Bio is required"],
       trim: true,
-      maxlength: [500, "Bio cannot exceed 500 characters"],
+      maxlength: [
+        USER_BIO_MAX_LENGTH,
+        `Bio cannot exceed ${USER_BIO_MAX_LENGTH} characters`,
+      ],
     },
     highestEducation: {
       type: String,
       required: [true, "Highest education is required"],
       trim: true,
-      maxlength: [150, "Highest education cannot exceed 150 characters"],
+      maxlength: [
+        USER_HIGHEST_EDUCATION_MAX_LENGTH,
+        `Highest education cannot exceed ${USER_HIGHEST_EDUCATION_MAX_LENGTH} characters`,
+      ],
     },
     yearsOfExperience: {
       type: Number,
       default: 0,
-      min: [0, "Years of experience cannot be negative"],
-      max: [60, "Years of experience cannot exceed 60"],
+      min: [
+        USER_YEARS_OF_EXPERIENCE_MIN,
+        "Years of experience cannot be negative",
+      ],
+      max: [
+        USER_YEARS_OF_EXPERIENCE_MAX,
+        `Years of experience cannot exceed ${USER_YEARS_OF_EXPERIENCE_MAX}`,
+      ],
     },
     avatar: {
       type: String,
@@ -63,7 +94,10 @@ const userSchema = new Schema(
       type: String,
       default: null,
       trim: true,
-      maxlength: [500, "Rejection reason cannot exceed 500 characters"],
+      maxlength: [
+        USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
+        `Rejection reason cannot exceed ${USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH} characters`,
+      ],
     },
     lastVerificationRejectedAt: {
       type: Date,

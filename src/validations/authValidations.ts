@@ -1,15 +1,42 @@
 import { z } from "zod";
+import {
+  USER_FULL_NAME_MIN_LENGTH,
+  USER_FULL_NAME_MAX_LENGTH,
+  USER_PASSWORD_MIN_LENGTH,
+  USER_BIO_MAX_LENGTH,
+  USER_HIGHEST_EDUCATION_MAX_LENGTH,
+  USER_YEARS_OF_EXPERIENCE_MIN,
+  USER_YEARS_OF_EXPERIENCE_MAX,
+} from "@src/constants/userConstants";
 
 const baseSignupSchema = z.object({
-  fullName: z.string().min(1, { error: "Full name is required" }),
-  email: z.email({ error: "Invalid email address" }),
-  password: z
+  fullName: z
     .string()
-    .min(8, { error: "Password must be at least 8 characters" }),
-  bio: z.string().min(1, { error: "Bio is required" }),
+    .trim()
+    .min(USER_FULL_NAME_MIN_LENGTH, {
+      error: `Full name must be at least ${USER_FULL_NAME_MIN_LENGTH} characters`,
+    })
+    .max(USER_FULL_NAME_MAX_LENGTH, {
+      error: `Full name cannot exceed ${USER_FULL_NAME_MAX_LENGTH} characters`,
+    }),
+  email: z.email({ error: "Invalid email address" }),
+  password: z.string().min(USER_PASSWORD_MIN_LENGTH, {
+    error: `Password must be at least ${USER_PASSWORD_MIN_LENGTH} characters`,
+  }),
+  bio: z
+    .string()
+    .trim()
+    .min(1, { error: "Bio is required" })
+    .max(USER_BIO_MAX_LENGTH, {
+      error: `Bio cannot exceed ${USER_BIO_MAX_LENGTH} characters`,
+    }),
   highestEducation: z
     .string()
-    .min(1, { error: "Highest education is required" }),
+    .trim()
+    .min(1, { error: "Highest education is required" })
+    .max(USER_HIGHEST_EDUCATION_MAX_LENGTH, {
+      error: `Highest education cannot exceed ${USER_HIGHEST_EDUCATION_MAX_LENGTH} characters`,
+    }),
 });
 
 export const studentSignupSchema = baseSignupSchema.extend({
@@ -19,7 +46,12 @@ export const studentSignupSchema = baseSignupSchema.extend({
 export const instructorSignupSchema = baseSignupSchema.extend({
   yearsOfExperience: z
     .number({ error: "Years of experience must be a number" })
-    .min(0, { error: "Years of experience cannot be negative" }),
+    .min(USER_YEARS_OF_EXPERIENCE_MIN, {
+      error: "Years of experience cannot be negative",
+    })
+    .max(USER_YEARS_OF_EXPERIENCE_MAX, {
+      error: `Years of experience cannot exceed ${USER_YEARS_OF_EXPERIENCE_MAX}`,
+    }),
   role: z.literal("instructor"),
 });
 

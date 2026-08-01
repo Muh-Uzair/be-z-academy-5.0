@@ -1,13 +1,36 @@
 import { z } from "zod";
 import { CourseLevel } from "@src/models/courseModel";
+import {
+  COURSE_TITLE_MIN_LENGTH,
+  COURSE_TITLE_MAX_LENGTH,
+  COURSE_DESCRIPTION_MIN_LENGTH,
+  COURSE_DESCRIPTION_MAX_LENGTH,
+  COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
+} from "@src/constants/courseConstants";
 
 export const courseIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Course id is required" }),
 });
 
 export const createCourseSchema = z.object({
-  title: z.string().trim().min(5, { error: "Title is required" }),
-  description: z.string().trim().min(20, { error: "Description is required" }),
+  title: z
+    .string()
+    .trim()
+    .min(COURSE_TITLE_MIN_LENGTH, {
+      error: `Title must be at least ${COURSE_TITLE_MIN_LENGTH} characters`,
+    })
+    .max(COURSE_TITLE_MAX_LENGTH, {
+      error: `Title cannot exceed ${COURSE_TITLE_MAX_LENGTH} characters`,
+    }),
+  description: z
+    .string()
+    .trim()
+    .min(COURSE_DESCRIPTION_MIN_LENGTH, {
+      error: `Description must be at least ${COURSE_DESCRIPTION_MIN_LENGTH} characters`,
+    })
+    .max(COURSE_DESCRIPTION_MAX_LENGTH, {
+      error: `Description cannot exceed ${COURSE_DESCRIPTION_MAX_LENGTH} characters`,
+    }),
   price: z.coerce.number().min(0, { error: "Price is required" }),
   level: z.enum(Object.values(CourseLevel) as [string, ...string[]], {
     error: "Level must be one of: beginner, intermediate, advanced",
@@ -20,7 +43,13 @@ export const createCourseSchema = z.object({
 export const updateCourseVerificationSchema = z
   .object({
     isVerified: z.boolean({ error: "isVerified must be a boolean" }),
-    verificationRejectionReason: z.string().trim().min(1).nullable().optional(),
+    verificationRejectionReason: z
+      .string()
+      .trim()
+      .min(1)
+      .max(COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH)
+      .nullable()
+      .optional(),
   })
   .refine((data) => data.isVerified || !!data.verificationRejectionReason, {
     error: "Rejection reason is required when rejecting a course",
@@ -29,8 +58,18 @@ export const updateCourseVerificationSchema = z
 
 export const updateCourseSchema = z
   .object({
-    title: z.string().trim().min(5).optional(),
-    description: z.string().trim().min(20).optional(),
+    title: z
+      .string()
+      .trim()
+      .min(COURSE_TITLE_MIN_LENGTH)
+      .max(COURSE_TITLE_MAX_LENGTH)
+      .optional(),
+    description: z
+      .string()
+      .trim()
+      .min(COURSE_DESCRIPTION_MIN_LENGTH)
+      .max(COURSE_DESCRIPTION_MAX_LENGTH)
+      .optional(),
     thumbnailKey: z.string().trim().min(1).optional(),
     videoKey: z.string().trim().min(1).optional(),
     price: z.coerce.number().min(0).optional(),

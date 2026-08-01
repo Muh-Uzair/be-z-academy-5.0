@@ -1,4 +1,8 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
+import {
+  ENROLLMENT_WATCH_PERCENTAGE_MIN,
+  ENROLLMENT_WATCH_PERCENTAGE_MAX,
+} from "@src/constants/enrollmentConstants";
 
 const enrollmentSchema = new Schema(
   {
@@ -40,8 +44,8 @@ const enrollmentSchema = new Schema(
     watchPercentage: {
       type: Number,
       default: 0,
-      min: 0,
-      max: 100,
+      min: ENROLLMENT_WATCH_PERCENTAGE_MIN,
+      max: ENROLLMENT_WATCH_PERCENTAGE_MAX,
     },
 
     watchedCompletely: {

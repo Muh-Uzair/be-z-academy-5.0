@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH } from "@src/constants/userConstants";
 
 export const instructorIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Instructor id is required" }),
@@ -7,7 +8,13 @@ export const instructorIdParamsSchema = z.object({
 export const updateInstructorVerificationSchema = z
   .object({
     isVerified: z.boolean({ error: "isVerified must be a boolean" }),
-    verificationRejectionReason: z.string().trim().min(1).nullable().optional(),
+    verificationRejectionReason: z
+      .string()
+      .trim()
+      .min(1)
+      .max(USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH)
+      .nullable()
+      .optional(),
   })
   .refine((data) => data.isVerified || !!data.verificationRejectionReason, {
     error: "Rejection reason is required when rejecting an instructor",
