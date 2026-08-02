@@ -3,7 +3,7 @@ import {
   VerifyOtpBody,
   ResendOtpBody,
   SigninBody,
-} from "@src/types/authTypes";
+} from "@src/types/authType";
 import AppError from "@src/utils/appError";
 import UserModel from "@src/models/userModel";
 import bcrypt from "bcryptjs";

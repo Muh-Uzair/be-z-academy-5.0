@@ -8,7 +8,7 @@ import {
   handleAccountUpdatedEventService,
   handlePaymentIntentSucceededService,
   handleChargeRefundedService,
-} from "@src/services/stripeServices";
+} from "@src/services/stripeService";
 
 export const handleStripeWebhook = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

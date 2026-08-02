@@ -17,7 +17,7 @@ import {
   updateCategorySchema,
   uploadCategoryImageSchema,
   getCategoriesQuerySchema,
-} from "@src/validations/categoryValidations";
+} from "@src/validations/categoryValidation";
 
 const categoryRouter = Router();
 

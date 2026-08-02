@@ -4,7 +4,7 @@ import {
   CATEGORY_NAME_MAX_LENGTH,
   CATEGORY_DESCRIPTION_MIN_LENGTH,
   CATEGORY_DESCRIPTION_MAX_LENGTH,
-} from "@src/constants/categoryConstants";
+} from "@src/constants/categoryConstant";
 
 export const categoryIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Category id is required" }),

@@ -13,7 +13,7 @@ import {
   getPresignedGetUrlService,
   deleteS3ObjectService,
   buildS3ObjectKey,
-} from "@src/services/s3Services";
+} from "@src/services/s3Service";
 import {
   CreateCourseBody,
   UpdateCourseBody,
@@ -21,14 +21,14 @@ import {
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
-} from "@src/types/courseTypes";
+} from "@src/types/courseType";
 import {
   COURSE_MAX_VIDEO_SIZE_IN_BYTES,
   COURSE_MAX_IMAGE_SIZE_IN_BYTES,
   COURSE_THUMBNAIL_S3_FOLDER,
   COURSE_VIDEO_S3_FOLDER,
-} from "@src/constants/courseConstants";
-import { buildSlug, getOwnedCourseOrThrow } from "@src/utils/courseUtils";
+} from "@src/constants/courseConstant";
+import { buildSlug, getOwnedCourseOrThrow } from "@src/utils/courseUtil";
 
 // FUNCTION
 export const createCoursePaymentIntentService = async (

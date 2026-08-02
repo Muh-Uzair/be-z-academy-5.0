@@ -12,7 +12,7 @@ import {
   createCoursePaymentIntentService,
   requestCourseRefundService,
   getCourseCompletionStatusService,
-} from "@src/services/courseServices";
+} from "@src/services/courseService";
 import {
   CourseIdParams,
   CreateCourseBody,
@@ -21,7 +21,7 @@ import {
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
-} from "@src/types/courseTypes";
+} from "@src/types/courseType";
 import sendResponse from "@src/utils/sendResponse";
 
 export const uploadCourseThumbnail = catchAsync(

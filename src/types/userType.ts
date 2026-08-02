@@ -4,7 +4,7 @@ import {
   userIdParamsSchema,
   updateUserVerificationSchema,
   updateProfileSchema,
-} from "@src/validations/userValidations";
+} from "@src/validations/userValidation";
 
 export type GetInstructorsQuery = z.infer<typeof getInstructorsQuerySchema>;
 export type UserIdParams = z.infer<typeof userIdParamsSchema>;

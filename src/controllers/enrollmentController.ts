@@ -3,11 +3,11 @@ import catchAsync from "@src/utils/catchAsync";
 import {
   getEnrollmentsService,
   getEnrollmentByIdService,
-} from "@src/services/enrollmentServices";
+} from "@src/services/enrollmentService";
 import {
   GetEnrollmentsQuery,
   EnrollmentIdParams,
-} from "@src/types/enrollmentTypes";
+} from "@src/types/enrollmentType";
 import sendResponse from "@src/utils/sendResponse";
 
 export const getEnrollments = catchAsync(

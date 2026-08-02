@@ -7,14 +7,14 @@ import {
   updateCategoryService,
   deleteCategoryService,
   getCategoryImageUploadUrlService,
-} from "@src/services/categoryServices";
+} from "@src/services/categoryService";
 import {
   CategoryIdParams,
   CreateCategoryBody,
   UpdateCategoryBody,
   UploadCategoryImageBody,
   GetCategoriesQuery,
-} from "@src/types/categoryTypes";
+} from "@src/types/categoryType";
 import sendResponse from "@src/utils/sendResponse";
 
 export const uploadCategoryImage = catchAsync(

@@ -3,8 +3,8 @@ import EnrollmentModel from "@src/models/enrollmentModel";
 import { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import APIFeatures from "@src/utils/apiFeatures";
-import { GetEnrollmentsQuery } from "@src/types/enrollmentTypes";
-import { verifyEnrollmentAccessOrThrow } from "@src/utils/enrollmentUtils";
+import { GetEnrollmentsQuery } from "@src/types/enrollmentType";
+import { verifyEnrollmentAccessOrThrow } from "@src/utils/enrollmentUtil";
 
 // Every reference is joined in place (lookup `as` reuses the original field
 // name), so the raw ObjectId is replaced with the nested document at that

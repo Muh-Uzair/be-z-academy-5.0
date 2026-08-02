@@ -9,12 +9,12 @@ import {
   CreateReviewBody,
   UpdateReviewBody,
   GetReviewsQuery,
-} from "@src/types/reviewTypes";
+} from "@src/types/reviewType";
 import {
   getReviewOrThrow,
   verifyReviewOwnershipOrThrow,
   verifyReviewDeletePermissionOrThrow,
-} from "@src/utils/reviewUtils";
+} from "@src/utils/reviewUtil";
 
 
 // Every reference is joined in place (lookup `as` reuses the original field

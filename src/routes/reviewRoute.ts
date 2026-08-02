@@ -15,7 +15,7 @@ import {
   updateReviewSchema,
   reviewIdParamsSchema,
   getReviewsQuerySchema,
-} from "@src/validations/reviewValidations";
+} from "@src/validations/reviewValidation";
 
 const reviewRouter = Router();
 

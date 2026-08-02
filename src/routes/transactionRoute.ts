@@ -8,7 +8,7 @@ import protect from "@src/middlewares/protect";
 import {
   transactionIdParamsSchema,
   getTransactionsQuerySchema,
-} from "@src/validations/transactionValidations";
+} from "@src/validations/transactionValidation";
 
 const transactionRouter = Router();
 

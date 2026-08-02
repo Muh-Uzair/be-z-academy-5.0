@@ -7,17 +7,17 @@ import {
   getPresignedPostUrlService,
   deleteS3ObjectService,
   buildS3ObjectKey,
-} from "@src/services/s3Services";
+} from "@src/services/s3Service";
 import {
   CreateCategoryBody,
   UpdateCategoryBody,
   UploadCategoryImageBody,
   GetCategoriesQuery,
-} from "@src/types/categoryTypes";
+} from "@src/types/categoryType";
 import {
   CATEGORY_MAX_IMAGE_SIZE_IN_BYTES,
   CATEGORY_IMAGE_S3_FOLDER,
-} from "@src/constants/categoryConstants";
+} from "@src/constants/categoryConstant";
 
 // FUNCTION
 export const getCategoryImageUploadUrlService = async (

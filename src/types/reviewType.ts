@@ -4,7 +4,7 @@ import {
   createReviewSchema,
   updateReviewSchema,
   getReviewsQuerySchema,
-} from "@src/validations/reviewValidations";
+} from "@src/validations/reviewValidation";
 
 export type ReviewIdParams = z.infer<typeof reviewIdParamsSchema>;
 export type CreateReviewBody = z.infer<typeof createReviewSchema>;

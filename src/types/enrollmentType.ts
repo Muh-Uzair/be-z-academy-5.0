@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   enrollmentIdParamsSchema,
   getEnrollmentsQuerySchema,
-} from "@src/validations/enrollmentValidations";
+} from "@src/validations/enrollmentValidation";
 
 export type EnrollmentIdParams = z.infer<typeof enrollmentIdParamsSchema>;
 export type GetEnrollmentsQuery = z.infer<typeof getEnrollmentsQuerySchema>;

@@ -6,7 +6,7 @@ import {
   verifyOtpSchema,
   resendOtpSchema,
   signinSchema,
-} from "@src/validations/authValidations";
+} from "@src/validations/authValidation";
 
 export type SignupBody = z.infer<typeof signupSchema>;
 export type StudentSignupBody = z.infer<typeof studentSignupSchema>;

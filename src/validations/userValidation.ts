@@ -7,7 +7,7 @@ import {
   USER_HIGHEST_EDUCATION_MAX_LENGTH,
   USER_YEARS_OF_EXPERIENCE_MIN,
   USER_YEARS_OF_EXPERIENCE_MAX,
-} from "@src/constants/userConstants";
+} from "@src/constants/userConstant";
 
 export const userIdParamsSchema = z.object({
   id: z.string().min(1, { error: "User id is required" }),

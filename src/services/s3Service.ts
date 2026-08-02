@@ -7,7 +7,7 @@ import {
   MIME_TYPE_TO_EXTENSION,
   PRESIGNED_POST_EXPIRES_IN_SECONDS,
   PRESIGNED_GET_DEFAULT_EXPIRES_IN_SECONDS,
-} from "@src/constants/s3Constants";
+} from "@src/constants/s3Constant";
 
 // FUNCTION
 export const buildS3ObjectKey = (

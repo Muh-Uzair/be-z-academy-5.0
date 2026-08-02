@@ -6,12 +6,12 @@ import {
   resendOtpService,
   signinService,
   rotateTokenService,
-} from "@src/services/authServices";
-import { getUserByIdService } from "@src/services/userServices";
-import { SignupBody, VerifyOtpBody, ResendOtpBody, SigninBody } from "@src/types/authTypes";
+} from "@src/services/authService";
+import { getUserByIdService } from "@src/services/userService";
+import { SignupBody, VerifyOtpBody, ResendOtpBody, SigninBody } from "@src/types/authType";
 import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
-import { setAuthCookies } from "@src/utils/cookies";
+import { setAuthCookies } from "@src/utils/cookie";
 
 export const  signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

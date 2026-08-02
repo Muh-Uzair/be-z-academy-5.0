@@ -15,7 +15,7 @@ import {
   userIdParamsSchema,
   updateUserVerificationSchema,
   updateProfileSchema,
-} from "@src/validations/userValidations";
+} from "@src/validations/userValidation";
 
 const userRouter = Router();
 

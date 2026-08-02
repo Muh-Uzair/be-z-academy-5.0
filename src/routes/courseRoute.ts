@@ -16,7 +16,7 @@ import validation from "@src/middlewares/validation";
 import protect from "@src/middlewares/protect";
 import optionalAuth from "@src/middlewares/optionalAuth";
 import restrictTo from "@src/middlewares/restrictTo";
-import requireStripeOnboarding from "@src/middlewares/courseMiddlewares";
+import requireStripeOnboarding from "@src/middlewares/courseMiddleware";
 import { Role } from "@src/models/userModel";
 import {
   courseIdParamsSchema,
@@ -26,7 +26,7 @@ import {
   uploadCourseThumbnailSchema,
   uploadCourseVideoSchema,
   getCoursesQuerySchema,
-} from "@src/validations/courseValidations";
+} from "@src/validations/courseValidation";
 
 const courseRouter = Router();
 

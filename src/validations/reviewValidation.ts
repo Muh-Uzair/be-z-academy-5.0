@@ -4,7 +4,7 @@ import {
   REVIEW_RATING_MAX,
   REVIEW_FEEDBACK_MIN_LENGTH,
   REVIEW_FEEDBACK_MAX_LENGTH,
-} from "@src/constants/reviewConstants";
+} from "@src/constants/reviewConstant";
 
 export const reviewIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Review id is required" }),

@@ -5,14 +5,14 @@ import {
   getUserByIdService,
   updateUserVerificationService,
   updateOwnProfileService,
-} from "@src/services/userServices";
-import { getInstructorOnboardingLinkService } from "@src/services/stripeServices";
+} from "@src/services/userService";
+import { getInstructorOnboardingLinkService } from "@src/services/stripeService";
 import {
   GetInstructorsQuery,
   UserIdParams,
   UpdateUserVerificationBody,
   UpdateProfileBody,
-} from "@src/types/userTypes";
+} from "@src/types/userType";
 import sendResponse from "@src/utils/sendResponse";
 import { Role } from "@src/models/userModel";
 

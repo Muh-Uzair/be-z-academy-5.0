@@ -8,7 +8,7 @@ import protect from "@src/middlewares/protect";
 import {
   enrollmentIdParamsSchema,
   getEnrollmentsQuerySchema,
-} from "@src/validations/enrollmentValidations";
+} from "@src/validations/enrollmentValidation";
 
 const enrollmentRouter = Router();
 

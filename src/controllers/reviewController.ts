@@ -6,13 +6,13 @@ import {
   getReviewByIdService,
   updateReviewService,
   deleteReviewService,
-} from "@src/services/reviewServices";
+} from "@src/services/reviewService";
 import {
   CreateReviewBody,
   UpdateReviewBody,
   GetReviewsQuery,
   ReviewIdParams,
-} from "@src/types/reviewTypes";
+} from "@src/types/reviewType";
 import sendResponse from "@src/utils/sendResponse";
 
 export const createReview = catchAsync(

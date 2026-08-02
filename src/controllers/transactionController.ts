@@ -3,11 +3,11 @@ import catchAsync from "@src/utils/catchAsync";
 import {
   getTransactionsService,
   getTransactionByIdService,
-} from "@src/services/transactionServices";
+} from "@src/services/transactionService";
 import {
   GetTransactionsQuery,
   TransactionIdParams,
-} from "@src/types/transactionTypes";
+} from "@src/types/transactionType";
 import sendResponse from "@src/utils/sendResponse";
 
 export const getTransactions = catchAsync(

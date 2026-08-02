@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { stripe } from "@src/config/stripe";
 import UserModel, { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
-import { STRIPE_ONBOARDING_URL } from "@src/constants/stripeConstants";
+import { STRIPE_ONBOARDING_URL } from "@src/constants/stripeConstant";
 import TransactionModel from "@src/models/transactionModel";
 import EnrollmentModel from "@src/models/enrollmentModel";
 // FUNCTION

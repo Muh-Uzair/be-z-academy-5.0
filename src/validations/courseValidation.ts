@@ -6,7 +6,7 @@ import {
   COURSE_DESCRIPTION_MIN_LENGTH,
   COURSE_DESCRIPTION_MAX_LENGTH,
   COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
-} from "@src/constants/courseConstants";
+} from "@src/constants/courseConstant";
 
 export const courseIdParamsSchema = z.object({
   id: z.string().min(1, { error: "Course id is required" }),

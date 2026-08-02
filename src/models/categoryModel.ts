@@ -1,11 +1,11 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
-import { getPublicS3Url } from "@src/services/s3Services";
+import { getPublicS3Url } from "@src/services/s3Service";
 import {
   CATEGORY_NAME_MIN_LENGTH,
   CATEGORY_NAME_MAX_LENGTH,
   CATEGORY_DESCRIPTION_MIN_LENGTH,
   CATEGORY_DESCRIPTION_MAX_LENGTH,
-} from "@src/constants/categoryConstants";
+} from "@src/constants/categoryConstant";
 
 const categorySchema = new Schema(
   {

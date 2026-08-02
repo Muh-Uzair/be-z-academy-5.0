@@ -5,7 +5,7 @@ import {
   updateCategorySchema,
   uploadCategoryImageSchema,
   getCategoriesQuerySchema,
-} from "@src/validations/categoryValidations";
+} from "@src/validations/categoryValidation";
 
 export type CategoryIdParams = z.infer<typeof categoryIdParamsSchema>;
 export type CreateCategoryBody = z.infer<typeof createCategorySchema>;

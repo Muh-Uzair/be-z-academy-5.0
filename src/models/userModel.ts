@@ -8,7 +8,7 @@ import {
   USER_YEARS_OF_EXPERIENCE_MIN,
   USER_YEARS_OF_EXPERIENCE_MAX,
   USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
-} from "@src/constants/userConstants";
+} from "@src/constants/userConstant";
 
 enum Role {
   Admin = "admin",

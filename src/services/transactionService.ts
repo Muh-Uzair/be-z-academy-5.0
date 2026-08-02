@@ -3,8 +3,8 @@ import TransactionModel from "@src/models/transactionModel";
 import { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import APIFeatures from "@src/utils/apiFeatures";
-import { GetTransactionsQuery } from "@src/types/transactionTypes";
-import { verifyTransactionAccessOrThrow } from "@src/utils/transactionUtils";
+import { GetTransactionsQuery } from "@src/types/transactionType";
+import { verifyTransactionAccessOrThrow } from "@src/utils/transactionUtil";
 
 // Every reference is joined in place (lookup `as` reuses the original field
 // name), so the raw ObjectId is replaced with the nested document at that
