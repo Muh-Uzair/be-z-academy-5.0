@@ -69,6 +69,9 @@ categorySchema.post("aggregate", function (docs) {
   });
 });
 
+// Index to support APIFeatures default sorting
+categorySchema.index({ createdAt: -1 });
+
 type CategoryType = InferSchemaType<typeof categorySchema>;
 
 const CategoryModel =

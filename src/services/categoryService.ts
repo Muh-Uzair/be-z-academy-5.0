@@ -1,3 +1,4 @@
+import { PipelineStage } from "mongoose";
 import { randomUUID } from "crypto";
 import CategoryModel from "@src/models/categoryModel";
 import CourseModel from "@src/models/courseModel";
@@ -54,10 +55,12 @@ export const getCategoriesService = async (
   query: GetCategoriesQuery,
 ): Promise<any> => {
   // Step 1: Start with an empty base pipeline (no resource-specific pre-filters needed)
+  const basePipeline: PipelineStage[] = [];
+
   const { data: categories, pagination } = await new APIFeatures(
     CategoryModel,
     query,
-    [],
+    basePipeline,
   )
     .search(["name"])
     .sort()
