@@ -108,10 +108,7 @@ const courseSchema = new Schema(
     averageRating: {
       type: Number,
       default: 0,
-      min: [
-        COURSE_AVERAGE_RATING_MIN,
-        "Average rating cannot be negative",
-      ],
+      min: [COURSE_AVERAGE_RATING_MIN, "Average rating cannot be negative"],
       max: [
         COURSE_AVERAGE_RATING_MAX,
         `Average rating cannot exceed ${COURSE_AVERAGE_RATING_MAX}`,

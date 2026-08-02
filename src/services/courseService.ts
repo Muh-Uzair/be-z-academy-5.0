@@ -219,8 +219,24 @@ export const getCoursesService = async (
     });
   }
 
-  // Step 4: Lookup the category details and unwind the result
+  // Step 4: Lookup the instructor and category details and unwind each result.
+  // These stages run AFTER the role-scoped $match stages above, which use the
+  // raw ObjectId fields — preserving index efficiency on the pre-join documents.
   basePipeline.push(
+    {
+      $lookup: {
+        from: "users",
+        localField: "instructor",
+        foreignField: "_id",
+        as: "instructorDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$instructorDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     {
       $lookup: {
         from: "categories",
@@ -237,18 +253,28 @@ export const getCoursesService = async (
     },
     {
       $project: {
+        instructor: 0,
         category: 0,
       },
     },
   );
 
-  // Step 5: Layer the query-driven filter, search, sort, projection and pagination stages
+  // Step 5: Layer the query-driven filter, search, sort, projection and pagination stages.
+  // Cast the instructor id filter to ObjectId targeting the joined instructorDetails._id
+  // field, consistent with the pattern used in other services.
+  const filterQuery = {
+    ...query,
+    "instructorDetails._id": query.instructor
+      ? new Types.ObjectId(query.instructor)
+      : undefined,
+  };
+
   const { data: courses, pagination } = await new APIFeatures(
     CourseModel,
-    query,
+    filterQuery,
     basePipeline,
   )
-    .filter(["isVerified"])
+    .filter(["isVerified", "instructorDetails._id"])
     .search(["title"])
     .sort()
     .projection()

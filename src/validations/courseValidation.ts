@@ -103,6 +103,7 @@ export const uploadCourseVideoSchema = z.object({
 export const getCoursesQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
   projection: z.string().trim().min(1).optional(),
+  instructor: z.string().trim().min(1).optional(),
   isVerified: z
     .enum(["true", "false"], { error: "isVerified must be true or false" })
     .transform((val) => val === "true")
