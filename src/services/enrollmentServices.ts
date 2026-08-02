@@ -4,6 +4,7 @@ import { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import APIFeatures from "@src/utils/apiFeatures";
 import { GetEnrollmentsQuery } from "@src/types/enrollmentTypes";
+import { verifyEnrollmentAccessOrThrow } from "@src/utils/enrollmentUtils";
 
 // Every reference is joined in place (lookup `as` reuses the original field
 // name), so the raw ObjectId is replaced with the nested document at that
@@ -136,25 +137,7 @@ export const getEnrollmentByIdService = async (
   }
 
   // Step 2: Enforce ownership for non-admins
-  if (
-    user.role === Role.Instructor &&
-    enrollment.instructor?._id?.toString() !== user.id
-  ) {
-    throw new AppError(
-      403,
-      "You do not have permission to access this enrollment",
-    );
-  }
-
-  if (
-    user.role === Role.Student &&
-    enrollment.student?._id?.toString() !== user.id
-  ) {
-    throw new AppError(
-      403,
-      "You do not have permission to access this enrollment",
-    );
-  }
+  verifyEnrollmentAccessOrThrow(enrollment, user);
 
   return toEnrollmentDetails(enrollment);
 };

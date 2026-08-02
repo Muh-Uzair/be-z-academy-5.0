@@ -4,6 +4,7 @@ import { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import APIFeatures from "@src/utils/apiFeatures";
 import { GetTransactionsQuery } from "@src/types/transactionTypes";
+import { verifyTransactionAccessOrThrow } from "@src/utils/transactionUtils";
 
 // Every reference is joined in place (lookup `as` reuses the original field
 // name), so the raw ObjectId is replaced with the nested document at that
@@ -117,25 +118,7 @@ export const getTransactionByIdService = async (
   }
 
   // Step 2: Enforce ownership for non-admins
-  if (
-    user.role === Role.Instructor &&
-    transaction.instructor?._id?.toString() !== user.id
-  ) {
-    throw new AppError(
-      403,
-      "You do not have permission to access this transaction",
-    );
-  }
-
-  if (
-    user.role === Role.Student &&
-    transaction.student?._id?.toString() !== user.id
-  ) {
-    throw new AppError(
-      403,
-      "You do not have permission to access this transaction",
-    );
-  }
+  verifyTransactionAccessOrThrow(transaction, user);
 
   return toTransactionDetails(transaction);
 };

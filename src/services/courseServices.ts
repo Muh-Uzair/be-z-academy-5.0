@@ -28,7 +28,7 @@ import {
   COURSE_THUMBNAIL_S3_FOLDER,
   COURSE_VIDEO_S3_FOLDER,
 } from "@src/constants/courseConstants";
-import { buildSlug } from "@src/utils/courseUtils";
+import { buildSlug, getOwnedCourseOrThrow } from "@src/utils/courseUtils";
 
 // FUNCTION
 export const createCoursePaymentIntentService = async (
@@ -264,23 +264,6 @@ export const getCoursesService = async (
     courses: coursesWithVideoUrls,
     pagination,
   };
-};
-
-// FUNCTION
-const getOwnedCourseOrThrow = async (id: string, instructorId: string) => {
-  // Step 1: Find the course by id
-  const course = await CourseModel.findById(id);
-
-  if (!course) {
-    throw new AppError(404, "Course not found");
-  }
-
-  // Step 2: Ensure the requesting instructor owns this course
-  if (course.instructor.toString() !== instructorId) {
-    throw new AppError(403, "You do not have permission to access this course");
-  }
-
-  return course;
 };
 
 // FUNCTION

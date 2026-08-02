@@ -10,6 +10,12 @@ import {
   UpdateReviewBody,
   GetReviewsQuery,
 } from "@src/types/reviewTypes";
+import {
+  getReviewOrThrow,
+  verifyReviewOwnershipOrThrow,
+  verifyReviewDeletePermissionOrThrow,
+} from "@src/utils/reviewUtils";
+
 
 // Every reference is joined in place (lookup `as` reuses the original field
 // name), so the raw ObjectId is replaced with the nested document at that
@@ -157,18 +163,8 @@ export const updateReviewService = async (
   body: UpdateReviewBody,
 ): Promise<any> => {
   // Step 1: Fetch the review, enforcing ownership
-  const review = await ReviewModel.findById(id);
-
-  if (!review) {
-    throw new AppError(404, "Review not found");
-  }
-
-  if (review.reviewBy.toString() !== studentId) {
-    throw new AppError(
-      403,
-      "You do not have permission to modify this review",
-    );
-  }
+  const review = await getReviewOrThrow(id);
+  verifyReviewOwnershipOrThrow(review, studentId);
 
   // Step 2: Apply the update
   return ReviewModel.findByIdAndUpdate(id, body, {
@@ -183,24 +179,12 @@ export const deleteReviewService = async (
   user: { id: string; role: string },
 ): Promise<any> => {
   // Step 1: Fetch the review, enforcing ownership (author or admin)
-  const review = await ReviewModel.findById(id);
-
-  if (!review) {
-    throw new AppError(404, "Review not found");
-  }
-
-  const isOwner = review.reviewBy.toString() === user.id;
-  const isAdmin = user.role === Role.Admin;
-
-  if (!isOwner && !isAdmin) {
-    throw new AppError(
-      403,
-      "You do not have permission to delete this review",
-    );
-  }
+  const review = await getReviewOrThrow(id);
+  verifyReviewDeletePermissionOrThrow(review, user);
 
   // Step 2: Delete the review document
   await review.deleteOne();
 
   return null;
 };
+
