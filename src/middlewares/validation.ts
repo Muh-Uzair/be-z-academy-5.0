@@ -6,7 +6,7 @@ type ValidationSource = "body" | "query" | "params";
 
 const validation = (
   schema: ZodSchema,
-  source: ValidationSource = "body",
+  source: ValidationSource,
 ): RequestHandler => {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req[source]);

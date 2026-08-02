@@ -20,20 +20,20 @@ import {
 
 const authRouter = Router();
 
-authRouter.post("/signup", validation(signupSchema), signup);
+authRouter.post("/signup", validation(signupSchema, "body"), signup);
 authRouter.post(
   "/verify-otp",
-  validation(verifyOtpSchema),
+  validation(verifyOtpSchema, "body"),
   restrictTo(Role.Student),
   verifyOtp,
 );  
 authRouter.post(
   "/resend-otp",
-  validation(resendOtpSchema),
+  validation(resendOtpSchema, "body"),
   restrictTo(Role.Student),
   resendOtp,
 );
-authRouter.post("/signin", validation(signinSchema), signin);
+authRouter.post("/signin", validation(signinSchema, "body"), signin);
 authRouter.post("/rotate-token", rotateToken);
 authRouter.get("/me", protect, getMe);
 
