@@ -15,6 +15,7 @@ import {
   userIdParamsSchema,
   updateUserVerificationSchema,
   updateProfileSchema,
+  userRoleQuerySchema,
 } from "@src/validations/userValidation";
 
 const userRouter = Router();
@@ -34,6 +35,7 @@ userRouter.get(
   protect,
   restrictTo(Role.Admin),
   validation(userIdParamsSchema, "params"),
+  validation(userRoleQuerySchema, "query"),
   getUserDetails,
 );
 
@@ -42,9 +44,11 @@ userRouter.patch(
   protect,
   restrictTo(Role.Admin),
   validation(userIdParamsSchema, "params"),
+  validation(userRoleQuerySchema, "query"),
   validation(updateUserVerificationSchema, "body"),
   updateUserVerification,
 );
+
 
 // ─── Instructor Routes ────────────────────────────────────────────────────────
 

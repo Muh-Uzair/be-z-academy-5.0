@@ -12,9 +12,9 @@ import {
   UserIdParams,
   UpdateUserVerificationBody,
   UpdateProfileBody,
+  UserRoleQuery,
 } from "@src/types/userType";
 import sendResponse from "@src/utils/sendResponse";
-import { Role } from "@src/models/userModel";
 
 export const getInstructors = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -33,7 +33,7 @@ export const getInstructors = catchAsync(
 export const getUserDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as UserIdParams;
-    const role = req.query.role as Role || Role.Instructor; // Fallback to instructor if not provided
+    const { role } = req.validatedQuery as UserRoleQuery;
 
     const user = await getUserByIdService(id, role);
 
@@ -77,7 +77,7 @@ export const updateProfile = catchAsync(
 export const updateUserVerification = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as UserIdParams;
-    const role = req.query.role as Role || Role.Instructor; // Fallback to instructor if not provided
+    const { role } = req.validatedQuery as UserRoleQuery;
     const body = req.validatedBody as UpdateUserVerificationBody;
 
     const user = await updateUserVerificationService(

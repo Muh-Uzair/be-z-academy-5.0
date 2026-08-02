@@ -63,6 +63,10 @@ export const uploadCategoryImageSchema = z.object({
 
 export const getCategoriesQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
+  projection: z.string().trim().min(1).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).default(10),
+  sortBy: z.string().trim().min(1).default("name"),
+  sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
+

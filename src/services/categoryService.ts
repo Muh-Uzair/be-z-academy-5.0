@@ -1,8 +1,8 @@
-import { PipelineStage } from "mongoose";
 import { randomUUID } from "crypto";
 import CategoryModel from "@src/models/categoryModel";
 import CourseModel from "@src/models/courseModel";
 import AppError from "@src/utils/appError";
+import APIFeatures from "@src/utils/apiFeatures";
 import {
   getPresignedPostUrlService,
   deleteS3ObjectService,
@@ -53,46 +53,19 @@ export const createCategoryService = async (
 export const getCategoriesService = async (
   query: GetCategoriesQuery,
 ): Promise<any> => {
-  // Step 1: Build the base pipeline with an optional search filter
-  const pipeline: PipelineStage[] = [];
+  // Step 1: Start with an empty base pipeline (no resource-specific pre-filters needed)
+  const { data: categories, pagination } = await new APIFeatures(
+    CategoryModel,
+    query,
+    [],
+  )
+    .search(["name"])
+    .sort()
+    .projection()
+    .paginate()
+    .exec();
 
-  if (query.search) {
-    pipeline.push({
-      $match: {
-        name: { $regex: query.search, $options: "i" },
-      },
-    });
-  }
-
-  // Step 2: Clone the pipeline for a total count before pagination is applied
-  const countPipeline: PipelineStage[] = [...pipeline, { $count: "total" }];
-
-  // Step 3: Apply sorting and pagination to the main pipeline
-  pipeline.push({ $sort: { name: 1 } });
-  pipeline.push({ $skip: (query.page - 1) * query.limit });
-  pipeline.push({ $limit: query.limit });
-
-  // Step 4: Run both pipelines in parallel
-  const [categories, countResult] = await Promise.all([
-    CategoryModel.aggregate(pipeline),
-    CategoryModel.aggregate(countPipeline),
-  ]);
-
-  // Step 5: Compute pagination metadata
-  const totalDocuments = countResult[0]?.total ?? 0;
-  const totalPages = Math.ceil(totalDocuments / query.limit);
-
-  return {
-    categories,
-    pagination: {
-      page: query.page,
-      limit: query.limit,
-      totalDocuments,
-      totalPages,
-      hasNextPage: query.page < totalPages,
-      hasPrevPage: query.page > 1,
-    },
-  };
+  return { categories, pagination };
 };
 
 // FUNCTION

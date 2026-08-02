@@ -2,7 +2,6 @@ import { PipelineStage, Types } from "mongoose";
 import ReviewModel from "@src/models/reviewModel";
 import CourseModel from "@src/models/courseModel";
 import EnrollmentModel from "@src/models/enrollmentModel";
-import { Role } from "@src/models/userModel";
 import AppError from "@src/utils/appError";
 import APIFeatures from "@src/utils/apiFeatures";
 import {

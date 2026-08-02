@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Role } from "@src/models/userModel";
 import {
   USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
   USER_FULL_NAME_MIN_LENGTH,
@@ -12,6 +13,11 @@ import {
 export const userIdParamsSchema = z.object({
   id: z.string().min(1, { error: "User id is required" }),
 });
+
+export const userRoleQuerySchema = z.object({
+  role: z.nativeEnum(Role).default(Role.Instructor),
+});
+
 
 export const updateUserVerificationSchema = z
   .object({
