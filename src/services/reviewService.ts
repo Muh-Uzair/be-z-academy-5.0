@@ -128,7 +128,7 @@ export const getReviewsService = async (
 };
 
 // FUNCTION
-export const getReviewByIdService = async (id: string): Promise<any> => {
+export const getReviewDetailsService = async (id: string): Promise<any> => {
   const pipeline: PipelineStage[] = [
     { $match: { _id: new Types.ObjectId(id) } },
     ...REVIEW_LOOKUP_STAGES,

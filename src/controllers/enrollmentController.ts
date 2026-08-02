@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "@src/utils/catchAsync";
 import {
   getEnrollmentsService,
-  getEnrollmentByIdService,
+  getEnrollmentDetailsService,
 } from "@src/services/enrollmentService";
 import {
   GetEnrollmentsQuery,
@@ -33,7 +33,7 @@ export const getEnrollmentDetails = catchAsync(
     const { id } = req.validatedParams as EnrollmentIdParams;
     const { id: userId, role } = req.user!;
 
-    const enrollment = await getEnrollmentByIdService(id, {
+    const enrollment = await getEnrollmentDetailsService(id, {
       id: userId,
       role,
     });

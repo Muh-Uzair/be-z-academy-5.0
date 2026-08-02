@@ -291,7 +291,7 @@ export const getCoursesService = async (
 };
 
 // FUNCTION
-export const getCourseByIdService = async (id: string): Promise<any> => {
+export const getCourseDetailsService = async (id: string): Promise<any> => {
   // Step 1: Fetch the course by id
   const course = await CourseModel.findById(id);
 

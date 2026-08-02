@@ -89,7 +89,7 @@ export const getTransactionsService = async (
 };
 
 // FUNCTION
-export const getTransactionByIdService = async (
+export const getTransactionDetailsService = async (
   id: string,
   user: { id: string; role: string },
 ): Promise<any> => {

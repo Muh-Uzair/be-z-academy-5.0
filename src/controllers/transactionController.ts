@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "@src/utils/catchAsync";
 import {
   getTransactionsService,
-  getTransactionByIdService,
+  getTransactionDetailsService,
 } from "@src/services/transactionService";
 import {
   GetTransactionsQuery,
@@ -33,7 +33,7 @@ export const getTransactionDetails = catchAsync(
     const { id } = req.validatedParams as TransactionIdParams;
     const { id: userId, role } = req.user!;
 
-    const transaction = await getTransactionByIdService(id, {
+    const transaction = await getTransactionDetailsService(id, {
       id: userId,
       role,
     });

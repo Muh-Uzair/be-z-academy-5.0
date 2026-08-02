@@ -7,7 +7,7 @@ import {
   signinService,
   rotateTokenService,
 } from "@src/services/authService";
-import { getUserByIdService } from "@src/services/userService";
+import { getUserDetailsService } from "@src/services/userService";
 import { SignupBody, VerifyOtpBody, ResendOtpBody, SigninBody } from "@src/types/authType";
 import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
@@ -79,7 +79,7 @@ export const getMe = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id, role } = req.user!;
 
-    const user = await getUserByIdService(id, role as Role);
+    const user = await getUserDetailsService(id, role as Role);
 
     sendResponse(res, 200, {
       status: "success",

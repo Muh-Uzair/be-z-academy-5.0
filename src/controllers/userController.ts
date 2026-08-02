@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "@src/utils/catchAsync";
 import {
   getInstructorsService,
-  getUserByIdService,
+  getUserDetailsService,
   updateUserVerificationService,
   updateOwnProfileService,
 } from "@src/services/userService";
@@ -35,7 +35,7 @@ export const getUserDetails = catchAsync(
     const { id } = req.validatedParams as UserIdParams;
     const { role } = req.validatedQuery as UserRoleQuery;
 
-    const user = await getUserByIdService(id, role);
+    const user = await getUserDetailsService(id, role);
 
     sendResponse(res, 200, {
       status: "success",

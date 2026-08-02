@@ -3,7 +3,7 @@ import catchAsync from "@src/utils/catchAsync";
 import {
   createReviewService,
   getReviewsService,
-  getReviewByIdService,
+  getReviewDetailsService,
   updateReviewService,
   deleteReviewService,
 } from "@src/services/reviewService";
@@ -48,7 +48,7 @@ export const getReviewDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as ReviewIdParams;
 
-    const review = await getReviewByIdService(id);
+    const review = await getReviewDetailsService(id);
 
     sendResponse(res, 200, {
       status: "success",

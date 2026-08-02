@@ -5,7 +5,7 @@ import {
   getCourseVideoUploadUrlService,
   createCourseService,
   getCoursesService,
-  getCourseByIdService,
+  getCourseDetailsService,
   updateCourseService,
   updateCourseVerificationService,
   deleteCourseService,
@@ -87,7 +87,7 @@ export const getCourseDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
 
-    const course = await getCourseByIdService(id);
+    const course = await getCourseDetailsService(id);
 
     sendResponse(res, 200, {
       status: "success",

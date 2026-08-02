@@ -107,7 +107,7 @@ export const getEnrollmentsService = async (
 };
 
 // FUNCTION
-export const getEnrollmentByIdService = async (
+export const getEnrollmentDetailsService = async (
   id: string,
   user: { id: string; role: string },
 ): Promise<any> => {

@@ -72,7 +72,7 @@ export const getCategoriesService = async (
 };
 
 // FUNCTION
-export const getCategoryByIdService = async (id: string): Promise<any> => {
+export const getCategoryDetailsService = async (id: string): Promise<any> => {
   // Step 1: Find the category by id
   const category = await CategoryModel.findById(id);
 

@@ -3,7 +3,7 @@ import catchAsync from "@src/utils/catchAsync";
 import {
   createCategoryService,
   getCategoriesService,
-  getCategoryByIdService,
+  getCategoryDetailsService,
   updateCategoryService,
   deleteCategoryService,
   getCategoryImageUploadUrlService,
@@ -64,7 +64,7 @@ export const getCategoryDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CategoryIdParams;
 
-    const category = await getCategoryByIdService(id);
+    const category = await getCategoryDetailsService(id);
 
     sendResponse(res, 200, {
       status: "success",

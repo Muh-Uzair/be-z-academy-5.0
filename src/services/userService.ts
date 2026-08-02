@@ -24,7 +24,7 @@ export const getInstructorsService = async (
     basePipeline,
   )
     .filter(["isVerified"])
-    .search(["fullName", "email"])
+  .search(["fullName", "email"])
     .sort()
     .projection()
     .paginate()
@@ -34,7 +34,7 @@ export const getInstructorsService = async (
 };
 
 // FUNCTION
-export const getUserByIdService = async (
+export const getUserDetailsService = async (
   id: string,
   role: Role,
 ): Promise<any> => {
