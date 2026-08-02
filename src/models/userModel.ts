@@ -139,6 +139,12 @@ const userSchema = new Schema(
   },
 );
 
+// Indexes to support APIFeatures role-scoping, query filtering, and default sorting.
+// email already has an index from unique: true on the schema field.
+userSchema.index({ role: 1 });
+userSchema.index({ isVerified: 1 });
+userSchema.index({ createdAt: -1 });
+
 type UserType = InferSchemaType<typeof userSchema>;
 
 const UserModel = models.User || model<UserType>("User", userSchema);
