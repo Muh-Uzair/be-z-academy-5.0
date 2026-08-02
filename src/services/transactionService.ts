@@ -46,23 +46,19 @@ export const getTransactionsService = async (
   query: GetTransactionsQuery,
   user: { id: string; role: string },
 ): Promise<any> => {
-  // Step 1: Cast the reference id filters to ObjectId, targeting the *Details
-  // nested _id fields produced by the lookup stages above.
+  // Step 1: Cast the reference id filters to ObjectId, targeting the raw
+  // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
     ...query,
-    "studentDetails._id": query.student
-      ? new Types.ObjectId(query.student)
-      : undefined,
-    "courseDetails._id": query.course ? new Types.ObjectId(query.course) : undefined,
-    "instructorDetails._id": query.instructor
+    student: query.student ? new Types.ObjectId(query.student) : undefined,
+    course: query.course ? new Types.ObjectId(query.course) : undefined,
+    instructor: query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
   };
 
   // Step 2: Scope results by role - admins see everything, instructors see
   // their own courses' transactions, students see only their own.
-  // NOTE: These $match stages run BEFORE the lookup, so they use the raw
-  // ObjectId fields on the document, not the joined *Details fields.
   const basePipeline: PipelineStage[] = [];
 
   if (user.role === Role.Instructor) {
@@ -73,17 +69,18 @@ export const getTransactionsService = async (
     basePipeline.push({ $match: { student: new Types.ObjectId(user.id) } });
   }
 
-  basePipeline.push(...TRANSACTION_LOOKUP_STAGES);
-
-  // Step 3: Layer the query-driven filter, search, sort, projection and pagination stages
+  // Step 3: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
+  // By calling .join() AFTER .filter() and .search(), MongoDB's optimizer can use
+  // indexes to dramatically reduce the dataset before performing expensive joins.
   const { data, pagination } = await new APIFeatures(
     TransactionModel,
     filterQuery,
     basePipeline,
   )
-    .filter(["studentDetails._id", "courseDetails._id", "instructorDetails._id", "paymentStatus"])
+    .filter(["student", "course", "instructor", "paymentStatus"])
     .search(["transactionId"])
     .sort()
+    .addStages(TRANSACTION_LOOKUP_STAGES)
     .projection()
     .paginate()
     .exec();

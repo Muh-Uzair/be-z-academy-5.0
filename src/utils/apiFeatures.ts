@@ -116,6 +116,14 @@ class APIFeatures<T> {
     return this;
   }
 
+  // Appends raw pipeline stages (typically $lookup, $unwind, and related $project stages)
+  // to the pipeline. By calling this AFTER .filter() and .search(), you ensure that
+  // MongoDB can use indexes for query matching before performing expensive joins.
+  addStages(stages: PipelineStage[]): this {
+    this.pipeline.push(...stages);
+    return this;
+  }
+
   // Adds the $facet stage that pages the results and counts the total in one round trip.
   paginate(): this {
     const { page, limit } = this.query;
@@ -136,6 +144,11 @@ class APIFeatures<T> {
   // $facet result and returns pagination metadata; otherwise returns every
   // matching document as-is, with pagination set to null.
   async exec(): Promise<{ data: T[]; pagination: Pagination | null }> {
+    console.log(
+      "pipeline --------------------------------------- \n",
+      this.pipeline,
+    );
+
     const results = await this.model.aggregate(this.pipeline);
 
     if (!this.isPaginated) {

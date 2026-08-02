@@ -79,6 +79,12 @@ const transactionSchema = new Schema(
   },
 );
 
+// Indexes to support APIFeatures role-scoping and query filtering,
+// dramatically speeding up list queries.
+transactionSchema.index({ instructor: 1 });
+transactionSchema.index({ student: 1 });
+transactionSchema.index({ createdAt: -1 });
+
 type TransactionType = InferSchemaType<typeof transactionSchema>;
 
 const TransactionModel =
