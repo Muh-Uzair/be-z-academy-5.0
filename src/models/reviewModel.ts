@@ -43,6 +43,7 @@ const reviewSchema = new Schema(
   },
   {
     timestamps: true,
+    id: false,
   },
 );
 

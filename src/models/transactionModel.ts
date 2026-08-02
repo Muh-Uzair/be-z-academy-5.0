@@ -76,6 +76,7 @@ const transactionSchema = new Schema(
   },
   {
     timestamps: true,
+    id: false,
   },
 );
 

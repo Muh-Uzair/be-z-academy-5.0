@@ -75,6 +75,7 @@ const enrollmentSchema = new Schema(
   },
   {
     timestamps: true,
+    id: false,
   },
 );
 

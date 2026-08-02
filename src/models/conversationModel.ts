@@ -34,6 +34,7 @@ const conversationSchema = new Schema(
   },
   {
     timestamps: true,
+    id: false,
   },
 );
 
