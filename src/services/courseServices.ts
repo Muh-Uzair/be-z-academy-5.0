@@ -461,3 +461,25 @@ export const requestCourseRefundService = async (
   // The DB update (marking transaction as 'refunded' and removing enrollment)
   // happens in the 'charge.refunded' webhook handler to guarantee consistency.
 };
+
+// FUNCTION
+export const getCourseCompletionStatusService = async (
+  studentId: string,
+  courseId: string,
+): Promise<any> => {
+  // Step 1: Find the enrollment for the student in this course
+  const enrollment = await EnrollmentModel.findOne({
+    student: studentId,
+    course: courseId,
+  });
+
+  if (!enrollment) {
+    throw new AppError(404, "You are not enrolled in this course");
+  }
+
+  // Step 2: Return completion status and percentage
+  return {
+    completionPercentage: enrollment.watchPercentage,
+    completed: enrollment.watchedCompletely,
+  };
+};

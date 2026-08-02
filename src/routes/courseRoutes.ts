@@ -10,6 +10,7 @@ import {
   deleteCourse,
   createCoursePaymentIntent,
   requestCourseRefund,
+  getCourseCompletionStatus,
 } from "@src/controllers/courseController";
 import validation from "@src/middlewares/validation";
 import protect from "@src/middlewares/protect";
@@ -49,6 +50,8 @@ courseRouter.post(
   validation(uploadCourseThumbnailSchema, "body"),
   uploadCourseThumbnail,
 );
+
+// ─── Instructor Routes ────────────────────────────────────────────────────────
 
 courseRouter.post(
   "/upload-video",
@@ -100,6 +103,14 @@ courseRouter.post(
   restrictTo(Role.Student),
   validation(courseIdParamsSchema, "params"),
   requestCourseRefund,
+);
+
+courseRouter.get(
+  "/:id/completion-status",
+  protect,
+  restrictTo(Role.Student),
+  validation(courseIdParamsSchema, "params"),
+  getCourseCompletionStatus,
 );
 
 // ─── Shared Routes ────────────────────────────────────────────────────────────

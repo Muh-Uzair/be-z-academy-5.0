@@ -11,6 +11,7 @@ import {
   deleteCourseService,
   createCoursePaymentIntentService,
   requestCourseRefundService,
+  getCourseCompletionStatusService,
 } from "@src/services/courseServices";
 import {
   CourseIdParams,
@@ -170,6 +171,21 @@ export const requestCourseRefund = catchAsync(
       status: "success",
       message: "Refund initiated successfully. Your money will be returned within 5-10 business days",
       data: null,
+    });
+  },
+);
+
+export const getCourseCompletionStatus = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as CourseIdParams;
+    const studentId = req.user!.id;
+
+    const completionStatus = await getCourseCompletionStatusService(studentId, id);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Course completion status fetched successfully",
+      data: completionStatus,
     });
   },
 );
