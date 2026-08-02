@@ -78,6 +78,13 @@ const enrollmentSchema = new Schema(
   },
 );
 
+// Indexes to support APIFeatures role-scoping, query filtering, and default sorting.
+enrollmentSchema.index({ student: 1 });
+enrollmentSchema.index({ course: 1 });
+enrollmentSchema.index({ instructor: 1 });
+enrollmentSchema.index({ transaction: 1 });
+enrollmentSchema.index({ createdAt: -1 });
+
 type EnrollmentType = InferSchemaType<typeof enrollmentSchema>;
 
 const EnrollmentModel =

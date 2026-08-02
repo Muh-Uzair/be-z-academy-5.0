@@ -55,26 +55,22 @@ export const getEnrollmentsService = async (
   query: GetEnrollmentsQuery,
   user: { id: string; role: string },
 ): Promise<any> => {
-  // Step 1: Cast the reference id filters to ObjectId, targeting the *Details
-  // nested _id fields produced by the lookup stages above.
+  // Step 1: Cast the reference id filters to ObjectId, targeting the raw
+  // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
     ...query,
-    "studentDetails._id": query.student
-      ? new Types.ObjectId(query.student)
-      : undefined,
-    "courseDetails._id": query.course ? new Types.ObjectId(query.course) : undefined,
-    "instructorDetails._id": query.instructor
+    student: query.student ? new Types.ObjectId(query.student) : undefined,
+    course: query.course ? new Types.ObjectId(query.course) : undefined,
+    instructor: query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
-    "transactionDetails._id": query.transaction
+    transaction: query.transaction
       ? new Types.ObjectId(query.transaction)
       : undefined,
   };
 
   // Step 2: Scope results by role - admins see everything, instructors see
   // their own courses' enrollments, students see only their own.
-  // NOTE: These $match stages run BEFORE the lookup, so they use the raw
-  // ObjectId fields on the document, not the joined *Details fields.
   const basePipeline: PipelineStage[] = [];
 
   if (user.role === Role.Instructor) {
@@ -85,23 +81,24 @@ export const getEnrollmentsService = async (
     basePipeline.push({ $match: { student: new Types.ObjectId(user.id) } });
   }
 
-  basePipeline.push(...ENROLLMENT_LOOKUP_STAGES);
-
-  // Step 3: Layer the query-driven filter, sort, projection and pagination stages
+  // Step 3: Layer the query-driven filter, sort, lookup, projection, and pagination stages.
+  // By calling .addStages() AFTER .filter(), MongoDB's optimizer can use
+  // indexes to dramatically reduce the dataset before performing expensive joins.
   const { data, pagination } = await new APIFeatures(
     EnrollmentModel,
     filterQuery,
     basePipeline,
   )
     .filter([
-      "studentDetails._id",
-      "courseDetails._id",
-      "instructorDetails._id",
-      "transactionDetails._id",
+      "student",
+      "course",
+      "instructor",
+      "transaction",
       "watchedCompletely",
       "certificateIssued",
     ])
     .sort()
+    .addStages(ENROLLMENT_LOOKUP_STAGES)
     .projection()
     .paginate()
     .exec();
