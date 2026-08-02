@@ -1,14 +1,14 @@
 import { z } from "zod";
 import {
   getInstructorsQuerySchema,
-  instructorIdParamsSchema,
-  updateInstructorVerificationSchema,
+  userIdParamsSchema,
+  updateUserVerificationSchema,
   updateProfileSchema,
 } from "@src/validations/userValidations";
 
 export type GetInstructorsQuery = z.infer<typeof getInstructorsQuerySchema>;
-export type InstructorIdParams = z.infer<typeof instructorIdParamsSchema>;
-export type UpdateInstructorVerificationBody = z.infer<
-  typeof updateInstructorVerificationSchema
+export type UserIdParams = z.infer<typeof userIdParamsSchema>;
+export type UpdateUserVerificationBody = z.infer<
+  typeof updateUserVerificationSchema
 >;
 export type UpdateProfileBody = z.infer<typeof updateProfileSchema>;

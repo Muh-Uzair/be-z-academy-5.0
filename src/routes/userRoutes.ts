@@ -1,8 +1,8 @@
 import { Router } from "express";
 import {
   getInstructors,
-  getInstructorDetails,
-  updateInstructorVerification,
+  getUserDetails,
+  updateUserVerification,
   getInstructorOnboardingLink,
   updateProfile,
 } from "@src/controllers/userController";
@@ -12,8 +12,8 @@ import restrictTo from "@src/middlewares/restrictTo";
 import { Role } from "@src/models/userModel";
 import {
   getInstructorsQuerySchema,
-  instructorIdParamsSchema,
-  updateInstructorVerificationSchema,
+  userIdParamsSchema,
+  updateUserVerificationSchema,
   updateProfileSchema,
 } from "@src/validations/userValidations";
 
@@ -30,20 +30,20 @@ userRouter.get(
 );
 
 userRouter.get(
-  "/instructor/:id",
+  "/user/:id",
   protect,
   restrictTo(Role.Admin),
-  validation(instructorIdParamsSchema, "params"),
-  getInstructorDetails,
+  validation(userIdParamsSchema, "params"),
+  getUserDetails,
 );
 
 userRouter.patch(
-  "/instructor/:id/verification",
+  "/user/:id/verification",
   protect,
   restrictTo(Role.Admin),
-  validation(instructorIdParamsSchema, "params"),
-  validation(updateInstructorVerificationSchema, "body"),
-  updateInstructorVerification,
+  validation(userIdParamsSchema, "params"),
+  validation(updateUserVerificationSchema, "body"),
+  updateUserVerification,
 );
 
 // ─── Instructor Routes ────────────────────────────────────────────────────────

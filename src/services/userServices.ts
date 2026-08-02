@@ -6,7 +6,7 @@ import { PROFILE_UPDATABLE_FIELDS } from "@src/constants/userConstants";
 import APIFeatures from "@src/utils/apiFeatures";
 import {
   GetInstructorsQuery,
-  UpdateInstructorVerificationBody,
+  UpdateUserVerificationBody,
   UpdateProfileBody,
 } from "@src/types/userTypes";
 
@@ -95,7 +95,7 @@ export const updateOwnProfileService = async (
 export const updateUserVerificationService = async (
   id: string,
   role: Role,
-  body: UpdateInstructorVerificationBody,
+  body: UpdateUserVerificationBody,
 ): Promise<any> => {
   // Step 1: Ensure the user exists and has the expected role
   const user = await UserModel.findOne({ _id: id, role });

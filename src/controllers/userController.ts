@@ -9,8 +9,8 @@ import {
 import { getInstructorOnboardingLinkService } from "@src/services/stripeServices";
 import {
   GetInstructorsQuery,
-  InstructorIdParams,
-  UpdateInstructorVerificationBody,
+  UserIdParams,
+  UpdateUserVerificationBody,
   UpdateProfileBody,
 } from "@src/types/userTypes";
 import sendResponse from "@src/utils/sendResponse";
@@ -30,16 +30,17 @@ export const getInstructors = catchAsync(
   },
 );
 
-export const getInstructorDetails = catchAsync(
+export const getUserDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.validatedParams as InstructorIdParams;
+    const { id } = req.validatedParams as UserIdParams;
+    const role = req.query.role as Role || Role.Instructor; // Fallback to instructor if not provided
 
-    const instructor = await getUserByIdService(id, Role.Instructor);
+    const user = await getUserByIdService(id, role);
 
     sendResponse(res, 200, {
       status: "success",
-      message: "Instructor details fetched successfully",
-      data: { instructor },
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} details fetched successfully`,
+      data: { user },
     });
   },
 );
@@ -73,23 +74,24 @@ export const updateProfile = catchAsync(
   },
 );
 
-export const updateInstructorVerification = catchAsync(
+export const updateUserVerification = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.validatedParams as InstructorIdParams;
-    const body = req.validatedBody as UpdateInstructorVerificationBody;
+    const { id } = req.validatedParams as UserIdParams;
+    const role = req.query.role as Role || Role.Instructor; // Fallback to instructor if not provided
+    const body = req.validatedBody as UpdateUserVerificationBody;
 
-    const instructor = await updateUserVerificationService(
+    const user = await updateUserVerificationService(
       id,
-      Role.Instructor,
+      role,
       body,
     );
 
     sendResponse(res, 200, {
       status: "success",
       message: body.isVerified
-        ? "Instructor approved successfully"
-        : "Instructor rejected successfully",
-      data: { instructor },
+        ? `${role.charAt(0).toUpperCase() + role.slice(1)} approved successfully`
+        : `${role.charAt(0).toUpperCase() + role.slice(1)} rejected successfully`,
+      data: { user },
     });
   },
 );

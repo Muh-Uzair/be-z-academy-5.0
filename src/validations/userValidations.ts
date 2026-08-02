@@ -9,11 +9,11 @@ import {
   USER_YEARS_OF_EXPERIENCE_MAX,
 } from "@src/constants/userConstants";
 
-export const instructorIdParamsSchema = z.object({
-  id: z.string().min(1, { error: "Instructor id is required" }),
+export const userIdParamsSchema = z.object({
+  id: z.string().min(1, { error: "User id is required" }),
 });
 
-export const updateInstructorVerificationSchema = z
+export const updateUserVerificationSchema = z
   .object({
     isVerified: z.boolean({ error: "isVerified must be a boolean" }),
     verificationRejectionReason: z
@@ -25,7 +25,7 @@ export const updateInstructorVerificationSchema = z
       .optional(),
   })
   .refine((data) => data.isVerified || !!data.verificationRejectionReason, {
-    error: "Rejection reason is required when rejecting an instructor",
+    error: "Rejection reason is required when rejecting a user",
     path: ["verificationRejectionReason"],
   });
 
