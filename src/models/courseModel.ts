@@ -158,8 +158,13 @@ const courseSchema = new Schema(
     id: false,
   },
 );
-
+// One course with a given title per instructor
 courseSchema.index({ title: 1, instructor: 1 }, { unique: true });
+
+// Indexes to support APIFeatures role-scoping, query filtering, and default sorting.
+courseSchema.index({ instructor: 1 });
+courseSchema.index({ isVerified: 1, verificationRejectionReason: 1 });
+courseSchema.index({ createdAt: -1 });
 
 // videoKey is intentionally NOT exposed as a virtual/public URL here — the
 // video is private, so a signed GET URL must be generated per-request in the

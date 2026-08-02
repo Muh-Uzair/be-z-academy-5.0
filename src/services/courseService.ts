@@ -219,10 +219,7 @@ export const getCoursesService = async (
     });
   }
 
-  // Step 4: Lookup the instructor and category details and unwind each result.
-  // These stages run AFTER the role-scoped $match stages above, which use the
-  // raw ObjectId fields — preserving index efficiency on the pre-join documents.
-  basePipeline.push(
+  const COURSE_LOOKUP_STAGES: PipelineStage[] = [
     {
       $lookup: {
         from: "users",
@@ -257,14 +254,14 @@ export const getCoursesService = async (
         category: 0,
       },
     },
-  );
+  ];
 
-  // Step 5: Layer the query-driven filter, search, sort, projection and pagination stages.
-  // Cast the instructor id filter to ObjectId targeting the joined instructorDetails._id
-  // field, consistent with the pattern used in other services.
+  // Step 4: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
+  // Cast the instructor id filter to ObjectId targeting the raw field so MongoDB
+  // can use indexes before any lookups occur.
   const filterQuery = {
     ...query,
-    "instructorDetails._id": query.instructor
+    instructor: query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
   };
@@ -274,14 +271,15 @@ export const getCoursesService = async (
     filterQuery,
     basePipeline,
   )
-    .filter(["isVerified", "instructorDetails._id"])
+    .filter(["isVerified", "instructor"])
     .search(["title"])
     .sort()
+    .addStages(COURSE_LOOKUP_STAGES)
     .projection()
     .paginate()
     .exec();
 
-  // Step 6: Attach a signed video URL to every course in the page
+  // Step 5: Attach a signed video URL to every course in the page
   const coursesWithVideoUrls = await Promise.all(
     courses.map((course) => withSignedVideoUrl(course)),
   );

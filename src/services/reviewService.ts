@@ -97,30 +97,29 @@ export const createReviewService = async (
 export const getReviewsService = async (
   query: GetReviewsQuery,
 ): Promise<any> => {
-  // Step 1: Cast the reference id filters to ObjectId, targeting the *Details
-  // nested _id fields produced by the lookup stages above.
+  // Step 1: Cast the reference id filters to ObjectId, targeting the raw
+  // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
     ...query,
-    "courseDetails._id": query.course ? new Types.ObjectId(query.course) : undefined,
-    "instructorDetails._id": query.instructor
+    course: query.course ? new Types.ObjectId(query.course) : undefined,
+    instructor: query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
-    "reviewByDetails._id": query.reviewBy
-      ? new Types.ObjectId(query.reviewBy)
-      : undefined,
+    reviewBy: query.reviewBy ? new Types.ObjectId(query.reviewBy) : undefined,
   };
 
-  const basePipeline: PipelineStage[] = [...REVIEW_LOOKUP_STAGES];
-
-  // Step 2: Layer the query-driven filter, search, sort, projection and pagination stages
+  // Step 2: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
+  // By calling .addStages() AFTER .filter() and .search(), MongoDB's optimizer can use
+  // indexes to dramatically reduce the dataset before performing expensive joins.
   const { data, pagination } = await new APIFeatures(
     ReviewModel,
     filterQuery,
-    basePipeline,
+    [],
   )
-    .filter(["courseDetails._id", "instructorDetails._id", "reviewByDetails._id", "rating"])
+    .filter(["course", "instructor", "reviewBy", "rating"])
     .search(["feedback"])
     .sort()
+    .addStages(REVIEW_LOOKUP_STAGES)
     .projection()
     .paginate()
     .exec();
