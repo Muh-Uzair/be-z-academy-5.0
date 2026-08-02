@@ -6,85 +6,75 @@ import APIFeatures from "@src/utils/apiFeatures";
 import { GetEnrollmentsQuery } from "@src/types/enrollmentType";
 import { verifyEnrollmentAccessOrThrow } from "@src/utils/enrollmentUtil";
 
-// Every reference is joined in place (lookup `as` reuses the original field
-// name), so the raw ObjectId is replaced with the nested document at that
-// same key. This is what lets query filters target e.g. "course._id".
+// Each reference is joined into a *Details field so the response shape is
+// already correct without any post-processing mapper.
+// The final $project drops the original ObjectId fields that are superseded
+// by the joined documents.
 const ENROLLMENT_LOOKUP_STAGES: PipelineStage[] = [
   {
     $lookup: {
       from: "users",
       localField: "student",
       foreignField: "_id",
-      as: "student",
+      as: "studentDetails",
     },
   },
-  { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$studentDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "courses",
       localField: "course",
       foreignField: "_id",
-      as: "course",
+      as: "courseDetails",
     },
   },
-  { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$courseDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "users",
       localField: "instructor",
       foreignField: "_id",
-      as: "instructor",
+      as: "instructorDetails",
     },
   },
-  { $unwind: { path: "$instructor", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "transactions",
       localField: "transaction",
       foreignField: "_id",
-      as: "transaction",
+      as: "transactionDetails",
     },
   },
-  { $unwind: { path: "$transaction", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$transactionDetails", preserveNullAndEmptyArrays: true } },
+  { $project: { student: 0, course: 0, instructor: 0, transaction: 0 } },
 ];
-
-// Renames the now-joined reference fields to *Details for the response, so
-// callers get e.g. courseDetails: {} instead of course: "<mongo id>".
-const toEnrollmentDetails = (doc: any) => {
-  const { student, course, instructor, transaction, ...rest } = doc;
-  return {
-    ...rest,
-    studentDetails: student,
-    courseDetails: course,
-    instructorDetails: instructor,
-    transactionDetails: transaction,
-  };
-};
 
 // FUNCTION
 export const getEnrollmentsService = async (
   query: GetEnrollmentsQuery,
   user: { id: string; role: string },
 ): Promise<any> => {
-  // Step 1: The reference filters need ObjectId casting. Since the base
-  // pipeline joins them in place under the same field name, they must be
-  // matched by their nested _id rather than the (now-gone) raw id field.
+  // Step 1: Cast the reference id filters to ObjectId, targeting the *Details
+  // nested _id fields produced by the lookup stages above.
   const filterQuery = {
     ...query,
-    "student._id": query.student
+    "studentDetails._id": query.student
       ? new Types.ObjectId(query.student)
       : undefined,
-    "course._id": query.course ? new Types.ObjectId(query.course) : undefined,
-    "instructor._id": query.instructor
+    "courseDetails._id": query.course ? new Types.ObjectId(query.course) : undefined,
+    "instructorDetails._id": query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
-    "transaction._id": query.transaction
+    "transactionDetails._id": query.transaction
       ? new Types.ObjectId(query.transaction)
       : undefined,
   };
 
   // Step 2: Scope results by role - admins see everything, instructors see
-  // their own courses' enrollments, students see only their own
+  // their own courses' enrollments, students see only their own.
+  // NOTE: These $match stages run BEFORE the lookup, so they use the raw
+  // ObjectId fields on the document, not the joined *Details fields.
   const basePipeline: PipelineStage[] = [];
 
   if (user.role === Role.Instructor) {
@@ -104,10 +94,10 @@ export const getEnrollmentsService = async (
     basePipeline,
   )
     .filter([
-      "student._id",
-      "course._id",
-      "instructor._id",
-      "transaction._id",
+      "studentDetails._id",
+      "courseDetails._id",
+      "instructorDetails._id",
+      "transactionDetails._id",
       "watchedCompletely",
       "certificateIssued",
     ])
@@ -116,7 +106,7 @@ export const getEnrollmentsService = async (
     .paginate()
     .exec();
 
-  return { enrollments: data.map(toEnrollmentDetails), pagination };
+  return { enrollments: data, pagination };
 };
 
 // FUNCTION
@@ -139,5 +129,5 @@ export const getEnrollmentByIdService = async (
   // Step 2: Enforce ownership for non-admins
   verifyEnrollmentAccessOrThrow(enrollment, user);
 
-  return toEnrollmentDetails(enrollment);
+  return enrollment;
 };

@@ -182,7 +182,7 @@ export const getCoursesService = async (
 
   // making changes according to admin
   if (role && role === Role.Admin && user.id) {
-    console.log("Admin accessing courses");
+    // Admin sees all courses — no additional match stage needed
   }
 
   // making changes according to instructor
@@ -231,7 +231,7 @@ export const getCoursesService = async (
     },
     {
       $unwind: {
-        path: "$category",
+        path: "$categoryDetails",
         preserveNullAndEmptyArrays: true,
       },
     },

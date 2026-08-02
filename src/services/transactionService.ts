@@ -6,72 +6,63 @@ import APIFeatures from "@src/utils/apiFeatures";
 import { GetTransactionsQuery } from "@src/types/transactionType";
 import { verifyTransactionAccessOrThrow } from "@src/utils/transactionUtil";
 
-// Every reference is joined in place (lookup `as` reuses the original field
-// name), so the raw ObjectId is replaced with the nested document at that
-// same key. This is what lets query filters target e.g. "course._id".
+// Each reference is joined into a *Details field so the response shape is
+// already correct without any post-processing mapper.
+// The final $project drops the original ObjectId fields that are superseded
+// by the joined documents.
 const TRANSACTION_LOOKUP_STAGES: PipelineStage[] = [
   {
     $lookup: {
       from: "users",
       localField: "student",
       foreignField: "_id",
-      as: "student",
+      as: "studentDetails",
     },
   },
-  { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$studentDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "courses",
       localField: "course",
       foreignField: "_id",
-      as: "course",
+      as: "courseDetails",
     },
   },
-  { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$courseDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "users",
       localField: "instructor",
       foreignField: "_id",
-      as: "instructor",
+      as: "instructorDetails",
     },
   },
-  { $unwind: { path: "$instructor", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
+  { $project: { student: 0, course: 0, instructor: 0 } },
 ];
-
-// Renames the now-joined reference fields to *Details for the response, so
-// callers get e.g. courseDetails: {} instead of course: "<mongo id>".
-const toTransactionDetails = (doc: any) => {
-  const { student, course, instructor, ...rest } = doc;
-  return {
-    ...rest,
-    studentDetails: student,
-    courseDetails: course,
-    instructorDetails: instructor,
-  };
-};
 
 // FUNCTION
 export const getTransactionsService = async (
   query: GetTransactionsQuery,
   user: { id: string; role: string },
 ): Promise<any> => {
-  // Step 1: The reference filters need ObjectId casting. Since the base
-  // pipeline joins them in place under the same field name, they must be
-  // matched by their nested _id rather than the (now-gone) raw id field.
+  // Step 1: Cast the reference id filters to ObjectId, targeting the *Details
+  // nested _id fields produced by the lookup stages above.
   const filterQuery = {
     ...query,
-    "student._id": query.student
+    "studentDetails._id": query.student
       ? new Types.ObjectId(query.student)
       : undefined,
-    "course._id": query.course ? new Types.ObjectId(query.course) : undefined,
-    "instructor._id": query.instructor
+    "courseDetails._id": query.course ? new Types.ObjectId(query.course) : undefined,
+    "instructorDetails._id": query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
   };
 
   // Step 2: Scope results by role - admins see everything, instructors see
-  // their own courses' transactions, students see only their own
+  // their own courses' transactions, students see only their own.
+  // NOTE: These $match stages run BEFORE the lookup, so they use the raw
+  // ObjectId fields on the document, not the joined *Details fields.
   const basePipeline: PipelineStage[] = [];
 
   if (user.role === Role.Instructor) {
@@ -90,14 +81,14 @@ export const getTransactionsService = async (
     filterQuery,
     basePipeline,
   )
-    .filter(["student._id", "course._id", "instructor._id", "paymentStatus"])
+    .filter(["studentDetails._id", "courseDetails._id", "instructorDetails._id", "paymentStatus"])
     .search(["transactionId"])
     .sort()
     .projection()
     .paginate()
     .exec();
 
-  return { transactions: data.map(toTransactionDetails), pagination };
+  return { transactions: data, pagination };
 };
 
 // FUNCTION
@@ -120,5 +111,5 @@ export const getTransactionByIdService = async (
   // Step 2: Enforce ownership for non-admins
   verifyTransactionAccessOrThrow(transaction, user);
 
-  return toTransactionDetails(transaction);
+  return transaction;
 };

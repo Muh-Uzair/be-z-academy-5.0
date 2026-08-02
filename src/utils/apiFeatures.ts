@@ -136,11 +136,6 @@ class APIFeatures<T> {
   // $facet result and returns pagination metadata; otherwise returns every
   // matching document as-is, with pagination set to null.
   async exec(): Promise<{ data: T[]; pagination: Pagination | null }> {
-    console.log(
-      "pipeline ---------------------------------- \n",
-      this.pipeline,
-    );
-
     const results = await this.model.aggregate(this.pipeline);
 
     if (!this.isPaginated) {

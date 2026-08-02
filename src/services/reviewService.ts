@@ -16,50 +16,40 @@ import {
 } from "@src/utils/reviewUtil";
 
 
-// Every reference is joined in place (lookup `as` reuses the original field
-// name), so the raw ObjectId is replaced with the nested document at that
-// same key. This is what lets query filters target e.g. "course._id".
+// Each reference is joined into a *Details field so the response shape is
+// already correct without any post-processing mapper.
+// The final $project drops the original ObjectId fields that are superseded
+// by the joined documents.
 const REVIEW_LOOKUP_STAGES: PipelineStage[] = [
   {
     $lookup: {
       from: "users",
       localField: "reviewBy",
       foreignField: "_id",
-      as: "reviewBy",
+      as: "reviewByDetails",
     },
   },
-  { $unwind: { path: "$reviewBy", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$reviewByDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "courses",
       localField: "course",
       foreignField: "_id",
-      as: "course",
+      as: "courseDetails",
     },
   },
-  { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$courseDetails", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "users",
       localField: "instructor",
       foreignField: "_id",
-      as: "instructor",
+      as: "instructorDetails",
     },
   },
-  { $unwind: { path: "$instructor", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
+  { $project: { reviewBy: 0, course: 0, instructor: 0 } },
 ];
-
-// Renames the now-joined reference fields to *Details for the response, so
-// callers get e.g. courseDetails: {} instead of course: "<mongo id>".
-const toReviewDetails = (doc: any) => {
-  const { reviewBy, course, instructor, ...rest } = doc;
-  return {
-    ...rest,
-    reviewByDetails: reviewBy,
-    courseDetails: course,
-    instructorDetails: instructor,
-  };
-};
 
 // FUNCTION
 export const createReviewService = async (
@@ -107,16 +97,15 @@ export const createReviewService = async (
 export const getReviewsService = async (
   query: GetReviewsQuery,
 ): Promise<any> => {
-  // Step 1: The reference filters need ObjectId casting. Since the base
-  // pipeline joins them in place under the same field name, they must be
-  // matched by their nested _id rather than the (now-gone) raw id field.
+  // Step 1: Cast the reference id filters to ObjectId, targeting the *Details
+  // nested _id fields produced by the lookup stages above.
   const filterQuery = {
     ...query,
-    "course._id": query.course ? new Types.ObjectId(query.course) : undefined,
-    "instructor._id": query.instructor
+    "courseDetails._id": query.course ? new Types.ObjectId(query.course) : undefined,
+    "instructorDetails._id": query.instructor
       ? new Types.ObjectId(query.instructor)
       : undefined,
-    "reviewBy._id": query.reviewBy
+    "reviewByDetails._id": query.reviewBy
       ? new Types.ObjectId(query.reviewBy)
       : undefined,
   };
@@ -129,14 +118,14 @@ export const getReviewsService = async (
     filterQuery,
     basePipeline,
   )
-    .filter(["course._id", "instructor._id", "reviewBy._id", "rating"])
+    .filter(["courseDetails._id", "instructorDetails._id", "reviewByDetails._id", "rating"])
     .search(["feedback"])
     .sort()
     .projection()
     .paginate()
     .exec();
 
-  return { reviews: data.map(toReviewDetails), pagination };
+  return { reviews: data, pagination };
 };
 
 // FUNCTION
@@ -152,7 +141,7 @@ export const getReviewByIdService = async (id: string): Promise<any> => {
     throw new AppError(404, "Review not found");
   }
 
-  return toReviewDetails(review);
+  return review;
 };
 
 // FUNCTION
