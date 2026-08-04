@@ -4,6 +4,7 @@ import { stripe } from "@src/config/stripe";
 import { env } from "@src/config/env";
 import catchAsync from "@src/utils/catchAsync";
 import AppError from "@src/utils/appError";
+import sendResponse from "@src/utils/sendResponse";
 import {
   handleAccountUpdatedEventService,
   handlePaymentIntentSucceededService,
@@ -53,7 +54,10 @@ export const handleStripeWebhook = catchAsync(
       console.log("Unhandled Stripe webhook event type:", event.type);
     }
 
-    // Return a 200 response to acknowledge receipt of the event
-    res.status(200).json({ received: true });
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Webhook event received",
+      data: { received: true },
+    });
   },
 );

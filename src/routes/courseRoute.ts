@@ -51,8 +51,6 @@ courseRouter.post(
   uploadCourseThumbnail,
 );
 
-// ─── Instructor Routes ────────────────────────────────────────────────────────
-
 courseRouter.post(
   "/upload-video",
   protect,
