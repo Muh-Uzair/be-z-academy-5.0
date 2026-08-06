@@ -39,42 +39,52 @@ const baseSignupSchema = z.object({
     }),
 });
 
-export const studentSignupSchema = baseSignupSchema.extend({
-  role: z.literal("student"),
-});
+export const studentSignupSchema = baseSignupSchema
+  .extend({
+    role: z.literal("student"),
+  })
+  .strict();
 
-export const instructorSignupSchema = baseSignupSchema.extend({
-  yearsOfExperience: z
-    .number({ error: "Years of experience must be a number" })
-    .min(USER_YEARS_OF_EXPERIENCE_MIN, {
-      error: "Years of experience cannot be negative",
-    })
-    .max(USER_YEARS_OF_EXPERIENCE_MAX, {
-      error: `Years of experience cannot exceed ${USER_YEARS_OF_EXPERIENCE_MAX}`,
-    }),
-  role: z.literal("instructor"),
-});
+export const instructorSignupSchema = baseSignupSchema
+  .extend({
+    yearsOfExperience: z
+      .number({ error: "Years of experience must be a number" })
+      .min(USER_YEARS_OF_EXPERIENCE_MIN, {
+        error: "Years of experience cannot be negative",
+      })
+      .max(USER_YEARS_OF_EXPERIENCE_MAX, {
+        error: `Years of experience cannot exceed ${USER_YEARS_OF_EXPERIENCE_MAX}`,
+      }),
+    role: z.literal("instructor"),
+  })
+  .strict();
 
 export const signupSchema = z.discriminatedUnion("role", [
   studentSignupSchema,
   instructorSignupSchema,
 ]);
 
-export const verifyOtpSchema = z.object({
-  email: z.email({ error: "Invalid email address" }),
-  otp: z
-    .union([z.string(), z.number()])
-    .transform((val) => String(val))
-    .refine((val) => /^\d{6}$/.test(val), {
-      error: "OTP must be a 6 digit number",
-    }),
-});
+export const verifyOtpSchema = z
+  .object({
+    email: z.email({ error: "Invalid email address" }),
+    otp: z
+      .union([z.string(), z.number()])
+      .transform((val) => String(val))
+      .refine((val) => /^\d{6}$/.test(val), {
+        error: "OTP must be a 6 digit number",
+      }),
+  })
+  .strict();
 
-export const resendOtpSchema = z.object({
-  email: z.email({ error: "Invalid email address" }),
-});
+export const resendOtpSchema = z
+  .object({
+    email: z.email({ error: "Invalid email address" }),
+  })
+  .strict();
 
-export const signinSchema = z.object({
-  email: z.email({ error: "Invalid email address" }),
-  password: z.string().min(1, { error: "Password is required" }),
-});
+export const signinSchema = z
+  .object({
+    email: z.email({ error: "Invalid email address" }),
+    password: z.string().min(1, { error: "Password is required" }),
+  })
+  .strict();

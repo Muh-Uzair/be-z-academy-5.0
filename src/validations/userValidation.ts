@@ -10,13 +10,17 @@ import {
   USER_YEARS_OF_EXPERIENCE_MAX,
 } from "@src/constants/userConstant";
 
-export const userIdParamsSchema = z.object({
-  id: z.string().min(1, { error: "User id is required" }),
-});
+export const userIdParamsSchema = z
+  .object({
+    id: z.string().min(1, { error: "User id is required" }),
+  })
+  .strict();
 
-export const userRoleQuerySchema = z.object({
-  role: z.nativeEnum(Role).default(Role.Instructor),
-});
+export const userRoleQuerySchema = z
+  .object({
+    role: z.nativeEnum(Role).default(Role.Instructor),
+  })
+  .strict();
 
 
 export const updateUserVerificationSchema = z
@@ -30,23 +34,26 @@ export const updateUserVerificationSchema = z
       .nullable()
       .optional(),
   })
+  .strict()
   .refine((data) => data.isVerified || !!data.verificationRejectionReason, {
     error: "Rejection reason is required when rejecting a user",
     path: ["verificationRejectionReason"],
   });
 
-export const getInstructorsQuerySchema = z.object({
-  isVerified: z
-    .enum(["true", "false"])
-    .transform((val) => val === "true")
-    .optional(),
-  search: z.string().trim().min(1).optional(),
-  projection: z.string().trim().min(1).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).default(10),
-  sortBy: z.string().trim().min(1).default("createdAt"),
-  sortOrder: z.enum(["asc", "desc"]).default("desc"),
-});
+export const getInstructorsQuerySchema = z
+  .object({
+    isVerified: z
+      .enum(["true", "false"])
+      .transform((val) => val === "true")
+      .optional(),
+    search: z.string().trim().min(1).optional(),
+    projection: z.string().trim().min(1).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).default(10),
+    sortBy: z.string().trim().min(1).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict();
 
 // ─── Shared: Update Own Profile ────────────────────────────────────────────────
 // Superset of every role's editable fields; userServices.ts strips fields the
@@ -91,6 +98,7 @@ export const updateProfileSchema = z
       })
       .optional(),
   })
+  .strict()
   .refine((data) => Object.keys(data).length > 0, {
     error: "At least one field must be provided to update the profile",
   });
