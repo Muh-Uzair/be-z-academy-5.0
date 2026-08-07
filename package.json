@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "eslint . && ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/server.ts",
+    "build": "tsc && tsc-alias",
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate:up": "ts-node --transpile-only -r tsconfig-paths/register node_modules/migrate-mongo/bin/migrate-mongo.js up -f migrate-mongo-config.ts",
@@ -40,6 +41,7 @@
     "migrate-mongo": "^14.0.7",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0"
