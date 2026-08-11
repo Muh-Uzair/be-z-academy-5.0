@@ -14,13 +14,14 @@ import { getCache, setCache } from "@src/utils/cache";
 export const getEnrollments = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetEnrollmentsQuery;
-    const { id, role } = req.user!;
+    const { id: userId, role } = req.user!;
 
-    const cacheKey = `enrollments:${JSON.stringify(query)}:${role}:${id}`;
+    const cacheKey = `enrollments:${JSON.stringify(query)}:${role}:${userId}`;
 
-    const cached = await getCache<{ enrollments: unknown; pagination: unknown }>(
-      cacheKey,
-    );
+    const cached = await getCache<{
+      enrollments: unknown;
+      pagination: unknown;
+    }>(cacheKey);
 
     if (cached) {
       sendResponse(res, 200, {
@@ -32,7 +33,7 @@ export const getEnrollments = catchAsync(
     }
 
     const { enrollments, pagination } = await getEnrollmentsService(query, {
-      id,
+      userId,
       role,
     });
 
@@ -65,7 +66,7 @@ export const getEnrollmentDetails = catchAsync(
     }
 
     const enrollment = await getEnrollmentDetailsService(id, {
-      id: userId,
+      userId,
       role,
     });
 

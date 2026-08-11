@@ -53,7 +53,7 @@ const ENROLLMENT_LOOKUP_STAGES: PipelineStage[] = [
 // FUNCTION
 export const getEnrollmentsService = async (
   query: GetEnrollmentsQuery,
-  user: { id: string; role: string },
+  user: { userId: string; role: string },
 ): Promise<any> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
@@ -75,10 +75,10 @@ export const getEnrollmentsService = async (
 
   if (user.role === Role.Instructor) {
     basePipeline.push({
-      $match: { instructor: new Types.ObjectId(user.id) },
+      $match: { instructor: new Types.ObjectId(user.userId) },
     });
   } else if (user.role === Role.Student) {
-    basePipeline.push({ $match: { student: new Types.ObjectId(user.id) } });
+    basePipeline.push({ $match: { student: new Types.ObjectId(user.userId) } });
   }
 
   // Step 3: Layer the query-driven filter, sort, lookup, projection, and pagination stages.
@@ -109,7 +109,7 @@ export const getEnrollmentsService = async (
 // FUNCTION
 export const getEnrollmentDetailsService = async (
   id: string,
-  user: { id: string; role: string },
+  user: { userId: string; role: string },
 ): Promise<any> => {
   // Step 1: Fetch the enrollment with every reference joined in place
   const pipeline: PipelineStage[] = [

@@ -1,15 +1,15 @@
 import AppError from "@src/utils/appError";
 import { Role } from "@src/models/userModel";
 
-export const verifyEnrollmentAccessOrThrow = (enrollment: any, user: { id: string; role: string }) => {
-  if (user.role === Role.Instructor && enrollment.instructor?._id?.toString() !== user.id) {
+export const verifyEnrollmentAccessOrThrow = (enrollment: any, user: { userId: string; role: string }) => {
+  if (user.role === Role.Instructor && enrollment.instructor?._id?.toString() !== user.userId) {
     throw new AppError(
       403,
       "You do not have permission to access this enrollment",
     );
   }
 
-  if (user.role === Role.Student && enrollment.student?._id?.toString() !== user.id) {
+  if (user.role === Role.Student && enrollment.student?._id?.toString() !== user.userId) {
     throw new AppError(
       403,
       "You do not have permission to access this enrollment",
