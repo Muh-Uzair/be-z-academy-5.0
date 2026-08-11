@@ -30,6 +30,43 @@ import {
 } from "@src/constants/courseConstant";
 import { buildSlug, getOwnedCourseOrThrow } from "@src/utils/courseUtil";
 
+const COURSE_LOOKUP_STAGES: PipelineStage[] = [
+  {
+    $lookup: {
+      from: "users",
+      localField: "instructor",
+      foreignField: "_id",
+      as: "instructorDetails",
+    },
+  },
+  {
+    $unwind: {
+      path: "$instructorDetails",
+      preserveNullAndEmptyArrays: true,
+    },
+  },
+  {
+    $lookup: {
+      from: "categories",
+      localField: "category",
+      foreignField: "_id",
+      as: "categoryDetails",
+    },
+  },
+  {
+    $unwind: {
+      path: "$categoryDetails",
+      preserveNullAndEmptyArrays: true,
+    },
+  },
+  {
+    $project: {
+      instructor: 0,
+      category: 0,
+    },
+  },
+];
+
 // FUNCTION
 export const createCoursePaymentIntentService = async (
   studentId: string,
@@ -61,7 +98,11 @@ export const createCoursePaymentIntentService = async (
     role: Role.Instructor,
   });
 
-  if (!instructor || !instructor.stripeAccountId || !instructor.stripeOnboardingComplete) {
+  if (
+    !instructor ||
+    !instructor.stripeAccountId ||
+    !instructor.stripeOnboardingComplete
+  ) {
     throw new AppError(
       400,
       "This course's instructor has not completed payment onboarding yet",
@@ -218,43 +259,6 @@ export const getCoursesService = async (
       },
     });
   }
-
-  const COURSE_LOOKUP_STAGES: PipelineStage[] = [
-    {
-      $lookup: {
-        from: "users",
-        localField: "instructor",
-        foreignField: "_id",
-        as: "instructorDetails",
-      },
-    },
-    {
-      $unwind: {
-        path: "$instructorDetails",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $lookup: {
-        from: "categories",
-        localField: "category",
-        foreignField: "_id",
-        as: "categoryDetails",
-      },
-    },
-    {
-      $unwind: {
-        path: "$categoryDetails",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $project: {
-        instructor: 0,
-        category: 0,
-      },
-    },
-  ];
 
   // Step 4: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
   // Cast the instructor id filter to ObjectId targeting the raw field so MongoDB
