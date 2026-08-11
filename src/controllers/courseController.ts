@@ -23,6 +23,12 @@ import {
   GetCoursesQuery,
 } from "@src/types/courseType";
 import sendResponse from "@src/utils/sendResponse";
+import {
+  getCache,
+  setCache,
+  deleteCache,
+  deleteCacheByPattern,
+} from "@src/utils/cache";
 
 export const uploadCourseThumbnail = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -61,6 +67,8 @@ export const createCourse = catchAsync(
 
     const course = await createCourseService(instructorId, body);
 
+    await deleteCacheByPattern("courses:*");
+
     sendResponse(res, 201, {
       status: "success",
       message: "Course created successfully, it will be reviewed by an Admin",
@@ -73,7 +81,24 @@ export const getCourses = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetCoursesQuery;
 
+    const cacheKey = `courses:${JSON.stringify(query)}:${req.user?.role ?? "guest"}:${req.user?.id ?? "guest"}`;
+
+    const cached = await getCache<{ courses: unknown; pagination: unknown }>(
+      cacheKey,
+    );
+
+    if (cached) {
+      sendResponse(res, 200, {
+        status: "success",
+        message: "Courses fetched successfully",
+        data: cached,
+      });
+      return;
+    }
+
     const { courses, pagination } = await getCoursesService(query, req.user);
+
+    await setCache(cacheKey, { courses, pagination });
 
     sendResponse(res, 200, {
       status: "success",
@@ -87,7 +112,22 @@ export const getCourseDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
 
+    const cacheKey = `coursesDetails:${id}`;
+
+    const cachedCourse = await getCache<unknown>(cacheKey);
+
+    if (cachedCourse) {
+      sendResponse(res, 200, {
+        status: "success",
+        message: "Course details fetched successfully",
+        data: { course: cachedCourse },
+      });
+      return;
+    }
+
     const course = await getCourseDetailsService(id);
+
+    await setCache(cacheKey, course);
 
     sendResponse(res, 200, {
       status: "success",
@@ -105,6 +145,9 @@ export const updateCourse = catchAsync(
 
     const course = await updateCourseService(id, instructorId, body);
 
+    await deleteCacheByPattern("courses:*");
+    await deleteCache(`coursesDetails:${id}`);
+
     sendResponse(res, 200, {
       status: "success",
       message: "Course updated successfully",
@@ -119,6 +162,9 @@ export const updateCourseVerification = catchAsync(
     const body = req.validatedBody as UpdateCourseVerificationBody;
 
     const course = await updateCourseVerificationService(id, body);
+
+    await deleteCacheByPattern("courses:*");
+    await deleteCache(`coursesDetails:${id}`);
 
     sendResponse(res, 200, {
       status: "success",
@@ -152,6 +198,9 @@ export const deleteCourse = catchAsync(
 
     await deleteCourseService(id, instructorId);
 
+    await deleteCacheByPattern("courses:*");
+    await deleteCache(`coursesDetails:${id}`);
+
     sendResponse(res, 200, {
       status: "success",
       message: "Course deleted successfully",
@@ -169,7 +218,8 @@ export const requestCourseRefund = catchAsync(
 
     sendResponse(res, 200, {
       status: "success",
-      message: "Refund initiated successfully. Your money will be returned within 5-10 business days",
+      message:
+        "Refund initiated successfully. Your money will be returned within 5-10 business days",
       data: null,
     });
   },
@@ -180,7 +230,10 @@ export const getCourseCompletionStatus = catchAsync(
     const { id } = req.validatedParams as CourseIdParams;
     const studentId = req.user!.id;
 
-    const completionStatus = await getCourseCompletionStatusService(studentId, id);
+    const completionStatus = await getCourseCompletionStatusService(
+      studentId,
+      id,
+    );
 
     sendResponse(res, 200, {
       status: "success",
