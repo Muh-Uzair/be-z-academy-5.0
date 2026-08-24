@@ -8,13 +8,18 @@ import {
   rotateTokenService,
 } from "@src/services/authService";
 import { getUserDetailsService } from "@src/services/userService";
-import { SignupBody, VerifyOtpBody, ResendOtpBody, SigninBody } from "@src/types/authType";
+import {
+  SignupBody,
+  VerifyOtpBody,
+  ResendOtpBody,
+  SigninBody,
+} from "@src/types/authType";
 import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
 import { setAuthCookies } from "@src/utils/cookie";
 import { getCache, setCache, deleteCacheByPattern } from "@src/utils/cache";
 
-export const  signup = catchAsync(
+export const signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.validatedBody as SignupBody;
 

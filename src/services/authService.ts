@@ -15,7 +15,9 @@ import {
 } from "@src/utils/jwt";
 
 // FUNCTION
-export const signupService = async (body: SignupBody): Promise<any> => {
+export const signupService = async (
+  body: SignupBody,
+): Promise<null> => {
   // Step 1: Check if email already exists
   const existingUser = await UserModel.findOne({ email: body.email });
   if (existingUser) {
@@ -61,7 +63,9 @@ export const signupService = async (body: SignupBody): Promise<any> => {
 };
 
 // FUNCTION
-export const verifyOtpService = async (body: VerifyOtpBody): Promise<any> => {
+export const verifyOtpService = async (
+  body: VerifyOtpBody,
+): Promise<null> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
   if (!user) {
@@ -93,7 +97,9 @@ export const verifyOtpService = async (body: VerifyOtpBody): Promise<any> => {
 };
 
 // FUNCTION
-export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
+export const resendOtpService = async (
+  body: ResendOtpBody,
+): Promise<null> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
   if (!user) {
@@ -127,9 +133,13 @@ export const resendOtpService = async (body: ResendOtpBody): Promise<any> => {
 };
 
 // FUNCTION
-export const signinService = async (body: SigninBody): Promise<any> => {
+export const signinService = async (
+  body: SigninBody,
+): Promise<{ accessToken: string; refreshToken: string }> => {
   // Step 1: Find user by email
-  const user = await UserModel.findOne({ email: body.email }).select("+password");
+  const user = await UserModel.findOne({ email: body.email }).select(
+    "+password",
+  );
   if (!user) {
     throw new AppError(401, "Invalid email or password");
   }
@@ -160,7 +170,7 @@ export const signinService = async (body: SigninBody): Promise<any> => {
 // FUNCTION
 export const rotateTokenService = async (
   refreshToken: string | undefined,
-): Promise<any> => {
+): Promise<{ accessToken: string; refreshToken: string }> => {
   // Step 1: Ensure refresh token was provided
   if (!refreshToken) {
     throw new AppError(401, "Refresh token is missing");
