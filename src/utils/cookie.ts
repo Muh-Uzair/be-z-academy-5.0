@@ -26,4 +26,20 @@ const setAuthCookies = (
   });
 };
 
-export { setAuthCookies };
+const clearAuthCookies = (res: Response): void => {
+  const isProduction = env.NODE_ENV === "production";
+
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "strict",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "strict",
+  });
+};
+
+export { setAuthCookies, clearAuthCookies };

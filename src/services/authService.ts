@@ -13,6 +13,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
 } from "@src/utils/jwt";
+import { USER_PUBLIC_PROJECTION } from "@src/services/userService";
 
 // FUNCTION
 export const signupService = async (body: SignupBody): Promise<null> => {
@@ -138,12 +139,17 @@ export const signinService = async (
     email: string;
     role: "admin" | "instructor" | "student";
     avatar: string | null;
+    bio: string;
+    highestEducation: string;
+    yearsOfExperience: number;
     isVerified: boolean;
+    createdAt: Date;
+    updatedAt: Date;
   };
 }> => {
-  // Step 1: Find user by email
+  // Step 1: Find user by email (select password explicitly; public fields via projection)
   const user = await UserModel.findOne({ email: body.email }).select(
-    "+password",
+    `+password ${USER_PUBLIC_PROJECTION}`,
   );
   if (!user) {
     throw new AppError(401, "Invalid email or password");
@@ -178,7 +184,12 @@ export const signinService = async (
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      bio: user.bio,
+      highestEducation: user.highestEducation,
+      yearsOfExperience: user.yearsOfExperience,
       isVerified: user.isVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     },
   };
 };

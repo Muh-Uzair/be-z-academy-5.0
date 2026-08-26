@@ -24,7 +24,7 @@ export const getInstructorsService = async (
     basePipeline,
   )
     .filter(["isVerified"])
-  .search(["fullName", "email"])
+    .search(["fullName", "email"])
     .sort()
     .projection()
     .paginate()
@@ -33,13 +33,20 @@ export const getInstructorsService = async (
   return { instructors, pagination };
 };
 
+// Projection used for the current-user response — must stay in sync with the
+// signin user shape so both endpoints return identical data.
+const USER_PUBLIC_PROJECTION =
+  "_id fullName email role avatar bio highestEducation yearsOfExperience isVerified createdAt updatedAt";
+
 // FUNCTION
 export const getUserDetailsService = async (
   id: string,
   role: Role,
 ): Promise<any> => {
-  // Step 1: Find the user, scoped to the expected role
-  const user = await UserModel.findOne({ _id: id, role });
+  // Step 1: Find the user, scoped to the expected role, selecting only public fields
+  const user = await UserModel.findOne({ _id: id, role }).select(
+    USER_PUBLIC_PROJECTION,
+  );
 
   // Step 2: Ensure it exists
   if (!user) {
@@ -48,6 +55,8 @@ export const getUserDetailsService = async (
 
   return user;
 };
+
+export { USER_PUBLIC_PROJECTION };
 
 // FUNCTION
 export const updateUserService = async (

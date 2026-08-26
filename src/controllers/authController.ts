@@ -16,7 +16,7 @@ import {
 } from "@src/types/authType";
 import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
-import { setAuthCookies } from "@src/utils/cookie";
+import { setAuthCookies, clearAuthCookies } from "@src/utils/cookie";
 
 export const signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -106,6 +106,18 @@ export const rotateToken = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Token rotated successfully",
+      data: null,
+    });
+  },
+);
+
+export const signout = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    clearAuthCookies(res);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Signed out successfully",
       data: null,
     });
   },

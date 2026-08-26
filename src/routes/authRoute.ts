@@ -6,6 +6,7 @@ import {
   signin,
   rotateToken,
   getMe,
+  signout,
 } from "@src/controllers/authController";
 import validation from "@src/middlewares/validation";
 import protect from "@src/middlewares/protect";
@@ -34,6 +35,7 @@ authRouter.post(
   resendOtp,
 );
 authRouter.post("/signin", validation(signinSchema, "body"), signin);
+authRouter.post("/signout", signout);
 authRouter.post("/rotate-token", rotateToken);
 authRouter.get("/me", protect, getMe);
 

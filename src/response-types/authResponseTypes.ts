@@ -28,34 +28,28 @@ export type ApiErrorResponse = {
 // cookies instead of the JSON response body.
 export type EmptyAuthResponseData = null;
 
-// User fields currently returned from GET /me. MongoDB ObjectIds and dates
-// are serialized by the API, so the frontend receives strings. Note: the
-// current backend does not strip otp, otpExpires, or __v from this response.
-export interface PublicUser {
+// Unified public user shape returned by both POST /signin and GET /me.
+// Sensitive or internal fields (password, otp, otpExpires, __v,
+// stripeAccountId, stripeOnboardingComplete, verificationRejectionReason,
+// lastVerificationRejectedAt) are never included.
+export interface AuthUser {
   _id: string;
   fullName: string;
   email: string;
+  role: "admin" | "instructor" | "student";
+  avatar: string | null;
   bio: string;
   highestEducation: string;
   yearsOfExperience: number;
-  avatar: string | null;
   isVerified: boolean;
-  verificationRejectionReason: string | null;
-  lastVerificationRejectedAt: string | null;
-  otp: string | null;
-  otpExpires: string | null;
-  role: "admin" | "instructor" | "student";
-  stripeAccountId: string | null;
-  stripeOnboardingComplete: boolean;
   createdAt: string;
   updatedAt: string;
-  __v: number;
 }
 
 // API 6: GET /api/v1/auth/me
 // Response: { status, message, data: { user } }
 export interface GetMeResponseData {
-  user: PublicUser;
+  user: AuthUser;
 }
 
 // API 1: POST /api/v1/auth/signup
@@ -110,17 +104,8 @@ export type ResendOtpResponse =
     >
   | ApiErrorResponse;
 
-export interface SigninUser {
-  _id: string;
-  fullName: string;
-  email: string;
-  role: "admin" | "instructor" | "student";
-  avatar: string | null;
-  isVerified: boolean;
-}
-
 export interface SigninResponseData {
-  user: SigninUser;
+  user: AuthUser;
 }
 
 // API 4: POST /api/v1/auth/signin
@@ -136,7 +121,12 @@ export interface SigninResponseData {
 //       "email": "john@example.com",
 //       "role": "student",
 //       "avatar": null,
-//       "isVerified": true
+//       "bio": "Computer science student",
+//       "highestEducation": "Bachelor's degree",
+//       "yearsOfExperience": 0,
+//       "isVerified": true,
+//       "createdAt": "2026-08-25T10:00:00.000Z",
+//       "updatedAt": "2026-08-25T10:00:00.000Z"
 //     }
 //   }
 // }
@@ -169,14 +159,12 @@ export type RotateTokenResponse =
 //       "_id": "66d1a1b2c3d4e5f678901234",
 //       "fullName": "John Doe",
 //       "email": "john@example.com",
-//       "bio": "Software engineering student",
-//       "highestEducation": "Bachelor's degree",
-//       "yearsOfExperience": 2,
-//       "avatar": null,
-//       "isVerified": true,
 //       "role": "student",
-//       "stripeAccountId": null,
-//       "stripeOnboardingComplete": false,
+//       "avatar": null,
+//       "bio": "Computer science student",
+//       "highestEducation": "Bachelor's degree",
+//       "yearsOfExperience": 0,
+//       "isVerified": true,
 //       "createdAt": "2026-08-25T10:00:00.000Z",
 //       "updatedAt": "2026-08-25T10:00:00.000Z"
 //     }
@@ -187,4 +175,17 @@ export type GetMeResponse =
       GetMeResponseData,
       "Current user fetched successfully"
     >
+  | ApiErrorResponse;
+
+// API 7: POST /api/v1/auth/signout
+// Status: 200
+// Example response:
+// {
+//   "status": "success",
+//   "message": "Signed out successfully",
+//   "data": null
+// }
+// Side effect: clears accessToken and refreshToken HTTP-only cookies.
+export type SignoutResponse =
+  | SuccessApiResponse<EmptyAuthResponseData, "Signed out successfully">
   | ApiErrorResponse;
