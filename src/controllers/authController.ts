@@ -17,17 +17,12 @@ import {
 import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
 import { setAuthCookies } from "@src/utils/cookie";
-import { getCache, setCache, deleteCacheByPattern } from "@src/utils/cache";
 
 export const signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.validatedBody as SignupBody;
 
     const data = await signupService(body);
-
-    if (body.role === "instructor") {
-      await deleteCacheByPattern("instructors:*");
-    }
 
     const message =
       body.role === "instructor"
@@ -88,22 +83,8 @@ export const signin = catchAsync(
 export const getMe = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id, role } = req.user!;
-    const cacheKey = `userDetails:${id}`;
-
-    const cachedUser = await getCache<unknown>(cacheKey);
-
-    if (cachedUser) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: "Current user fetched successfully",
-        data: { user: cachedUser },
-      });
-      return;
-    }
 
     const user = await getUserDetailsService(id, role as Role);
-
-    await setCache(cacheKey, user);
 
     sendResponse(res, 200, {
       status: "success",

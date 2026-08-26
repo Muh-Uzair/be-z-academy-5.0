@@ -25,7 +25,6 @@ const envSchema = z.object({
   STRIPE_PUBLISHABLE_KEY: z.string(),
   STRIPE_SECRET_KEY: z.string(),
   STRIPE_WEBHOOK_SECRET: z.string(),
-  REDIS_URL: z.string(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

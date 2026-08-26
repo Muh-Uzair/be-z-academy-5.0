@@ -14,7 +14,6 @@ import {
   ReviewIdParams,
 } from "@src/types/reviewType";
 import sendResponse from "@src/utils/sendResponse";
-import { getCache, setCache, deleteCache, deleteCacheByPattern } from "@src/utils/cache";
 
 export const createReview = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
@@ -22,8 +21,6 @@ export const createReview = catchAsync(
     const body = req.validatedBody as CreateReviewBody;
 
     const review = await createReviewService(id, body);
-
-    await deleteCacheByPattern("reviews:*");
 
     sendResponse(res, 201, {
       status: "success",
@@ -37,22 +34,7 @@ export const getReviews = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetReviewsQuery;
 
-    const cacheKey = `reviews:${JSON.stringify(query)}`;
-
-    const cached = await getCache<{ reviews: unknown; pagination: unknown }>(cacheKey);
-
-    if (cached) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: "Reviews fetched successfully",
-        data: cached,
-      });
-      return;
-    }
-
     const { reviews, pagination } = await getReviewsService(query);
-
-    await setCache(cacheKey, { reviews, pagination });
 
     sendResponse(res, 200, {
       status: "success",
@@ -66,22 +48,7 @@ export const getReviewDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as ReviewIdParams;
 
-    const cacheKey = `reviewDetails:${id}`;
-
-    const cachedReview = await getCache<unknown>(cacheKey);
-
-    if (cachedReview) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: "Review details fetched successfully",
-        data: { review: cachedReview },
-      });
-      return;
-    }
-
     const review = await getReviewDetailsService(id);
-
-    await setCache(cacheKey, review);
 
     sendResponse(res, 200, {
       status: "success",
@@ -99,9 +66,6 @@ export const updateReview = catchAsync(
 
     const review = await updateReviewService(id, studentId, body);
 
-    await deleteCacheByPattern("reviews:*");
-    await deleteCache(`reviewDetails:${id}`);
-
     sendResponse(res, 200, {
       status: "success",
       message: "Review updated successfully",
@@ -116,9 +80,6 @@ export const deleteReview = catchAsync(
     const { id: userId, role } = req.user!;
 
     await deleteReviewService(id, { id: userId, role });
-
-    await deleteCacheByPattern("reviews:*");
-    await deleteCache(`reviewDetails:${id}`);
 
     sendResponse(res, 200, {
       status: "success",

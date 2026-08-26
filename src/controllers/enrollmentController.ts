@@ -9,35 +9,16 @@ import {
   EnrollmentIdParams,
 } from "@src/types/enrollmentType";
 import sendResponse from "@src/utils/sendResponse";
-import { getCache, setCache } from "@src/utils/cache";
 
 export const getEnrollments = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetEnrollmentsQuery;
     const { id: userId, role } = req.user!;
 
-    const cacheKey = `enrollments:${JSON.stringify(query)}:${role}:${userId}`;
-
-    const cached = await getCache<{
-      enrollments: unknown;
-      pagination: unknown;
-    }>(cacheKey);
-
-    if (cached) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: "Enrollments fetched successfully",
-        data: cached,
-      });
-      return;
-    }
-
     const { enrollments, pagination } = await getEnrollmentsService(query, {
       userId,
       role,
     });
-
-    await setCache(cacheKey, { enrollments, pagination });
 
     sendResponse(res, 200, {
       status: "success",
@@ -52,25 +33,10 @@ export const getEnrollmentDetails = catchAsync(
     const { id } = req.validatedParams as EnrollmentIdParams;
     const { id: userId, role } = req.user!;
 
-    const cacheKey = `enrollmentDetails:${id}:${role}:${userId}`;
-
-    const cachedEnrollment = await getCache<unknown>(cacheKey);
-
-    if (cachedEnrollment) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: "Enrollment details fetched successfully",
-        data: { enrollment: cachedEnrollment },
-      });
-      return;
-    }
-
     const enrollment = await getEnrollmentDetailsService(id, {
       userId,
       role,
     });
-
-    await setCache(cacheKey, enrollment);
 
     sendResponse(res, 200, {
       status: "success",

@@ -15,28 +15,12 @@ import {
   UserRoleQuery,
 } from "@src/types/userType";
 import sendResponse from "@src/utils/sendResponse";
-import { getCache, setCache, deleteCache, deleteCacheByPattern } from "@src/utils/cache";
 
 export const getInstructors = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetInstructorsQuery;
 
-    const cacheKey = `instructors:${JSON.stringify(query)}`;
-
-    const cached = await getCache<{ instructors: unknown; pagination: unknown }>(cacheKey);
-
-    if (cached) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: "Instructors fetched successfully",
-        data: cached,
-      });
-      return;
-    }
-
     const { instructors, pagination } = await getInstructorsService(query);
-
-    await setCache(cacheKey, { instructors, pagination });
 
     sendResponse(res, 200, {
       status: "success",
@@ -51,22 +35,7 @@ export const getUserDetails = catchAsync(
     const { id } = req.validatedParams as UserIdParams;
     const { role } = req.validatedQuery as UserRoleQuery;
 
-    const cacheKey = `userDetails:${id}`;
-
-    const cachedUser = await getCache<unknown>(cacheKey);
-
-    if (cachedUser) {
-      sendResponse(res, 200, {
-        status: "success",
-        message: `${role.charAt(0).toUpperCase() + role.slice(1)} details fetched successfully`,
-        data: { user: cachedUser },
-      });
-      return;
-    }
-
     const user = await getUserDetailsService(id, role);
-
-    await setCache(cacheKey, user);
 
     sendResponse(res, 200, {
       status: "success",
@@ -97,11 +66,6 @@ export const updateProfile = catchAsync(
 
     const user = await updateOwnProfileService(id, role, body);
 
-    await deleteCache(`userDetails:${id}`);
-    if (role === "instructor") {
-      await deleteCacheByPattern("instructors:*");
-    }
-
     sendResponse(res, 200, {
       status: "success",
       message: "Profile updated successfully",
@@ -121,11 +85,6 @@ export const updateUserVerification = catchAsync(
       role,
       body,
     );
-
-    await deleteCache(`userDetails:${id}`);
-    if (role === "instructor") {
-      await deleteCacheByPattern("instructors:*");
-    }
 
     sendResponse(res, 200, {
       status: "success",
