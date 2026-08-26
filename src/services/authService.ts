@@ -15,9 +15,7 @@ import {
 } from "@src/utils/jwt";
 
 // FUNCTION
-export const signupService = async (
-  body: SignupBody,
-): Promise<null> => {
+export const signupService = async (body: SignupBody): Promise<null> => {
   // Step 1: Check if email already exists
   const existingUser = await UserModel.findOne({ email: body.email });
   if (existingUser) {
@@ -63,9 +61,7 @@ export const signupService = async (
 };
 
 // FUNCTION
-export const verifyOtpService = async (
-  body: VerifyOtpBody,
-): Promise<null> => {
+export const verifyOtpService = async (body: VerifyOtpBody): Promise<null> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
   if (!user) {
@@ -97,9 +93,7 @@ export const verifyOtpService = async (
 };
 
 // FUNCTION
-export const resendOtpService = async (
-  body: ResendOtpBody,
-): Promise<null> => {
+export const resendOtpService = async (body: ResendOtpBody): Promise<null> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email });
   if (!user) {
@@ -135,7 +129,18 @@ export const resendOtpService = async (
 // FUNCTION
 export const signinService = async (
   body: SigninBody,
-): Promise<{ accessToken: string; refreshToken: string }> => {
+): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    _id: string;
+    fullName: string;
+    email: string;
+    role: "admin" | "instructor" | "student";
+    avatar: string | null;
+    isVerified: boolean;
+  };
+}> => {
   // Step 1: Find user by email
   const user = await UserModel.findOne({ email: body.email }).select(
     "+password",
@@ -164,7 +169,18 @@ export const signinService = async (
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
-  return { accessToken, refreshToken };
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      _id: user._id.toString(),
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      isVerified: user.isVerified,
+    },
+  };
 };
 
 // FUNCTION

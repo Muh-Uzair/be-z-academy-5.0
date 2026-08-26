@@ -24,8 +24,8 @@ export type ApiErrorResponse = {
 };
 
 // Used by endpoints whose successful response body has `data: null`.
-// For sign-in and token rotation, tokens are sent as HTTP-only cookies,
-// never in the JSON response body.
+// Cookie-based auth flows such as token rotation keep tokens in HTTP-only
+// cookies instead of the JSON response body.
 export type EmptyAuthResponseData = null;
 
 // User fields currently returned from GET /me. MongoDB ObjectIds and dates
@@ -110,17 +110,39 @@ export type ResendOtpResponse =
     >
   | ApiErrorResponse;
 
+export interface SigninUser {
+  _id: string;
+  fullName: string;
+  email: string;
+  role: "admin" | "instructor" | "student";
+  avatar: string | null;
+  isVerified: boolean;
+}
+
+export interface SigninResponseData {
+  user: SigninUser;
+}
+
 // API 4: POST /api/v1/auth/signin
 // Status: 200
 // Example response:
 // {
 //   "status": "success",
 //   "message": "Signed in successfully",
-//   "data": null
+//   "data": {
+//     "user": {
+//       "_id": "66d1a1b2c3d4e5f678901234",
+//       "fullName": "John Doe",
+//       "email": "john@example.com",
+//       "role": "student",
+//       "avatar": null,
+//       "isVerified": true
+//     }
+//   }
 // }
 // Side effect: sets accessToken and refreshToken HTTP-only cookies.
 export type SigninResponse =
-  | SuccessApiResponse<EmptyAuthResponseData, "Signed in successfully">
+  | SuccessApiResponse<SigninResponseData, "Signed in successfully">
   | ApiErrorResponse;
 
 // API 5: POST /api/v1/auth/rotate-token

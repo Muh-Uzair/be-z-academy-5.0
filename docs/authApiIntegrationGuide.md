@@ -322,6 +322,7 @@ HTTP `200`
 1. Finds the account and compares the password with its stored hash.
 2. Requires the account to be verified.
 3. On success, sends an `accessToken` cookie (7 days) and a `refreshToken` cookie (30 days).
+4. Returns a minimal signed-in user summary in `data.user` so the frontend can update its local auth state immediately without an extra `/me` call.
 
 ### Success response
 
@@ -331,7 +332,16 @@ HTTP `200`
 {
   "status": "success",
   "message": "Signed in successfully",
-  "data": null
+  "data": {
+    "user": {
+      "_id": "66d1a1b2c3d4e5f678901234",
+      "fullName": "John Doe",
+      "email": "john@example.com",
+      "role": "student",
+      "avatar": null,
+      "isVerified": true
+    }
+  }
 }
 ```
 

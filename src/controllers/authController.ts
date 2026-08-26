@@ -20,6 +20,7 @@ import { setAuthCookies } from "@src/utils/cookie";
 
 export const signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
+    
     const body = req.validatedBody as SignupBody;
 
     const data = await signupService(body);
@@ -69,13 +70,13 @@ export const signin = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.validatedBody as SigninBody;
 
-    const { accessToken, refreshToken } = await signinService(body);
+    const { accessToken, refreshToken, user } = await signinService(body);
     setAuthCookies(res, accessToken, refreshToken);
 
     sendResponse(res, 200, {
       status: "success",
       message: "Signed in successfully",
-      data: null,
+      data: { user },
     });
   },
 );
