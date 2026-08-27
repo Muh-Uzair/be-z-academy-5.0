@@ -6,6 +6,8 @@ import {
   resendOtpService,
   signinService,
   rotateTokenService,
+  forgetPasswordService,
+  resetPasswordService,
 } from "@src/services/authService";
 import { getUserDetailsService } from "@src/services/userService";
 import {
@@ -13,6 +15,8 @@ import {
   VerifyOtpBody,
   ResendOtpBody,
   SigninBody,
+  ForgetPasswordBody,
+  ResetPasswordBody,
 } from "@src/types/authType";
 import { Role } from "@src/models/userModel";
 import sendResponse from "@src/utils/sendResponse";
@@ -77,6 +81,34 @@ export const signin = catchAsync(
       status: "success",
       message: "Signed in successfully",
       data: { user },
+    });
+  },
+);
+
+export const forgetPassword = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const body = req.validatedBody as ForgetPasswordBody;
+
+    const data = await forgetPasswordService(body);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "OTP sent successfully, please check your email",
+      data,
+    });
+  },
+);
+
+export const resetPassword = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const body = req.validatedBody as ResetPasswordBody;
+
+    const data = await resetPasswordService(body);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Password reset successfully",
+      data,
     });
   },
 );

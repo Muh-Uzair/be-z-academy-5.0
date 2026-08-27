@@ -3,6 +3,8 @@ import {
   VerifyOtpBody,
   ResendOtpBody,
   SigninBody,
+  ForgetPasswordBody,
+  ResetPasswordBody,
 } from "@src/types/authType";
 import AppError from "@src/utils/appError";
 import UserModel from "@src/models/userModel";
@@ -192,6 +194,65 @@ export const signinService = async (
       updatedAt: user.updatedAt,
     },
   };
+};
+
+// FUNCTION
+export const forgetPasswordService = async (
+  body: ForgetPasswordBody,
+): Promise<null> => {
+  // Step 1: Find user by email
+  const user = await UserModel.findOne({ email: body.email });
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  // Step 2: Generate 6-digit random OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Step 3: Calculate OTP expiry (10 minutes from now)
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+  // Step 4: Update user
+  user.otp = otp;
+  user.otpExpires = otpExpires;
+  await user.save();
+
+  // Step 5: Send OTP via email
+  await sendOtpEmail({
+    email: user.email,
+    otp,
+    fullName: user.fullName,
+  });
+
+  return null;
+};
+
+// FUNCTION
+export const resetPasswordService = async (
+  body: ResetPasswordBody,
+): Promise<null> => {
+  // Step 1: Find user by OTP
+  const user = await UserModel.findOne({ otp: body.otp });
+  if (!user) {
+    throw new AppError(400, "Invalid OTP");
+  }
+
+  // Step 2: Check if OTP is expired
+  if (!user.otpExpires || user.otpExpires.getTime() < Date.now()) {
+    throw new AppError(400, "OTP has expired");
+  }
+
+  // Step 3: Hash the new password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(body.newPassword, salt);
+
+  // Step 4: Update password and clear OTP fields
+  user.password = hashedPassword;
+  user.otp = null;
+  user.otpExpires = null;
+  await user.save();
+
+  return null;
 };
 
 // FUNCTION

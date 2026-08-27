@@ -189,3 +189,30 @@ export type GetMeResponse =
 export type SignoutResponse =
   | SuccessApiResponse<EmptyAuthResponseData, "Signed out successfully">
   | ApiErrorResponse;
+
+// API 8: POST /api/v1/auth/forget-password
+// Status: 200
+// Example response:
+// {
+//   "status": "success",
+//   "message": "OTP sent successfully, please check your email",
+//   "data": null
+// }
+export type ForgetPasswordResponse =
+  | SuccessApiResponse<
+      EmptyAuthResponseData,
+      "OTP sent successfully, please check your email"
+    >
+  | ApiErrorResponse;
+
+// API 9: POST /api/v1/auth/reset-password
+// Status: 200
+// Example response:
+// {
+//   "status": "success",
+//   "message": "Password reset successfully",
+//   "data": null
+// }
+export type ResetPasswordResponse =
+  | SuccessApiResponse<EmptyAuthResponseData, "Password reset successfully">
+  | ApiErrorResponse;

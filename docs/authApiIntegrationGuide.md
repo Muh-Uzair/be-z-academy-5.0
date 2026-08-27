@@ -437,7 +437,89 @@ HTTP `200`
 | 401 | `Invalid or expired access token` | Access-token cookie cannot be verified. |
 | 404 | `<role> not found` | The user referenced by the token no longer exists or no longer has that role. |
 
-## API 7 — Sign out
+## API 7 — Forget password
+
+`POST /api/v1/auth/forget-password`
+
+Sends a six-digit OTP to an existing user's email so they can reset their password. Works for any role.
+
+### Request body
+
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+### Processing
+
+1. Finds the user by email.
+2. Generates a new six-digit OTP, overwriting any existing OTP, that expires after 10 minutes.
+3. Sends the OTP to the user's email.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "OTP sent successfully, please check your email",
+  "data": null
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | Email is invalid or an extra field is sent. |
+| 404 | `User not found` | No account exists for the email. |
+
+## API 8 — Reset password
+
+`POST /api/v1/auth/reset-password`
+
+Sets a new password using the OTP sent by forget-password. No login cookie or email is needed; the user is identified by the OTP.
+
+### Request body
+
+```json
+{
+  "otp": "123456",
+  "newPassword": "newsecurepass123"
+}
+```
+
+`otp` may be sent as a six-digit string or number. It is converted to a string by the backend. Use a string on the frontend to preserve leading zeroes.
+
+### Processing
+
+1. Finds the user whose stored OTP matches the submitted OTP.
+2. Checks that the OTP has not expired.
+3. Hashes and saves the new password, then clears the OTP fields.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Password reset successfully",
+  "data": null
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | OTP is not exactly six digits, or `newPassword` is missing/too short, or an extra field is sent. |
+| 400 | `Invalid OTP` | No user has this OTP set. |
+| 400 | `OTP has expired` | OTP is older than 10 minutes. |
+
+## API 9 — Sign out
 
 `POST /api/v1/auth/signout`
 
@@ -461,4 +543,4 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports and exports `SignupResponse`, `VerifyOtpResponse`, `ResendOtpResponse`, `SigninResponse`, `RotateTokenResponse`, `GetMeResponse`, `SignoutResponse`, and the shared `AuthUser` interface used by both `SigninResponse` and `GetMeResponse`.
+Copy [`src/response-types/authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports and exports `SignupResponse`, `VerifyOtpResponse`, `ResendOtpResponse`, `SigninResponse`, `RotateTokenResponse`, `GetMeResponse`, `SignoutResponse`, `ForgetPasswordResponse`, `ResetPasswordResponse`, and the shared `AuthUser` interface used by both `SigninResponse` and `GetMeResponse`.

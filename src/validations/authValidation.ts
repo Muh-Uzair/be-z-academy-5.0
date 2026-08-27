@@ -88,3 +88,23 @@ export const signinSchema = z
     password: z.string().min(1, { error: "Password is required" }),
   })
   .strict();
+
+export const forgetPasswordSchema = z
+  .object({
+    email: z.email({ error: "Invalid email address" }),
+  })
+  .strict();
+
+export const resetPasswordSchema = z
+  .object({
+    otp: z
+      .union([z.string(), z.number()])
+      .transform((val) => String(val))
+      .refine((val) => /^\d{6}$/.test(val), {
+        error: "OTP must be a 6 digit number",
+      }),
+    newPassword: z.string().min(USER_PASSWORD_MIN_LENGTH, {
+      error: `Password must be at least ${USER_PASSWORD_MIN_LENGTH} characters`,
+    }),
+  })
+  .strict();
