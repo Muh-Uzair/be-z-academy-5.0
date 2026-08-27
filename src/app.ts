@@ -17,6 +17,7 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import { clean as xssClean } from "xss-clean/lib/xss";
 import hpp from "hpp";
+import { connectDB } from "@src/config/db";
 
 // ─── Process-level Safety Nets ────────────────────────────────────────────────
 
@@ -40,6 +41,11 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(morgan("dev"));
+
+// Vercel invokes the exported app directly, so initialize MongoDB before handling requests.
+app.use((_req, _res, next) => {
+  connectDB().then(() => next(), next);
+});
 
 // Stripe webhook needs the raw request body for signature verification, so
 // it must be mounted before the JSON body parser consumes/parses it.
