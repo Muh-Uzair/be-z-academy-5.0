@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   signupService,
   verifyOtpService,
@@ -8,8 +8,8 @@ import {
   rotateTokenService,
   forgetPasswordService,
   resetPasswordService,
-} from "@src/services/authService";
-import { getUserDetailsService } from "@src/services/userService";
+} from "../services/authService";
+import { getUserDetailsService } from "../services/userService";
 import {
   SignupBody,
   VerifyOtpBody,
@@ -17,10 +17,10 @@ import {
   SigninBody,
   ForgetPasswordBody,
   ResetPasswordBody,
-} from "@src/types/authType";
-import { Role } from "@src/models/userModel";
-import sendResponse from "@src/utils/sendResponse";
-import { setAuthCookies, clearAuthCookies } from "@src/utils/cookie";
+} from "../types/authType";
+import { Role } from "../models/userModel";
+import sendResponse from "../utils/sendResponse";
+import { setAuthCookies, clearAuthCookies } from "../utils/cookie";
 
 export const signup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

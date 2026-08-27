@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   getCourseThumbnailUploadUrlService,
   getCourseVideoUploadUrlService,
@@ -12,7 +12,7 @@ import {
   createCoursePaymentIntentService,
   requestCourseRefundService,
   getCourseCompletionStatusService,
-} from "@src/services/courseService";
+} from "../services/courseService";
 import {
   CourseIdParams,
   CreateCourseBody,
@@ -21,8 +21,8 @@ import {
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
-} from "@src/types/courseType";
-import sendResponse from "@src/utils/sendResponse";
+} from "../types/courseType";
+import sendResponse from "../utils/sendResponse";
 
 export const uploadCourseThumbnail = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

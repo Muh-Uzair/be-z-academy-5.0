@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import AppError from "@src/utils/appError";
-import UserModel, { Role } from "@src/models/userModel";
+import AppError from "../utils/appError";
+import UserModel, { Role } from "../models/userModel";
 
 /**
  * Restricts access to specific roles.

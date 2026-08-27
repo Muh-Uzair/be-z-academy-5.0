@@ -4,7 +4,7 @@ import {
   CATEGORY_NAME_MAX_LENGTH,
   CATEGORY_DESCRIPTION_MIN_LENGTH,
   CATEGORY_DESCRIPTION_MAX_LENGTH,
-} from "@src/constants/categoryConstant";
+} from "../constants/categoryConstant";
 
 export const categoryIdParamsSchema = z
   .object({

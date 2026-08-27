@@ -2,7 +2,7 @@ import { model, models, Schema, type InferSchemaType } from "mongoose";
 import {
   ENROLLMENT_WATCH_PERCENTAGE_MIN,
   ENROLLMENT_WATCH_PERCENTAGE_MAX,
-} from "@src/constants/enrollmentConstant";
+} from "../constants/enrollmentConstant";
 
 const enrollmentSchema = new Schema(
   {

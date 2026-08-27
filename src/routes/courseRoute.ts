@@ -11,13 +11,13 @@ import {
   createCoursePaymentIntent,
   requestCourseRefund,
   getCourseCompletionStatus,
-} from "@src/controllers/courseController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
-import optionalAuth from "@src/middlewares/optionalAuth";
-import restrictTo from "@src/middlewares/restrictTo";
-import requireStripeOnboarding from "@src/middlewares/courseMiddleware";
-import { Role } from "@src/models/userModel";
+} from "../controllers/courseController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
+import optionalAuth from "../middlewares/optionalAuth";
+import restrictTo from "../middlewares/restrictTo";
+import requireStripeOnboarding from "../middlewares/courseMiddleware";
+import { Role } from "../models/userModel";
 import {
   courseIdParamsSchema,
   createCourseSchema,
@@ -26,7 +26,7 @@ import {
   uploadCourseThumbnailSchema,
   uploadCourseVideoSchema,
   getCoursesQuerySchema,
-} from "@src/validations/courseValidation";
+} from "../validations/courseValidation";
 
 const courseRouter = Router();
 

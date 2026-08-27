@@ -7,7 +7,7 @@ import {
   uploadCourseThumbnailSchema,
   uploadCourseVideoSchema,
   getCoursesQuerySchema,
-} from "@src/validations/courseValidation";
+} from "../validations/courseValidation";
 
 export type CourseIdParams = z.infer<typeof courseIdParamsSchema>;
 export type CreateCourseBody = z.infer<typeof createCourseSchema>;

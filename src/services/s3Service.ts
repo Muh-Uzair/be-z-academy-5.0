@@ -1,13 +1,13 @@
 import { GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
-import { s3Client } from "@src/config/s3";
-import { env } from "@src/config/env";
+import { s3Client } from "../config/s3";
+import { env } from "../config/env";
 import {
   MIME_TYPE_TO_EXTENSION,
   PRESIGNED_POST_EXPIRES_IN_SECONDS,
   PRESIGNED_GET_DEFAULT_EXPIRES_IN_SECONDS,
-} from "@src/constants/s3Constant";
+} from "../constants/s3Constant";
 
 // FUNCTION
 export const buildS3ObjectKey = (

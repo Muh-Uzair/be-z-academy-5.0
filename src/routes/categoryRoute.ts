@@ -6,18 +6,18 @@ import {
   updateCategory,
   deleteCategory,
   uploadCategoryImage,
-} from "@src/controllers/categoryController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
-import restrictTo from "@src/middlewares/restrictTo";
-import { Role } from "@src/models/userModel";
+} from "../controllers/categoryController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
+import restrictTo from "../middlewares/restrictTo";
+import { Role } from "../models/userModel";
 import {
   categoryIdParamsSchema,
   createCategorySchema,
   updateCategorySchema,
   uploadCategoryImageSchema,
   getCategoriesQuerySchema,
-} from "@src/validations/categoryValidation";
+} from "../validations/categoryValidation";
 
 const categoryRouter = Router();
 

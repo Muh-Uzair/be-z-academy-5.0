@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   createCategoryService,
   getCategoriesService,
@@ -7,15 +7,15 @@ import {
   updateCategoryService,
   deleteCategoryService,
   getCategoryImageUploadUrlService,
-} from "@src/services/categoryService";
+} from "../services/categoryService";
 import {
   CategoryIdParams,
   CreateCategoryBody,
   UpdateCategoryBody,
   UploadCategoryImageBody,
   GetCategoriesQuery,
-} from "@src/types/categoryType";
-import sendResponse from "@src/utils/sendResponse";
+} from "../types/categoryType";
+import sendResponse from "../utils/sendResponse";
 
 export const uploadCategoryImage = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

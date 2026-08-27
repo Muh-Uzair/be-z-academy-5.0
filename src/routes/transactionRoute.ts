@@ -2,13 +2,13 @@ import { Router } from "express";
 import {
   getTransactions,
   getTransactionDetails,
-} from "@src/controllers/transactionController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
+} from "../controllers/transactionController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
 import {
   transactionIdParamsSchema,
   getTransactionsQuerySchema,
-} from "@src/validations/transactionValidation";
+} from "../validations/transactionValidation";
 
 const transactionRouter = Router();
 

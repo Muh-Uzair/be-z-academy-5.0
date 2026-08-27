@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { env } from "@src/config/env";
+import { env } from "./env";
 
 mongoose.plugin((schema) => {
   schema.set("versionKey", false);

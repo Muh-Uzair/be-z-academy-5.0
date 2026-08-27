@@ -5,18 +5,18 @@ import {
   updateUserVerification,
   getInstructorOnboardingLink,
   updateProfile,
-} from "@src/controllers/userController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
-import restrictTo from "@src/middlewares/restrictTo";
-import { Role } from "@src/models/userModel";
+} from "../controllers/userController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
+import restrictTo from "../middlewares/restrictTo";
+import { Role } from "../models/userModel";
 import {
   getInstructorsQuerySchema,
   userIdParamsSchema,
   updateUserVerificationSchema,
   updateProfileSchema,
   userRoleQuerySchema,
-} from "@src/validations/userValidation";
+} from "../validations/userValidation";
 
 const userRouter = Router();
 

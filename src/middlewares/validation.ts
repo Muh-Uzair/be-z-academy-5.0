@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { ZodSchema } from "zod";
-import AppError from "@src/utils/appError";
+import AppError from "../utils/appError";
 
 type ValidationSource = "body" | "query" | "params";
 

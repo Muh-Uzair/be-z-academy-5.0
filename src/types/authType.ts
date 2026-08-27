@@ -8,7 +8,7 @@ import {
   signinSchema,
   forgetPasswordSchema,
   resetPasswordSchema,
-} from "@src/validations/authValidation";
+} from "../validations/authValidation";
 
 export type SignupBody = z.infer<typeof signupSchema>;
 export type StudentSignupBody = z.infer<typeof studentSignupSchema>;

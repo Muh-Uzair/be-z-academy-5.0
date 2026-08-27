@@ -1,10 +1,10 @@
 import { PipelineStage, Types } from "mongoose";
-import EnrollmentModel from "@src/models/enrollmentModel";
-import { Role } from "@src/models/userModel";
-import AppError from "@src/utils/appError";
-import APIFeatures from "@src/utils/apiFeatures";
-import { GetEnrollmentsQuery } from "@src/types/enrollmentType";
-import { verifyEnrollmentAccessOrThrow } from "@src/utils/enrollmentUtil";
+import EnrollmentModel from "../models/enrollmentModel";
+import { Role } from "../models/userModel";
+import AppError from "../utils/appError";
+import APIFeatures from "../utils/apiFeatures";
+import { GetEnrollmentsQuery } from "../types/enrollmentType";
+import { verifyEnrollmentAccessOrThrow } from "../utils/enrollmentUtil";
 
 // Each reference is joined into a *Details field so the response shape is
 // already correct without any post-processing mapper.

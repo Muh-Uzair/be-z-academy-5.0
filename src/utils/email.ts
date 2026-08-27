@@ -1,5 +1,5 @@
-import transporter from "@src/config/mailer";
-import { env } from "@src/config/env";
+import transporter from "../config/mailer";
+import { env } from "../config/env";
 
 export const sendOtpEmail = async (options: {
   email: string;

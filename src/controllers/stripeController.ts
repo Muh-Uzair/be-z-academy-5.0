@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
-import { stripe } from "@src/config/stripe";
-import { env } from "@src/config/env";
-import catchAsync from "@src/utils/catchAsync";
-import AppError from "@src/utils/appError";
-import sendResponse from "@src/utils/sendResponse";
+import { stripe } from "../config/stripe";
+import { env } from "../config/env";
+import catchAsync from "../utils/catchAsync";
+import AppError from "../utils/appError";
+import sendResponse from "../utils/sendResponse";
 import {
   handleAccountUpdatedEventService,
   handlePaymentIntentSucceededService,
   handleChargeRefundedService,
-} from "@src/services/stripeService";
+} from "../services/stripeService";
 
 export const handleStripeWebhook = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

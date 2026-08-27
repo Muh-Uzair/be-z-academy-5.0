@@ -1,24 +1,24 @@
 import { PipelineStage } from "mongoose";
 import { randomUUID } from "crypto";
-import CategoryModel from "@src/models/categoryModel";
-import CourseModel from "@src/models/courseModel";
-import AppError from "@src/utils/appError";
-import APIFeatures from "@src/utils/apiFeatures";
+import CategoryModel from "../models/categoryModel";
+import CourseModel from "../models/courseModel";
+import AppError from "../utils/appError";
+import APIFeatures from "../utils/apiFeatures";
 import {
   getPresignedPostUrlService,
   deleteS3ObjectService,
   buildS3ObjectKey,
-} from "@src/services/s3Service";
+} from "./s3Service";
 import {
   CreateCategoryBody,
   UpdateCategoryBody,
   UploadCategoryImageBody,
   GetCategoriesQuery,
-} from "@src/types/categoryType";
+} from "../types/categoryType";
 import {
   CATEGORY_MAX_IMAGE_SIZE_IN_BYTES,
   CATEGORY_IMAGE_S3_FOLDER,
-} from "@src/constants/categoryConstant";
+} from "../constants/categoryConstant";
 
 // FUNCTION
 export const getCategoryImageUploadUrlService = async (

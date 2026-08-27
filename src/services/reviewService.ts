@@ -1,19 +1,19 @@
 import { PipelineStage, Types } from "mongoose";
-import ReviewModel from "@src/models/reviewModel";
-import CourseModel from "@src/models/courseModel";
-import EnrollmentModel from "@src/models/enrollmentModel";
-import AppError from "@src/utils/appError";
-import APIFeatures from "@src/utils/apiFeatures";
+import ReviewModel from "../models/reviewModel";
+import CourseModel from "../models/courseModel";
+import EnrollmentModel from "../models/enrollmentModel";
+import AppError from "../utils/appError";
+import APIFeatures from "../utils/apiFeatures";
 import {
   CreateReviewBody,
   UpdateReviewBody,
   GetReviewsQuery,
-} from "@src/types/reviewType";
+} from "../types/reviewType";
 import {
   getReviewOrThrow,
   verifyReviewOwnershipOrThrow,
   verifyReviewDeletePermissionOrThrow,
-} from "@src/utils/reviewUtil";
+} from "../utils/reviewUtil";
 
 
 // Each reference is joined into a *Details field so the response shape is

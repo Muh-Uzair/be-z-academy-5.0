@@ -2,13 +2,13 @@ import { Router } from "express";
 import {
   getEnrollments,
   getEnrollmentDetails,
-} from "@src/controllers/enrollmentController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
+} from "../controllers/enrollmentController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
 import {
   enrollmentIdParamsSchema,
   getEnrollmentsQuerySchema,
-} from "@src/validations/enrollmentValidation";
+} from "../validations/enrollmentValidation";
 
 const enrollmentRouter = Router();
 

@@ -7,7 +7,7 @@ import {
   USER_HIGHEST_EDUCATION_MAX_LENGTH,
   USER_YEARS_OF_EXPERIENCE_MIN,
   USER_YEARS_OF_EXPERIENCE_MAX,
-} from "@src/constants/userConstant";
+} from "../constants/userConstant";
 
 const baseSignupSchema = z.object({
   fullName: z

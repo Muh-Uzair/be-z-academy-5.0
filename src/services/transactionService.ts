@@ -1,10 +1,10 @@
 import { PipelineStage, Types } from "mongoose";
-import TransactionModel from "@src/models/transactionModel";
-import { Role } from "@src/models/userModel";
-import AppError from "@src/utils/appError";
-import APIFeatures from "@src/utils/apiFeatures";
-import { GetTransactionsQuery } from "@src/types/transactionType";
-import { verifyTransactionAccessOrThrow } from "@src/utils/transactionUtil";
+import TransactionModel from "../models/transactionModel";
+import { Role } from "../models/userModel";
+import AppError from "../utils/appError";
+import APIFeatures from "../utils/apiFeatures";
+import { GetTransactionsQuery } from "../types/transactionType";
+import { verifyTransactionAccessOrThrow } from "../utils/transactionUtil";
 
 // Each reference is joined into a *Details field so the response shape is
 // already correct without any post-processing mapper.

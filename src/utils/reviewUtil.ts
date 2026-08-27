@@ -1,6 +1,6 @@
-import ReviewModel from "@src/models/reviewModel";
-import AppError from "@src/utils/appError";
-import { Role } from "@src/models/userModel";
+import ReviewModel from "../models/reviewModel";
+import AppError from "./appError";
+import { Role } from "../models/userModel";
 
 export const getReviewOrThrow = async (id: string) => {
   const review = await ReviewModel.findById(id);

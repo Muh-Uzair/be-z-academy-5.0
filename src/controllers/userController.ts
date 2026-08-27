@@ -1,20 +1,20 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   getInstructorsService,
   getUserDetailsService,
   updateUserVerificationService,
   updateOwnProfileService,
-} from "@src/services/userService";
-import { getInstructorOnboardingLinkService } from "@src/services/stripeService";
+} from "../services/userService";
+import { getInstructorOnboardingLinkService } from "../services/stripeService";
 import {
   GetInstructorsQuery,
   UserIdParams,
   UpdateUserVerificationBody,
   UpdateProfileBody,
   UserRoleQuery,
-} from "@src/types/userType";
-import sendResponse from "@src/utils/sendResponse";
+} from "../types/userType";
+import sendResponse from "../utils/sendResponse";
 
 export const getInstructors = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

@@ -1,4 +1,4 @@
-import { Role } from "@src/models/userModel";
+import { Role } from "../models/userModel";
 
 declare global {
   namespace Express {

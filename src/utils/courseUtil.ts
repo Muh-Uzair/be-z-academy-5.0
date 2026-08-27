@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
-import CourseModel from "@src/models/courseModel";
-import AppError from "@src/utils/appError";
+import CourseModel from "../models/courseModel";
+import AppError from "./appError";
 
 export const buildSlug = (title: string): string => {
   const base = title

@@ -1,5 +1,5 @@
 import type { Model, PipelineStage } from "mongoose";
-import type { Pagination } from "@src/utils/sendResponse";
+import type { Pagination } from "./sendResponse";
 
 interface BaseListQuery {
   search?: string;

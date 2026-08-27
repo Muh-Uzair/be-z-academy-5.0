@@ -1,14 +1,14 @@
 import { PipelineStage } from "mongoose";
-import UserModel, { Role } from "@src/models/userModel";
-import AppError from "@src/utils/appError";
-import { sendVerificationStatusEmail } from "@src/utils/email";
-import { PROFILE_UPDATABLE_FIELDS } from "@src/constants/userConstant";
-import APIFeatures from "@src/utils/apiFeatures";
+import UserModel, { Role } from "../models/userModel";
+import AppError from "../utils/appError";
+import { sendVerificationStatusEmail } from "../utils/email";
+import { PROFILE_UPDATABLE_FIELDS } from "../constants/userConstant";
+import APIFeatures from "../utils/apiFeatures";
 import {
   GetInstructorsQuery,
   UpdateUserVerificationBody,
   UpdateProfileBody,
-} from "@src/types/userType";
+} from "../types/userType";
 
 // FUNCTION
 export const getInstructorsService = async (

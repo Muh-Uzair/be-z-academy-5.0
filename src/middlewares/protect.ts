@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import AppError from "@src/utils/appError";
-import { verifyAccessToken } from "@src/utils/jwt";
+import AppError from "../utils/appError";
+import { verifyAccessToken } from "../utils/jwt";
 
 /**
  * Verifies the accessToken cookie and attaches the decoded user (id, role) to req.user.

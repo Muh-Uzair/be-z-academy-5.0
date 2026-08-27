@@ -1,23 +1,23 @@
 import express, { Request, Response, NextFunction } from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import authRouter from "@src/routes/authRoute";
-import userRouter from "@src/routes/userRoute";
-import categoryRouter from "@src/routes/categoryRoute";
-import courseRouter from "@src/routes/courseRoute";
-import stripeRouter from "@src/routes/stripeRoute";
-import enrollmentRouter from "@src/routes/enrollmentRoute";
-import transactionRouter from "@src/routes/transactionRoute";
-import reviewRouter from "@src/routes/reviewRoute";
-import AppError from "@src/utils/appError";
-import globalErrorHandler from "@src/controllers/errorController";
-import sendResponse from "@src/utils/sendResponse";
+import authRouter from "./routes/authRoute";
+import userRouter from "./routes/userRoute";
+import categoryRouter from "./routes/categoryRoute";
+import courseRouter from "./routes/courseRoute";
+import stripeRouter from "./routes/stripeRoute";
+import enrollmentRouter from "./routes/enrollmentRoute";
+import transactionRouter from "./routes/transactionRoute";
+import reviewRouter from "./routes/reviewRoute";
+import AppError from "./utils/appError";
+import globalErrorHandler from "./controllers/errorController";
+import sendResponse from "./utils/sendResponse";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import { clean as xssClean } from "xss-clean/lib/xss";
 import hpp from "hpp";
-import { connectDB } from "@src/config/db";
+import { connectDB } from "./config/db";
 
 // ─── Process-level Safety Nets ────────────────────────────────────────────────
 

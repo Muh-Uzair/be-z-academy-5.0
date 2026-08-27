@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Role } from "@src/models/userModel";
+import { Role } from "../models/userModel";
 import {
   USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
   USER_FULL_NAME_MIN_LENGTH,
@@ -8,7 +8,7 @@ import {
   USER_HIGHEST_EDUCATION_MAX_LENGTH,
   USER_YEARS_OF_EXPERIENCE_MIN,
   USER_YEARS_OF_EXPERIENCE_MAX,
-} from "@src/constants/userConstant";
+} from "../constants/userConstant";
 
 export const userIdParamsSchema = z
   .object({

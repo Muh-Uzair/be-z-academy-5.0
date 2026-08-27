@@ -1,5 +1,5 @@
-import AppError from "@src/utils/appError";
-import { Role } from "@src/models/userModel";
+import AppError from "./appError";
+import { Role } from "../models/userModel";
 
 export const verifyEnrollmentAccessOrThrow = (enrollment: any, user: { userId: string; role: string }) => {
   if (user.role === Role.Instructor && enrollment.instructor?._id?.toString() !== user.userId) {

@@ -1,19 +1,19 @@
 import { PipelineStage, Types } from "mongoose";
 import { randomUUID } from "crypto";
-import CourseModel from "@src/models/courseModel";
-import UserModel, { Role } from "@src/models/userModel";
-import EnrollmentModel from "@src/models/enrollmentModel";
-import TransactionModel from "@src/models/transactionModel";
-import { stripe } from "@src/config/stripe";
-import { env } from "@src/config/env";
-import AppError from "@src/utils/appError";
-import APIFeatures from "@src/utils/apiFeatures";
+import CourseModel from "../models/courseModel";
+import UserModel, { Role } from "../models/userModel";
+import EnrollmentModel from "../models/enrollmentModel";
+import TransactionModel from "../models/transactionModel";
+import { stripe } from "../config/stripe";
+import { env } from "../config/env";
+import AppError from "../utils/appError";
+import APIFeatures from "../utils/apiFeatures";
 import {
   getPresignedPostUrlService,
   getPresignedGetUrlService,
   deleteS3ObjectService,
   buildS3ObjectKey,
-} from "@src/services/s3Service";
+} from "./s3Service";
 import {
   CreateCourseBody,
   UpdateCourseBody,
@@ -21,14 +21,14 @@ import {
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
-} from "@src/types/courseType";
+} from "../types/courseType";
 import {
   COURSE_MAX_VIDEO_SIZE_IN_BYTES,
   COURSE_MAX_IMAGE_SIZE_IN_BYTES,
   COURSE_THUMBNAIL_S3_FOLDER,
   COURSE_VIDEO_S3_FOLDER,
-} from "@src/constants/courseConstant";
-import { buildSlug, getOwnedCourseOrThrow } from "@src/utils/courseUtil";
+} from "../constants/courseConstant";
+import { buildSlug, getOwnedCourseOrThrow } from "../utils/courseUtil";
 
 const COURSE_LOOKUP_STAGES: PipelineStage[] = [
   {

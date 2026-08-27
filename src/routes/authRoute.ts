@@ -9,11 +9,11 @@ import {
   signout,
   forgetPassword,
   resetPassword,
-} from "@src/controllers/authController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
-import restrictTo from "@src/middlewares/restrictTo";
-import { Role } from "@src/models/userModel";
+} from "../controllers/authController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
+import restrictTo from "../middlewares/restrictTo";
+import { Role } from "../models/userModel";
 import {
   signupSchema,
   verifyOtpSchema,
@@ -21,7 +21,7 @@ import {
   signinSchema,
   forgetPasswordSchema,
   resetPasswordSchema,
-} from "@src/validations/authValidation";
+} from "../validations/authValidation";
 
 const authRouter = Router();
 

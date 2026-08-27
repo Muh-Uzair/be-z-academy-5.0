@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { env } from "@src/config/env";
+import { env } from "../config/env";
 
 const ACCESS_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const REFRESH_TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;

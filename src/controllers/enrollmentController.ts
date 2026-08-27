@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   getEnrollmentsService,
   getEnrollmentDetailsService,
-} from "@src/services/enrollmentService";
+} from "../services/enrollmentService";
 import {
   GetEnrollmentsQuery,
   EnrollmentIdParams,
-} from "@src/types/enrollmentType";
-import sendResponse from "@src/utils/sendResponse";
+} from "../types/enrollmentType";
+import sendResponse from "../utils/sendResponse";
 
 export const getEnrollments = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

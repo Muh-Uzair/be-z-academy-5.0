@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import catchAsync from "@src/utils/catchAsync";
-import AppError from "@src/utils/appError";
-import UserModel from "@src/models/userModel";
+import catchAsync from "../utils/catchAsync";
+import AppError from "../utils/appError";
+import UserModel from "../models/userModel";
 
 /**
  * Ensures the instructor has completed Stripe onboarding before they can create a course.

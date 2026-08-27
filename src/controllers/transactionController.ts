@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   getTransactionsService,
   getTransactionDetailsService,
-} from "@src/services/transactionService";
+} from "../services/transactionService";
 import {
   GetTransactionsQuery,
   TransactionIdParams,
-} from "@src/types/transactionType";
-import sendResponse from "@src/utils/sendResponse";
+} from "../types/transactionType";
+import sendResponse from "../utils/sendResponse";
 
 export const getTransactions = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

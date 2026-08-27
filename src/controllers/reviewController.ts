@@ -1,19 +1,19 @@
 import { Request, Response } from "express";
-import catchAsync from "@src/utils/catchAsync";
+import catchAsync from "../utils/catchAsync";
 import {
   createReviewService,
   getReviewsService,
   getReviewDetailsService,
   updateReviewService,
   deleteReviewService,
-} from "@src/services/reviewService";
+} from "../services/reviewService";
 import {
   CreateReviewBody,
   UpdateReviewBody,
   GetReviewsQuery,
   ReviewIdParams,
-} from "@src/types/reviewType";
-import sendResponse from "@src/utils/sendResponse";
+} from "../types/reviewType";
+import sendResponse from "../utils/sendResponse";
 
 export const createReview = catchAsync(
   async (req: Request, res: Response): Promise<void> => {

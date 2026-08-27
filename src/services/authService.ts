@@ -5,17 +5,17 @@ import {
   SigninBody,
   ForgetPasswordBody,
   ResetPasswordBody,
-} from "@src/types/authType";
-import AppError from "@src/utils/appError";
-import UserModel from "@src/models/userModel";
+} from "../types/authType";
+import AppError from "../utils/appError";
+import UserModel from "../models/userModel";
 import bcrypt from "bcryptjs";
-import { sendOtpEmail } from "@src/utils/email";
+import { sendOtpEmail } from "../utils/email";
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
-} from "@src/utils/jwt";
-import { USER_PUBLIC_PROJECTION } from "@src/services/userService";
+} from "../utils/jwt";
+import { USER_PUBLIC_PROJECTION } from "./userService";
 
 // FUNCTION
 export const signupService = async (body: SignupBody): Promise<null> => {

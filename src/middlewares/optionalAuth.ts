@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "@src/utils/jwt";
+import { verifyAccessToken } from "../utils/jwt";
 
 /**
  * Attaches req.user (id, role) if a valid accessToken cookie is present.

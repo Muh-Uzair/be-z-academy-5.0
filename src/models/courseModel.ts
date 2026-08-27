@@ -1,5 +1,5 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
-import { getPublicS3Url } from "@src/services/s3Service";
+import { getPublicS3Url } from "../services/s3Service";
 import {
   COURSE_TITLE_MIN_LENGTH,
   COURSE_TITLE_MAX_LENGTH,
@@ -8,7 +8,7 @@ import {
   COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
   COURSE_AVERAGE_RATING_MIN,
   COURSE_AVERAGE_RATING_MAX,
-} from "@src/constants/courseConstant";
+} from "../constants/courseConstant";
 
 export enum CourseLevel {
   Beginner = "beginner",

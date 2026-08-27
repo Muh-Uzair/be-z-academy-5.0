@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { CourseLevel } from "@src/models/courseModel";
+import { CourseLevel } from "../models/courseModel";
 import {
   COURSE_TITLE_MIN_LENGTH,
   COURSE_TITLE_MAX_LENGTH,
   COURSE_DESCRIPTION_MIN_LENGTH,
   COURSE_DESCRIPTION_MAX_LENGTH,
   COURSE_VERIFICATION_REJECTION_REASON_MAX_LENGTH,
-} from "@src/constants/courseConstant";
+} from "../constants/courseConstant";
 
 export const courseIdParamsSchema = z
   .object({

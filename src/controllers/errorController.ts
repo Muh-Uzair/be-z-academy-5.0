@@ -2,8 +2,8 @@
 
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
-import AppError from "@src/utils/appError";
-import sendResponse from "@src/utils/sendResponse";
+import AppError from "../utils/appError";
+import sendResponse from "../utils/sendResponse";
 
 // ─── Converters ────────────────────────────────────────────────────────────────
 

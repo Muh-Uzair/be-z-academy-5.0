@@ -4,7 +4,7 @@ import {
   REVIEW_RATING_MAX,
   REVIEW_FEEDBACK_MIN_LENGTH,
   REVIEW_FEEDBACK_MAX_LENGTH,
-} from "@src/constants/reviewConstant";
+} from "../constants/reviewConstant";
 
 const reviewSchema = new Schema(
   {

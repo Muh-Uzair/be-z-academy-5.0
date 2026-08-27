@@ -5,17 +5,17 @@ import {
   getReviewDetails,
   updateReview,
   deleteReview,
-} from "@src/controllers/reviewController";
-import validation from "@src/middlewares/validation";
-import protect from "@src/middlewares/protect";
-import restrictTo from "@src/middlewares/restrictTo";
-import { Role } from "@src/models/userModel";
+} from "../controllers/reviewController";
+import validation from "../middlewares/validation";
+import protect from "../middlewares/protect";
+import restrictTo from "../middlewares/restrictTo";
+import { Role } from "../models/userModel";
 import {
   createReviewSchema,
   updateReviewSchema,
   reviewIdParamsSchema,
   getReviewsQuerySchema,
-} from "@src/validations/reviewValidation";
+} from "../validations/reviewValidation";
 
 const reviewRouter = Router();
 
