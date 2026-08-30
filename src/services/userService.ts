@@ -1,21 +1,57 @@
-import { PipelineStage } from "mongoose";
-import UserModel, { Role } from "../models/userModel";
+import { HydratedDocument, PipelineStage } from "mongoose";
+import UserModel, { Role, UserType } from "../models/userModel";
 import AppError from "../utils/appError";
 import { sendVerificationStatusEmail } from "../utils/email";
 import { PROFILE_UPDATABLE_FIELDS } from "../constants/userConstant";
 import APIFeatures from "../utils/apiFeatures";
+import { Pagination } from "../utils/sendResponse";
 import {
   GetInstructorsQuery,
   UpdateUserVerificationBody,
   UpdateProfileBody,
 } from "../types/userType";
 
+// Projection used for both the current-user response and the instructor
+// list, so no endpoint ever exposes password/otp/stripe internals by default.
+const USER_PUBLIC_PROJECTION =
+  "_id fullName email role avatar bio highestEducation yearsOfExperience isVerified createdAt updatedAt";
+
+// Same fields as USER_PUBLIC_PROJECTION, shaped as a $project stage. Applied
+// as the aggregation's default field list; a caller-supplied `projection`
+// query param can only narrow further, never re-add excluded fields.
+const INSTRUCTOR_LIST_PROJECTION: PipelineStage.Project = {
+  $project: USER_PUBLIC_PROJECTION.split(" ").reduce<Record<string, 1>>(
+    (project, field) => ({ ...project, [field]: 1 }),
+    {},
+  ),
+};
+
+export type InstructorListItem = Pick<
+  UserType,
+  | "fullName"
+  | "email"
+  | "role"
+  | "avatar"
+  | "bio"
+  | "highestEducation"
+  | "yearsOfExperience"
+  | "isVerified"
+  | "createdAt"
+  | "updatedAt"
+> & { _id: unknown };
+
 // FUNCTION
 export const getInstructorsService = async (
   query: GetInstructorsQuery,
-): Promise<any> => {
-  // Step 1: Scope the base pipeline to the instructor role
-  const basePipeline: PipelineStage[] = [{ $match: { role: "instructor" } }];
+): Promise<{
+  instructors: InstructorListItem[];
+  pagination: Pagination | null;
+}> => {
+  // Step 1: Scope to the instructor role and strip sensitive/internal fields by default
+  const basePipeline: PipelineStage[] = [
+    { $match: { role: "instructor" } },
+    INSTRUCTOR_LIST_PROJECTION,
+  ];
 
   // Step 2: Layer the query-driven filter, search, sort, projection and pagination stages
   const { data: instructors, pagination } = await new APIFeatures(
@@ -33,16 +69,11 @@ export const getInstructorsService = async (
   return { instructors, pagination };
 };
 
-// Projection used for the current-user response — must stay in sync with the
-// signin user shape so both endpoints return identical data.
-const USER_PUBLIC_PROJECTION =
-  "_id fullName email role avatar bio highestEducation yearsOfExperience isVerified createdAt updatedAt";
-
 // FUNCTION
 export const getUserDetailsService = async (
   id: string,
   role: Role,
-): Promise<any> => {
+): Promise<HydratedDocument<UserType>> => {
   // Step 1: Find the user, scoped to the expected role, selecting only public fields
   const user = await UserModel.findOne({ _id: id, role }).select(
     USER_PUBLIC_PROJECTION,
@@ -62,7 +93,7 @@ export { USER_PUBLIC_PROJECTION };
 export const updateUserService = async (
   id: string,
   updateData: Record<string, unknown>,
-): Promise<any> => {
+): Promise<HydratedDocument<UserType>> => {
   // Step 1: Apply the update
   const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, {
     new: true,
@@ -82,7 +113,7 @@ export const updateOwnProfileService = async (
   id: string,
   role: Role,
   body: UpdateProfileBody,
-): Promise<any> => {
+): Promise<HydratedDocument<UserType>> => {
   // Step 1: Keep only the fields this role is permitted to change
   const allowedFields = PROFILE_UPDATABLE_FIELDS[role] as readonly string[];
   const disallowedFields = Object.keys(body).filter(
@@ -105,7 +136,7 @@ export const updateUserVerificationService = async (
   id: string,
   role: Role,
   body: UpdateUserVerificationBody,
-): Promise<any> => {
+): Promise<HydratedDocument<UserType>> => {
   // Step 1: Ensure the user exists and has the expected role
   const user = await UserModel.findOne({ _id: id, role });
   if (!user) {
