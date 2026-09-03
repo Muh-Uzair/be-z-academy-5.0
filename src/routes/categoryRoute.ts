@@ -39,14 +39,12 @@ categoryRouter.post(
 
 categoryRouter.get(
   "/",
-  protect,
   validation(getCategoriesQuerySchema, "query"),
   getCategories,
 );
 
 categoryRouter.get(
   "/:id",
-  protect,
   validation(categoryIdParamsSchema, "params"),
   getCategoryDetails,
 );
