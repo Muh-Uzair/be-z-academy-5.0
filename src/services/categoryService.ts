@@ -98,13 +98,22 @@ export const updateCategoryService = async (
 
   const previousImageKey = existingCategory.imageKey;
 
-  // Step 2: Apply the update
+  // Step 2: Prevent updates while courses are still assigned to this category
+  const courseCount = await CourseModel.countDocuments({ category: id });
+  if (courseCount > 0) {
+    throw new AppError(
+      400,
+      "Cannot update a category that has courses assigned to it",
+    );
+  }
+
+  // Step 3: Apply the update
   const updatedCategory = await CategoryModel.findByIdAndUpdate(id, body, {
     new: true,
     runValidators: true,
   });
 
-  // Step 3: If the image was replaced, delete the old S3 object
+  // Step 4: If the image was replaced, delete the old S3 object
   if (body.imageKey && body.imageKey !== previousImageKey) {
     await deleteS3ObjectService(previousImageKey);
   }

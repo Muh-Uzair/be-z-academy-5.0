@@ -250,7 +250,7 @@ HTTP `200`
 
 `PATCH /api/v1/categories/:id`
 
-Admin only. All fields are optional, but at least one must be sent. If `imageKey` changes, the previous image is deleted from S3.
+Admin only. All fields are optional, but at least one must be sent. Blocked if any course still references the category. If `imageKey` changes, the previous image is deleted from S3.
 
 ### URL params
 
@@ -299,6 +299,7 @@ HTTP `200`
 | HTTP status | Message | When |
 | --- | --- | --- |
 | 400 | `Validation failed` | Body is empty, a field fails its shape rules, or an undocumented field is sent. |
+| 400 | `Cannot update a category that has courses assigned to it` | One or more courses still reference this category. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to perform this action` | Caller is not an admin. |
 | 404 | `Category not found` | No category exists with that `id`. |
