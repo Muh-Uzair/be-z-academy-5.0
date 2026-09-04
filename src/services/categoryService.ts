@@ -8,6 +8,7 @@ import {
   getPresignedPostUrlService,
   deleteS3ObjectService,
   buildS3ObjectKey,
+  getPublicS3Url,
 } from "./s3Service";
 import {
   CreateCategoryBody,
@@ -55,7 +56,10 @@ export const createCategoryService = async (
 // FUNCTION
 export const getCategoriesService = async (
   query: GetCategoriesQuery,
-): Promise<{ categories: CategoryType[]; pagination: Pagination }> => {
+): Promise<{
+  categories: Array<Omit<CategoryType, "imageKey"> & { imageUrl: string }>;
+  pagination: Pagination;
+}> => {
   // Step 1: Start with an empty base pipeline (no resource-specific pre-filters needed)
   const basePipeline: PipelineStage[] = [];
 
@@ -70,7 +74,17 @@ export const getCategoriesService = async (
     .paginate()
     .exec();
 
-  return { categories, pagination: pagination as Pagination };
+  // Step 2: Aggregation bypasses the schema's toJSON transform, so the raw
+  // imageKey (and Mongoose's internal __v) must be swapped/stripped here
+  // in favor of the derived, publicly-readable imageUrl.
+  const categoriesWithImageUrl = categories.map(
+    ({ imageKey, __v, ...rest }) => ({
+      ...rest,
+      imageUrl: getPublicS3Url(imageKey),
+    }),
+  );
+
+  return { categories: categoriesWithImageUrl, pagination: pagination as Pagination };
 };
 
 // FUNCTION

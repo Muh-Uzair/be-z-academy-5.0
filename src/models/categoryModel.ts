@@ -62,13 +62,6 @@ categorySchema.set("toJSON", {
   },
 });
 
-categorySchema.post("aggregate", function (docs) {
-  docs.forEach((doc) => {
-    doc.imageUrl = getPublicS3Url(doc.imageKey);
-    delete doc.imageKey;
-  });
-});
-
 // Index to support APIFeatures default sorting
 categorySchema.index({ createdAt: -1 });
 
