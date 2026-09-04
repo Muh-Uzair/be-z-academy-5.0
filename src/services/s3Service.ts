@@ -82,5 +82,11 @@ export const deleteS3ObjectService = async (key: string): Promise<void> => {
 
 // FUNCTION
 export const getPublicS3Url = (key: string): string => {
-  return `https://${env.AWS_S3_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
+  // Path-style URL: a bucket name containing dots (e.g. "z-academy-5.0-3")
+  // breaks the virtual-hosted-style cert (`*.s3.<region>.amazonaws.com` only
+  // covers one subdomain level), causing NET::ERR_CERT_COMMON_NAME_INVALID.
+  // Each path segment is also encoded since keys may contain spaces/parens.
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+
+  return `https://s3.${env.AWS_REGION}.amazonaws.com/${env.AWS_S3_BUCKET_NAME}/${encodedKey}`;
 };

@@ -35,7 +35,7 @@ Every category object returned by these APIs looks like:
   "_id": "66d1a1b2c3d4e5f678901234",
   "name": "Web Development",
   "description": "Courses covering frontend, backend, and full-stack web development.",
-  "imageUrl": "https://<bucket>.s3.<region>.amazonaws.com/categories/....jpg",
+  "imageUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/categories/images/....jpg",
   "createdAt": "2026-08-25T10:00:00.000Z",
   "updatedAt": "2026-08-25T10:00:00.000Z"
 }
@@ -72,7 +72,7 @@ HTTP `200`
   "status": "success",
   "message": "Category image upload URL generated successfully",
   "data": {
-    "uploadUrl": "https://<bucket>.s3.<region>.amazonaws.com/",
+    "uploadUrl": "https://s3.<region>.amazonaws.com/<bucket>/",
     "fields": {
       "key": "categories/<uuid>-web-dev.jpg",
       "Content-Type": "image/jpeg",
@@ -133,7 +133,7 @@ HTTP `201`
       "_id": "66d1a1b2c3d4e5f678901234",
       "name": "Web Development",
       "description": "Courses covering frontend, backend, and full-stack web development.",
-      "imageUrl": "https://<bucket>.s3.<region>.amazonaws.com/categories/....jpg",
+      "imageUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/categories/images/....jpg",
       "createdAt": "2026-08-25T10:00:00.000Z",
       "updatedAt": "2026-08-25T10:00:00.000Z"
     }
@@ -183,7 +183,7 @@ HTTP `200`
         "_id": "66d1a1b2c3d4e5f678901234",
         "name": "Web Development",
         "description": "Courses covering frontend, backend, and full-stack web development.",
-        "imageUrl": "https://<bucket>.s3.<region>.amazonaws.com/categories/....jpg",
+        "imageUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/categories/images/....jpg",
         "createdAt": "2026-08-25T10:00:00.000Z",
         "updatedAt": "2026-08-25T10:00:00.000Z"
       }
@@ -231,7 +231,7 @@ HTTP `200`
       "_id": "66d1a1b2c3d4e5f678901234",
       "name": "Web Development",
       "description": "Courses covering frontend, backend, and full-stack web development.",
-      "imageUrl": "https://<bucket>.s3.<region>.amazonaws.com/categories/....jpg",
+      "imageUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/categories/images/....jpg",
       "createdAt": "2026-08-25T10:00:00.000Z",
       "updatedAt": "2026-08-25T10:00:00.000Z"
     }
@@ -286,7 +286,7 @@ HTTP `200`
       "_id": "66d1a1b2c3d4e5f678901234",
       "name": "Web & Mobile Development",
       "description": "Courses covering frontend, backend, full-stack, and mobile development.",
-      "imageUrl": "https://<bucket>.s3.<region>.amazonaws.com/categories/....jpg",
+      "imageUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/categories/images/....jpg",
       "createdAt": "2026-08-25T10:00:00.000Z",
       "updatedAt": "2026-08-31T09:00:00.000Z"
     }
