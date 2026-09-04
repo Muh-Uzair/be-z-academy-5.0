@@ -74,8 +74,8 @@ export const getCategoriesQuerySchema = z
     projection: z.string().trim().min(1).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).default(10),
-    sortBy: z.string().trim().min(1).default("name"),
-    sortOrder: z.enum(["asc", "desc"]).default("asc"),
+    sortBy: z.string().trim().min(1).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })
   .strict();
 
