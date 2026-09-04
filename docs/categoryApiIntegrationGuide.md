@@ -164,8 +164,8 @@ Public. Returns a paginated, sortable, searchable list of categories.
 | `projection` | string | — | Comma-separated Mongo field projection. |
 | `page` | number (≥1) | `1` | |
 | `limit` | number (≥1) | `10` | |
-| `sortBy` | string | `name` | |
-| `sortOrder` | `"asc" \| "desc"` | `asc` | |
+| `sortBy` | string | `createdAt` | |
+| `sortOrder` | `"asc" \| "desc"` | `desc` | |
 
 All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
 

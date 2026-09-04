@@ -1,6 +1,6 @@
 import { PipelineStage } from "mongoose";
 import { randomUUID } from "crypto";
-import CategoryModel from "../models/categoryModel";
+import CategoryModel, { CategoryType } from "../models/categoryModel";
 import CourseModel from "../models/courseModel";
 import AppError from "../utils/appError";
 import APIFeatures from "../utils/apiFeatures";
@@ -15,6 +15,8 @@ import {
   UploadCategoryImageBody,
   GetCategoriesQuery,
 } from "../types/categoryType";
+import { UploadCategoryImageResponseData } from "../response-types/categoryResponseTypes";
+import { Pagination } from "../response-types/userResponseTypes";
 import {
   CATEGORY_MAX_IMAGE_SIZE_IN_BYTES,
   CATEGORY_IMAGE_S3_FOLDER,
@@ -23,7 +25,7 @@ import {
 // FUNCTION
 export const getCategoryImageUploadUrlService = async (
   body: UploadCategoryImageBody,
-): Promise<any> => {
+): Promise<UploadCategoryImageResponseData> => {
   // Step 1: Build a unique S3 key for the image, with the correct extension
   const key = buildS3ObjectKey(
     CATEGORY_IMAGE_S3_FOLDER,
@@ -43,7 +45,7 @@ export const getCategoryImageUploadUrlService = async (
 // FUNCTION
 export const createCategoryService = async (
   body: CreateCategoryBody,
-): Promise<any> => {
+): Promise<CategoryType> => {
   // Step 1: Create the category document
   const category = await CategoryModel.create(body);
 
@@ -53,7 +55,7 @@ export const createCategoryService = async (
 // FUNCTION
 export const getCategoriesService = async (
   query: GetCategoriesQuery,
-): Promise<any> => {
+): Promise<{ categories: CategoryType[]; pagination: Pagination }> => {
   // Step 1: Start with an empty base pipeline (no resource-specific pre-filters needed)
   const basePipeline: PipelineStage[] = [];
 
@@ -68,11 +70,13 @@ export const getCategoriesService = async (
     .paginate()
     .exec();
 
-  return { categories, pagination };
+  return { categories, pagination: pagination as Pagination };
 };
 
 // FUNCTION
-export const getCategoryDetailsService = async (id: string): Promise<any> => {
+export const getCategoryDetailsService = async (
+  id: string,
+): Promise<CategoryType> => {
   // Step 1: Find the category by id
   const category = await CategoryModel.findById(id);
 
@@ -88,7 +92,7 @@ export const getCategoryDetailsService = async (id: string): Promise<any> => {
 export const updateCategoryService = async (
   id: string,
   body: UpdateCategoryBody,
-): Promise<any> => {
+): Promise<CategoryType> => {
   // Step 1: Fetch the existing category to capture its current image key
   const existingCategory = await CategoryModel.findById(id);
 
@@ -113,6 +117,10 @@ export const updateCategoryService = async (
     runValidators: true,
   });
 
+  if (!updatedCategory) {
+    throw new AppError(404, "Category not found");
+  }
+
   // Step 4: If the image was replaced, delete the old S3 object
   if (body.imageKey && body.imageKey !== previousImageKey) {
     await deleteS3ObjectService(previousImageKey);
@@ -122,7 +130,7 @@ export const updateCategoryService = async (
 };
 
 // FUNCTION
-export const deleteCategoryService = async (id: string): Promise<any> => {
+export const deleteCategoryService = async (id: string): Promise<null> => {
   // Step 1: Ensure the category exists
   const category = await CategoryModel.findById(id);
   if (!category) {
