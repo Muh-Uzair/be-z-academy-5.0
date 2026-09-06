@@ -94,11 +94,13 @@ export const updateUserService = async (
   id: string,
   updateData: Record<string, unknown>,
 ): Promise<HydratedDocument<UserType>> => {
-  // Step 1: Apply the update
+  // Step 1: Apply the update, restricted to the same public projection as
+  // every other user-facing read, since only `password` has `select: false`
+  // and findByIdAndUpdate would otherwise return otp/stripe/internal fields
   const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
-  });
+  }).select(USER_PUBLIC_PROJECTION);
 
   // Step 2: Ensure the user existed
   if (!updatedUser) {

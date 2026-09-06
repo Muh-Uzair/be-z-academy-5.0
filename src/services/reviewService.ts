@@ -1,6 +1,6 @@
-import { PipelineStage, Types } from "mongoose";
-import ReviewModel from "../models/reviewModel";
-import CourseModel from "../models/courseModel";
+import { HydratedDocument, PipelineStage, Types } from "mongoose";
+import ReviewModel, { ReviewType } from "../models/reviewModel";
+import CourseModel, { CourseType } from "../models/courseModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import AppError from "../utils/appError";
 import APIFeatures from "../utils/apiFeatures";
@@ -9,17 +9,42 @@ import {
   UpdateReviewBody,
   GetReviewsQuery,
 } from "../types/reviewType";
+import { Pagination } from "../utils/sendResponse";
 import {
   getReviewOrThrow,
   verifyReviewOwnershipOrThrow,
   verifyReviewDeletePermissionOrThrow,
 } from "../utils/reviewUtil";
+import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
 
+interface ReviewUserSummary {
+  _id: Types.ObjectId;
+  fullName: string;
+  email: string;
+  avatar: string | null;
+}
+
+type ReviewCourseSummary = Omit<
+  CourseType,
+  "thumbnailKey" | "videoKey" | "instructor" | "category"
+>;
+
+// Shape of each review once REVIEW_LOOKUP_STAGES has joined and replaced
+// reviewBy/course/instructor ids with public-safe *Details sub-documents.
+export type ReviewListItem = Omit<
+  ReviewType,
+  "reviewBy" | "course" | "instructor"
+> & {
+  reviewByDetails: ReviewUserSummary;
+  courseDetails: ReviewCourseSummary;
+  instructorDetails: ReviewUserSummary;
+};
 
 // Each reference is joined into a *Details field so the response shape is
 // already correct without any post-processing mapper.
 // The final $project drops the original ObjectId fields that are superseded
-// by the joined documents.
+// by the joined documents, and scrubs sensitive fields that $lookup would
+// otherwise pull in from the joined documents unfiltered.
 const REVIEW_LOOKUP_STAGES: PipelineStage[] = [
   {
     $lookup: {
@@ -48,14 +73,23 @@ const REVIEW_LOOKUP_STAGES: PipelineStage[] = [
     },
   },
   { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
-  { $project: { reviewBy: 0, course: 0, instructor: 0 } },
+  {
+    $project: {
+      reviewBy: 0,
+      course: 0,
+      instructor: 0,
+      ...excludeUserFields("reviewByDetails"),
+      ...excludeUserFields("instructorDetails"),
+      ...excludeCourseInternalFields("courseDetails"),
+    },
+  },
 ];
 
 // FUNCTION
 export const createReviewService = async (
   studentId: string,
   body: CreateReviewBody,
-): Promise<any> => {
+): Promise<HydratedDocument<ReviewType>> => {
   // Step 1: Ensure the course exists
   const course = await CourseModel.findById(body.course);
   if (!course) {
@@ -96,7 +130,7 @@ export const createReviewService = async (
 // FUNCTION
 export const getReviewsService = async (
   query: GetReviewsQuery,
-): Promise<any> => {
+): Promise<{ reviews: ReviewListItem[]; pagination: Pagination | null }> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
@@ -124,17 +158,22 @@ export const getReviewsService = async (
     .paginate()
     .exec();
 
-  return { reviews: data, pagination };
+  // The pipeline's $lookup/$project stages reshape each document into
+  // ReviewListItem, which APIFeatures' generic Model<ReviewType> can't
+  // express — cast once at this boundary.
+  return { reviews: data as unknown as ReviewListItem[], pagination };
 };
 
 // FUNCTION
-export const getReviewDetailsService = async (id: string): Promise<any> => {
+export const getReviewDetailsService = async (
+  id: string,
+): Promise<ReviewListItem> => {
   const pipeline: PipelineStage[] = [
     { $match: { _id: new Types.ObjectId(id) } },
     ...REVIEW_LOOKUP_STAGES,
   ];
 
-  const [review] = await ReviewModel.aggregate(pipeline);
+  const [review] = (await ReviewModel.aggregate(pipeline)) as ReviewListItem[];
 
   if (!review) {
     throw new AppError(404, "Review not found");
@@ -148,23 +187,25 @@ export const updateReviewService = async (
   id: string,
   studentId: string,
   body: UpdateReviewBody,
-): Promise<any> => {
+): Promise<HydratedDocument<ReviewType>> => {
   // Step 1: Fetch the review, enforcing ownership
   const review = await getReviewOrThrow(id);
   verifyReviewOwnershipOrThrow(review, studentId);
 
   // Step 2: Apply the update
-  return ReviewModel.findByIdAndUpdate(id, body, {
+  const updatedReview = await ReviewModel.findByIdAndUpdate(id, body, {
     new: true,
     runValidators: true,
   });
+
+  return updatedReview!;
 };
 
 // FUNCTION
 export const deleteReviewService = async (
   id: string,
   user: { id: string; role: string },
-): Promise<any> => {
+): Promise<null> => {
   // Step 1: Fetch the review, enforcing ownership (author or admin)
   const review = await getReviewOrThrow(id);
   verifyReviewDeletePermissionOrThrow(review, user);

@@ -1,15 +1,43 @@
 import { PipelineStage, Types } from "mongoose";
-import TransactionModel from "../models/transactionModel";
+import TransactionModel, { TransactionType } from "../models/transactionModel";
 import { Role } from "../models/userModel";
+import { CourseType } from "../models/courseModel";
 import AppError from "../utils/appError";
 import APIFeatures from "../utils/apiFeatures";
 import { GetTransactionsQuery } from "../types/transactionType";
+import { Pagination } from "../utils/sendResponse";
 import { verifyTransactionAccessOrThrow } from "../utils/transactionUtil";
+import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
+
+interface TransactionUserSummary {
+  _id: Types.ObjectId;
+  fullName: string;
+  email: string;
+  avatar: string | null;
+}
+
+type TransactionCourseSummary = Omit<
+  CourseType,
+  "thumbnailKey" | "videoKey" | "instructor" | "category"
+>;
+
+// Shape of each transaction once TRANSACTION_LOOKUP_STAGES has joined and
+// replaced student/course/instructor ids with public-safe *Details
+// sub-documents.
+export type TransactionListItem = Omit<
+  TransactionType,
+  "student" | "course" | "instructor"
+> & {
+  studentDetails: TransactionUserSummary;
+  courseDetails: TransactionCourseSummary;
+  instructorDetails: TransactionUserSummary;
+};
 
 // Each reference is joined into a *Details field so the response shape is
 // already correct without any post-processing mapper.
 // The final $project drops the original ObjectId fields that are superseded
-// by the joined documents.
+// by the joined documents, and scrubs sensitive fields that $lookup would
+// otherwise pull in from the joined documents unfiltered.
 const TRANSACTION_LOOKUP_STAGES: PipelineStage[] = [
   {
     $lookup: {
@@ -38,14 +66,23 @@ const TRANSACTION_LOOKUP_STAGES: PipelineStage[] = [
     },
   },
   { $unwind: { path: "$instructorDetails", preserveNullAndEmptyArrays: true } },
-  { $project: { student: 0, course: 0, instructor: 0 } },
+  {
+    $project: {
+      student: 0,
+      course: 0,
+      instructor: 0,
+      ...excludeUserFields("studentDetails"),
+      ...excludeUserFields("instructorDetails"),
+      ...excludeCourseInternalFields("courseDetails"),
+    },
+  },
 ];
 
 // FUNCTION
 export const getTransactionsService = async (
   query: GetTransactionsQuery,
   user: { id: string; role: string },
-): Promise<any> => {
+): Promise<{ transactions: TransactionListItem[]; pagination: Pagination | null }> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
@@ -85,21 +122,29 @@ export const getTransactionsService = async (
     .paginate()
     .exec();
 
-  return { transactions: data, pagination };
+  // The pipeline's $lookup/$project stages reshape each document into
+  // TransactionListItem, which APIFeatures' generic Model<TransactionType>
+  // can't express — cast once at this boundary.
+  return {
+    transactions: data as unknown as TransactionListItem[],
+    pagination,
+  };
 };
 
 // FUNCTION
 export const getTransactionDetailsService = async (
   id: string,
   user: { id: string; role: string },
-): Promise<any> => {
+): Promise<TransactionListItem> => {
   // Step 1: Fetch the transaction with every reference joined in place
   const pipeline: PipelineStage[] = [
     { $match: { _id: new Types.ObjectId(id) } },
     ...TRANSACTION_LOOKUP_STAGES,
   ];
 
-  const [transaction] = await TransactionModel.aggregate(pipeline);
+  const [transaction] = (await TransactionModel.aggregate(
+    pipeline,
+  )) as TransactionListItem[];
 
   if (!transaction) {
     throw new AppError(404, "Transaction not found");

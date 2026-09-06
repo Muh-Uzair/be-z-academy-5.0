@@ -77,14 +77,15 @@ export const getCategoriesService = async (
   // Step 2: Aggregation bypasses the schema's toJSON transform, so the raw
   // imageKey (and Mongoose's internal __v) must be swapped/stripped here
   // in favor of the derived, publicly-readable imageUrl.
-  const categoriesWithImageUrl = categories.map(
-    ({ imageKey, __v, ...rest }) => ({
-      ...rest,
-      imageUrl: getPublicS3Url(imageKey),
-    }),
-  );
+  const categoriesWithImageUrl = categories.map(({ imageKey, ...rest }) => ({
+    ...rest,
+    imageUrl: getPublicS3Url(imageKey),
+  }));
 
-  return { categories: categoriesWithImageUrl, pagination: pagination as Pagination };
+  return {
+    categories: categoriesWithImageUrl,
+    pagination: pagination as Pagination,
+  };
 };
 
 // FUNCTION

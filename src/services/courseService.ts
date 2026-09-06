@@ -1,6 +1,6 @@
-import { PipelineStage, Types } from "mongoose";
+import { HydratedDocument, PipelineStage, Types } from "mongoose";
 import { randomUUID } from "crypto";
-import CourseModel from "../models/courseModel";
+import CourseModel, { CourseType } from "../models/courseModel";
 import UserModel, { Role } from "../models/userModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import TransactionModel from "../models/transactionModel";
@@ -15,6 +15,10 @@ import {
   buildS3ObjectKey,
 } from "./s3Service";
 import {
+  excludeUserFields,
+  excludeCategoryInternalFields,
+} from "../utils/lookupProjections";
+import {
   CreateCourseBody,
   UpdateCourseBody,
   UpdateCourseVerificationBody,
@@ -22,6 +26,7 @@ import {
   UploadCourseVideoBody,
   GetCoursesQuery,
 } from "../types/courseType";
+import { Pagination } from "../utils/sendResponse";
 import {
   COURSE_MAX_VIDEO_SIZE_IN_BYTES,
   COURSE_MAX_IMAGE_SIZE_IN_BYTES,
@@ -29,6 +34,38 @@ import {
   COURSE_VIDEO_S3_FOLDER,
 } from "../constants/courseConstant";
 import { buildSlug, getOwnedCourseOrThrow } from "../utils/courseUtil";
+
+interface CourseInstructorSummary {
+  _id: Types.ObjectId;
+  fullName: string;
+  email: string;
+  avatar: string | null;
+}
+
+interface CourseCategorySummary {
+  _id: Types.ObjectId;
+  name: string;
+  description: string;
+}
+
+// Shape returned for a single course (create/details/update/verification) —
+// the raw thumbnailKey/videoKey are replaced by their public/signed URLs.
+type CourseWithUrls = Omit<CourseType, "thumbnailKey" | "videoKey"> & {
+  thumbnailUrl: string;
+  videoUrl: string;
+};
+
+// Shape returned for each item of the paginated list endpoint, where
+// COURSE_LOOKUP_STAGES has already joined and replaced instructor/category
+// ids with their public-safe *Details sub-documents.
+type CourseAggregateItem = Omit<
+  CourseType,
+  "thumbnailKey" | "videoKey" | "instructor" | "category"
+> & {
+  thumbnailUrl: string;
+  instructorDetails: CourseInstructorSummary;
+  categoryDetails: CourseCategorySummary;
+};
 
 const COURSE_LOOKUP_STAGES: PipelineStage[] = [
   {
@@ -63,6 +100,10 @@ const COURSE_LOOKUP_STAGES: PipelineStage[] = [
     $project: {
       instructor: 0,
       category: 0,
+      // $lookup bypasses Mongoose's schema-level select:false / toJSON
+      // transform, so the joined documents must be scrubbed explicitly here.
+      ...excludeUserFields("instructorDetails"),
+      ...excludeCategoryInternalFields("categoryDetails"),
     },
   },
 ];
@@ -71,7 +112,7 @@ const COURSE_LOOKUP_STAGES: PipelineStage[] = [
 export const createCoursePaymentIntentService = async (
   studentId: string,
   courseId: string,
-): Promise<any> => {
+): Promise<{ clientSecret: string | null }> => {
   // Step 1: Ensure the course exists and is verified/live
   const course = await CourseModel.findOne({
     _id: courseId,
@@ -138,26 +179,44 @@ export const createCoursePaymentIntentService = async (
 };
 
 // FUNCTION
-const withSignedVideoUrl = async (course: any): Promise<any> => {
+// Accepts either a hydrated course document (create/details/update/verify)
+// or an already-joined aggregate list item, and returns the same shape back
+// with videoKey replaced by a freshly signed, time-limited videoUrl.
+const withSignedVideoUrl = async (
+  course: HydratedDocument<CourseType> | CourseAggregateItem,
+): Promise<
+  | CourseWithUrls
+  | (Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string })
+> => {
   // Step 1: Convert to a plain object (applies toJSON's thumbnailKey/videoKey cleanup)
-  const plain = typeof course.toJSON === "function" ? course.toJSON() : course;
+  const isDocument =
+    typeof (course as HydratedDocument<CourseType>).toJSON === "function";
+  const plain = (
+    isDocument ? (course as HydratedDocument<CourseType>).toJSON() : course
+  ) as CourseType & Record<string, unknown>;
 
   // Step 2: Read the raw video key from whichever source still has it
-  const videoKey = plain.videoKey ?? course.videoKey;
+  const videoKey =
+    (plain.videoKey as string) ?? (course as CourseType).videoKey;
 
   // Step 3: Sign a time-limited GET URL for the private video
   const videoUrl = await getPresignedGetUrlService(videoKey);
 
   // Step 4: Strip the raw key and attach the signed URL
-  delete plain.videoKey;
+  const rest = { ...plain };
+  Reflect.deleteProperty(rest, "videoKey");
 
-  return { ...plain, videoUrl };
+  return { ...rest, videoUrl } as unknown as CourseWithUrls;
 };
 
 // FUNCTION
 export const getCourseThumbnailUploadUrlService = async (
   body: UploadCourseThumbnailBody,
-): Promise<any> => {
+): Promise<{
+  uploadUrl: string;
+  fields: Record<string, string>;
+  key: string;
+}> => {
   // Step 1: Build a unique S3 key for the thumbnail, with the correct extension
   const key = buildS3ObjectKey(
     COURSE_THUMBNAIL_S3_FOLDER,
@@ -177,7 +236,11 @@ export const getCourseThumbnailUploadUrlService = async (
 // FUNCTION
 export const getCourseVideoUploadUrlService = async (
   body: UploadCourseVideoBody,
-): Promise<any> => {
+): Promise<{
+  uploadUrl: string;
+  fields: Record<string, string>;
+  key: string;
+}> => {
   // Step 1: Build a unique S3 key for the video, with the correct extension
   const key = buildS3ObjectKey(
     COURSE_VIDEO_S3_FOLDER,
@@ -198,7 +261,7 @@ export const getCourseVideoUploadUrlService = async (
 export const createCourseService = async (
   instructorId: string,
   body: CreateCourseBody,
-): Promise<any> => {
+): Promise<CourseWithUrls> => {
   // Step 1: Create the course, tagging the owning instructor and a unique slug
   const course = await CourseModel.create({
     ...body,
@@ -207,14 +270,17 @@ export const createCourseService = async (
   });
 
   // Step 2: Attach a signed video URL before returning
-  return withSignedVideoUrl(course);
+  return withSignedVideoUrl(course) as Promise<CourseWithUrls>;
 };
 
 // FUNCTION
 export const getCoursesService = async (
   query: GetCoursesQuery,
   user?: { id: string; role: string },
-): Promise<any> => {
+): Promise<{
+  courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
+  pagination: Pagination | null;
+}> => {
   // Step 1: Build the base pipeline
   const basePipeline: PipelineStage[] = [{ $match: {} }];
 
@@ -270,7 +336,7 @@ export const getCoursesService = async (
       : undefined,
   };
 
-  const { data: courses, pagination } = await new APIFeatures(
+  const { data, pagination } = await new APIFeatures(
     CourseModel,
     filterQuery,
     basePipeline,
@@ -283,9 +349,20 @@ export const getCoursesService = async (
     .paginate()
     .exec();
 
+  // The pipeline's $lookup/$project stages reshape each document into
+  // CourseAggregateItem, which APIFeatures' generic Model<CourseType> can't
+  // express — cast once at this boundary rather than losing type safety
+  // everywhere downstream.
+  const courses = data as unknown as CourseAggregateItem[];
+
   // Step 5: Attach a signed video URL to every course in the page
   const coursesWithVideoUrls = await Promise.all(
-    courses.map((course) => withSignedVideoUrl(course)),
+    courses.map(
+      (course) =>
+        withSignedVideoUrl(course) as Promise<
+          Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }
+        >,
+    ),
   );
 
   return {
@@ -295,7 +372,9 @@ export const getCoursesService = async (
 };
 
 // FUNCTION
-export const getCourseDetailsService = async (id: string): Promise<any> => {
+export const getCourseDetailsService = async (
+  id: string,
+): Promise<CourseWithUrls> => {
   // Step 1: Fetch the course by id
   const course = await CourseModel.findById(id);
 
@@ -304,7 +383,7 @@ export const getCourseDetailsService = async (id: string): Promise<any> => {
   }
 
   // Step 2: Attach a signed video URL before returning
-  return withSignedVideoUrl(course);
+  return withSignedVideoUrl(course) as Promise<CourseWithUrls>;
 };
 
 // FUNCTION
@@ -312,7 +391,7 @@ export const updateCourseService = async (
   id: string,
   instructorId: string,
   body: UpdateCourseBody,
-): Promise<any> => {
+): Promise<CourseWithUrls> => {
   // Step 1: Fetch the existing course, enforcing ownership, and capture its current keys
   const existingCourse = await getOwnedCourseOrThrow(id, instructorId);
 
@@ -340,14 +419,14 @@ export const updateCourseService = async (
   await Promise.all(staleKeys.map((key) => deleteS3ObjectService(key)));
 
   // Step 5: Attach a signed video URL before returning
-  return withSignedVideoUrl(updatedCourse);
+  return withSignedVideoUrl(updatedCourse!) as Promise<CourseWithUrls>;
 };
 
 // FUNCTION
 export const updateCourseVerificationService = async (
   id: string,
   body: UpdateCourseVerificationBody,
-): Promise<any> => {
+): Promise<CourseWithUrls> => {
   // Step 1: Ensure the course exists
   const course = await CourseModel.findById(id);
   if (!course) {
@@ -373,14 +452,14 @@ export const updateCourseVerificationService = async (
   );
 
   // Step 4: Attach a signed video URL before returning
-  return withSignedVideoUrl(updatedCourse);
+  return withSignedVideoUrl(updatedCourse!) as Promise<CourseWithUrls>;
 };
 
 // FUNCTION
 export const deleteCourseService = async (
   id: string,
   instructorId: string,
-): Promise<any> => {
+): Promise<null> => {
   // Step 1: Fetch the course, enforcing ownership
   const course = await getOwnedCourseOrThrow(id, instructorId);
 
@@ -477,7 +556,7 @@ export const requestCourseRefundService = async (
 export const getCourseCompletionStatusService = async (
   studentId: string,
   courseId: string,
-): Promise<any> => {
+): Promise<{ completionPercentage: number; completed: boolean }> => {
   // Step 1: Find the enrollment for the student in this course
   const enrollment = await EnrollmentModel.findOne({
     student: studentId,
