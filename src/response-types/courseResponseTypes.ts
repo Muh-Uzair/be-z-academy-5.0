@@ -171,8 +171,10 @@ export type GetCoursesResponse =
 
 // API 8: GET /api/v1/courses/:id
 // Response: { status, message, data: { course } }
+// Always the joined shape (instructorDetails/categoryDetails, same as
+// CourseListItem) — see the integration guide for the per-role access rules.
 export interface GetCourseDetailsResponseData {
-  course: Course;
+  course: CourseListItem;
 }
 
 export type GetCourseDetailsResponse =

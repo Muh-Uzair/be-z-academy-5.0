@@ -6,7 +6,7 @@ Base path: `/api/v1/courses`
 
 ## Integration rules
 
-- `GET /` and `GET /:id` use `optionalAuth` — no `accessToken` cookie is required, but sending one changes what the caller sees (see [Role-based visibility](#role-based-visibility-list-endpoint) below). Every other route in this guide requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
+- `GET /` uses `optionalAuth` — no `accessToken` cookie is required, but sending one changes what the caller sees (see [Role-based visibility](#role-based-visibility-list-endpoint) below). Every other route in this guide, including `GET /:id`, requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. Body and query fields are validated separately; an undocumented field in either causes `400 Validation failed`.
 - JSON request bodies are limited to 10 KB.
@@ -28,7 +28,7 @@ Base path: `/api/v1/courses`
 | `POST /:id/refund` | Student only |
 | `GET /:id/completion-status` | Student only |
 | `GET /` | Public (role changes visibility, see below) |
-| `GET /:id` | Public (no auth required) |
+| `GET /:id` | Admin, Instructor, or Student (must be logged in; role changes what's returned, see [API 8](#api-8--get-course-details)) |
 
 A caller with the wrong role receives `403 You do not have permission to perform this action`. A missing/invalid/expired `accessToken` cookie receives the same `401` errors documented for `/auth/me`.
 
@@ -457,7 +457,17 @@ Note: `instructor` and `category` raw ids are replaced by joined `instructorDeta
 
 `GET /api/v1/courses/:id`
 
-Uses `optionalAuth`, but applies **no visibility filtering** — any caller can fetch any course by id regardless of its verification status. Use API 7 if you need role-scoped visibility.
+Requires an authenticated session (unlike `GET /`, anonymous callers are rejected with `401`). What's returned depends on the caller's role.
+
+### Role-based behavior (details endpoint)
+
+Every role gets the same joined shape back — `instructorDetails`/`categoryDetails` instead of raw `instructor`/`category` (same as an [API 7](#api-7--list-courses) list item) — but who can reach it differs:
+
+| Caller | Sees | On a course that isn't theirs / isn't accessible |
+| --- | --- | --- |
+| Admin | Any course, full details. | `404 Course not found` if the `id` doesn't exist. |
+| Instructor | Full details, but only for a course they own. | `404 Course not found` if the `id` doesn't exist; `403 You do not have permission to access this course` if it exists but belongs to another instructor. |
+| Student | Full details, but only for a course they're enrolled in. | `404 You are not enrolled in this course` if there's no enrollment for this student+course (including when the course itself doesn't exist). |
 
 ### URL params
 
@@ -469,12 +479,22 @@ Uses `optionalAuth`, but applies **no visibility filtering** — any caller can 
 
 HTTP `200`
 
+`course` uses the joined shape (`instructorDetails`/`categoryDetails` instead of raw `instructor`/`category`, same as an [API 7](#api-7--list-courses) list item), for every role:
+
 ```json
 {
   "status": "success",
   "message": "Course details fetched successfully",
   "data": {
-    "course": { /* Course shape, see above */ }
+    "course": {
+      "_id": "66d1a1b2c3d4e5f678901234",
+      "title": "Complete Web Development Bootcamp",
+      "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/....jpg",
+      "videoUrl": "https://s3.<region>.amazonaws.com/<bucket>/...?X-Amz-Signature=...",
+      "instructorDetails": { "_id": "66c0a1b2c3d4e5f678901111", "fullName": "Jane Doe" },
+      "categoryDetails": { "_id": "66c0a1b2c3d4e5f678901222", "name": "Web Development" }
+      /* ...remaining Course fields, see above */
+    }
   }
 }
 ```
@@ -484,7 +504,10 @@ HTTP `200`
 | HTTP status | Message | When |
 | --- | --- | --- |
 | 400 | `Invalid value "<value>" for field "_id"` | `id` is not a valid Mongo ObjectId. |
-| 404 | `Course not found` | No course exists with that `id`. |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 403 | `You do not have permission to access this course` | Caller is an instructor and the course belongs to someone else. |
+| 404 | `Course not found` | Caller is an admin/instructor and no course exists with that `id`. |
+| 404 | `You are not enrolled in this course` | Caller is a student with no enrollment for this course (also returned when the `id` doesn't exist at all). |
 
 ## API 9 — Create payment intent (Student)
 

@@ -372,18 +372,82 @@ export const getCoursesService = async (
 };
 
 // FUNCTION
+// Runs COURSE_LOOKUP_STAGES against the given $match, returning the single
+// joined course (or undefined if nothing matched).
+const findCourseWithLookups = async (
+  matchStage: Record<string, unknown>,
+): Promise<CourseAggregateItem | undefined> => {
+  const [course] = await CourseModel.aggregate([
+    { $match: matchStage },
+    ...COURSE_LOOKUP_STAGES,
+  ]);
+
+  return course;
+};
+
+// FUNCTION
 export const getCourseDetailsService = async (
   id: string,
-): Promise<CourseWithUrls> => {
-  // Step 1: Fetch the course by id
-  const course = await CourseModel.findById(id);
+  user: { id: string; role: string },
+): Promise<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }> => {
+  // Step 1: Admin — full details for any course, including the joined
+  // instructorDetails/categoryDetails, no ownership restriction.
+  if (user.role === Role.Admin) {
+    const course = await findCourseWithLookups({ _id: new Types.ObjectId(id) });
+
+    if (!course) {
+      throw new AppError(404, "Course not found");
+    }
+
+    return withSignedVideoUrl(course) as Promise<
+      Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }
+    >;
+  }
+
+  // Step 2: Instructor — full details, but only for their own course
+  if (user.role === Role.Instructor) {
+    const course = await findCourseWithLookups({
+      _id: new Types.ObjectId(id),
+      instructor: new Types.ObjectId(user.id),
+    });
+
+    if (!course) {
+      // Distinguish "course doesn't exist" from "exists but belongs to
+      // another instructor", mirroring getOwnedCourseOrThrow's 404-vs-403.
+      const exists = await CourseModel.exists({ _id: id });
+
+      throw new AppError(
+        exists ? 403 : 404,
+        exists
+          ? "You do not have permission to access this course"
+          : "Course not found",
+      );
+    }
+
+    return withSignedVideoUrl(course) as Promise<
+      Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }
+    >;
+  }
+
+  // Step 3: Student — full details (including video), but only if enrolled
+  const enrollment = await EnrollmentModel.findOne({
+    student: user.id,
+    course: id,
+  });
+
+  if (!enrollment) {
+    throw new AppError(404, "You are not enrolled in this course");
+  }
+
+  const course = await findCourseWithLookups({ _id: new Types.ObjectId(id) });
 
   if (!course) {
     throw new AppError(404, "Course not found");
   }
 
-  // Step 2: Attach a signed video URL before returning
-  return withSignedVideoUrl(course) as Promise<CourseWithUrls>;
+  return withSignedVideoUrl(course) as Promise<
+    Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }
+  >;
 };
 
 // FUNCTION

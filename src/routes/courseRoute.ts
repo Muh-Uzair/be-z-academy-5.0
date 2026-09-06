@@ -120,9 +120,12 @@ courseRouter.get(
   getCourses,
 );
 
+// Requires auth (unlike GET /, anonymous callers are not allowed here);
+// visibility/detail level then depends on the caller's role — see
+// getCourseDetailsService.
 courseRouter.get(
   "/:id",
-  optionalAuth,
+  protect,
   validation(courseIdParamsSchema, "params"),
   getCourseDetails,
 );

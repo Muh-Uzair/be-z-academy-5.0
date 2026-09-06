@@ -183,10 +183,21 @@ courseSchema.set("toJSON", {
   },
 });
 
+// A paginated aggregate ends in a $facet stage (see APIFeatures.paginate),
+// which wraps the course docs as `{ data: [...], totalCount: [...] }`
+// instead of returning them directly, so each doc must be unwrapped first.
 courseSchema.post("aggregate", function (docs) {
-  docs.forEach((doc) => {
-    doc.thumbnailUrl = getPublicS3Url(doc.thumbnailKey);
+  const applyThumbnailUrl = (doc: Record<string, unknown>) => {
+    doc.thumbnailUrl = getPublicS3Url(doc.thumbnailKey as string);
     delete doc.thumbnailKey;
+  };
+
+  docs.forEach((doc) => {
+    if (Array.isArray(doc?.data)) {
+      doc.data.forEach(applyThumbnailUrl);
+    } else {
+      applyThumbnailUrl(doc);
+    }
   });
 });
 

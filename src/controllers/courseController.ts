@@ -86,8 +86,9 @@ export const getCourses = catchAsync(
 export const getCourseDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as CourseIdParams;
+    const user = req.user!;
 
-    const course = await getCourseDetailsService(id);
+    const course = await getCourseDetailsService(id, user);
 
     sendResponse(res, 200, {
       status: "success",
