@@ -276,7 +276,7 @@ export const createCourseService = async (
 // FUNCTION
 export const getCoursesService = async (
   query: GetCoursesQuery,
-  user?: { id: string; role: string },
+  user: { id: string; role: string },
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
   pagination: Pagination | null;
@@ -284,16 +284,13 @@ export const getCoursesService = async (
   // Step 1: Build the base pipeline
   const basePipeline: PipelineStage[] = [{ $match: {} }];
 
-  // Step 2 : Deal with roles
-  const role = user?.role;
-
-  // making changes according to admin
-  if (role && role === Role.Admin && user.id) {
+  // Step 2 : Scope the result set by role — this endpoint requires auth
+  // (route-level protect), so anonymous callers never reach here.
+  if (user.role === Role.Admin) {
     // Admin sees all courses — no additional match stage needed
   }
 
-  // making changes according to instructor
-  if (role && role === Role.Instructor && user.id) {
+  if (user.role === Role.Instructor) {
     basePipeline.push({
       $match: {
         instructor: new Types.ObjectId(user.id),
@@ -301,17 +298,15 @@ export const getCoursesService = async (
     });
   }
 
-  // making changes according to student
-  if (role && role === Role.Student && user.id) {
-    basePipeline.push({
-      $match: { isVerified: true, verificationRejectionReason: null },
+  if (user.role === Role.Student) {
+    // Students only see courses they're enrolled in (payment already
+    // guarantees the course was verified at enrollment time).
+    const enrolledCourseIds = await EnrollmentModel.distinct("course", {
+      student: new Types.ObjectId(user.id),
     });
-  }
 
-  // making changes according to unauthenticated users
-  if (!role) {
     basePipeline.push({
-      $match: { isVerified: true, verificationRejectionReason: null },
+      $match: { _id: { $in: enrolledCourseIds } },
     });
   }
 

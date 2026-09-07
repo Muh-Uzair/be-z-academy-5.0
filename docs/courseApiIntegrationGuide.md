@@ -6,7 +6,7 @@ Base path: `/api/v1/courses`
 
 ## Integration rules
 
-- `GET /` uses `optionalAuth` — no `accessToken` cookie is required, but sending one changes what the caller sees (see [Role-based visibility](#role-based-visibility-list-endpoint) below). Every other route in this guide, including `GET /:id`, requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
+- Every route in this guide requires an authenticated session, including `GET /` and `GET /:id`: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`). Anonymous callers are rejected with `401`.
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. Body and query fields are validated separately; an undocumented field in either causes `400 Validation failed`.
 - JSON request bodies are limited to 10 KB.
@@ -27,7 +27,7 @@ Base path: `/api/v1/courses`
 | `POST /:id/payment-intent` | Student only |
 | `POST /:id/refund` | Student only |
 | `GET /:id/completion-status` | Student only |
-| `GET /` | Public (role changes visibility, see below) |
+| `GET /` | Any authenticated user (role changes visibility, see below) |
 | `GET /:id` | Admin, Instructor, or Student (must be logged in; role changes what's returned, see [API 8](#api-8--get-course-details)) |
 
 A caller with the wrong role receives `403 You do not have permission to perform this action`. A missing/invalid/expired `accessToken` cookie receives the same `401` errors documented for `/auth/me`.
@@ -62,7 +62,7 @@ Every course object returned by these APIs looks like:
 }
 ```
 
-The raw `thumbnailKey` and `videoKey` are never exposed in responses — only the derived `thumbnailUrl` and `videoUrl`. In the list endpoint (API 7), `instructor` and `category` are replaced by joined `instructorDetails` and `categoryDetails` objects instead of raw ids.
+The raw `thumbnailKey` and `videoKey` are never exposed in responses — only the derived `thumbnailUrl` and `videoUrl`. In the list endpoint (API 7) and the details endpoint (API 8), `instructor` and `category` are replaced by joined `instructorDetails` and `categoryDetails` objects instead of raw ids; every other endpoint returns them as raw ids.
 
 `slug` is generated server-side from the title plus a random suffix — it cannot be set or changed by the client.
 
@@ -375,13 +375,13 @@ HTTP `200`
 
 `GET /api/v1/courses`
 
-Uses `optionalAuth`. Returns a paginated, sortable, searchable list of courses. Visibility depends on the caller's role.
+Requires an authenticated session — anonymous callers are rejected with `401`. Returns a paginated, sortable, searchable list of courses. Visibility depends on the caller's role.
 
 ### Role-based visibility (list endpoint)
 
 | Caller | Sees |
 | --- | --- |
-| Anonymous or Student | Only courses where `isVerified: true` and `verificationRejectionReason: null`. |
+| Student | Only courses they are enrolled in. |
 | Instructor | Only their own courses (including their own unverified/rejected ones). |
 | Admin | All courses, no restriction. |
 
@@ -452,6 +452,7 @@ Note: `instructor` and `category` raw ids are replaced by joined `instructorDeta
 | HTTP status | Message | When |
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent. |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 
 ## API 8 — Get course details
 

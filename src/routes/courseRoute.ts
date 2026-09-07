@@ -14,7 +14,6 @@ import {
 } from "../controllers/courseController";
 import validation from "../middlewares/validation";
 import protect from "../middlewares/protect";
-import optionalAuth from "../middlewares/optionalAuth";
 import restrictTo from "../middlewares/restrictTo";
 import requireStripeOnboarding from "../middlewares/courseMiddleware";
 import { Role } from "../models/userModel";
@@ -112,17 +111,16 @@ courseRouter.get(
 );
 
 // ─── Shared Routes ────────────────────────────────────────────────────────────
+// Both routes below require auth; visibility/detail level then depends on
+// the caller's role — see getCoursesService / getCourseDetailsService.
 
 courseRouter.get(
   "/",
-  optionalAuth,
+  protect,
   validation(getCoursesQuerySchema, "query"),
   getCourses,
 );
 
-// Requires auth (unlike GET /, anonymous callers are not allowed here);
-// visibility/detail level then depends on the caller's role — see
-// getCourseDetailsService.
 courseRouter.get(
   "/:id",
   protect,

@@ -43,8 +43,9 @@ export interface CourseCategorySummary {
   description: string;
 }
 
-// Course shape returned by the list endpoint (API 10), where instructor/category
-// ids are replaced by joined *Details summaries.
+// Course shape returned by the list endpoint (API 7) and the details endpoint
+// (API 8), where instructor/category ids are replaced by joined *Details
+// summaries.
 export interface CourseListItem extends Omit<Course, "instructor" | "category"> {
   instructorDetails: CourseInstructorSummary;
   categoryDetails: CourseCategorySummary;

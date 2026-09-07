@@ -73,7 +73,7 @@ export const getCourses = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetCoursesQuery;
 
-    const { courses, pagination } = await getCoursesService(query, req.user);
+    const { courses, pagination } = await getCoursesService(query, req.user!);
 
     sendResponse(res, 200, {
       status: "success",
