@@ -6,6 +6,11 @@ import { Pagination } from "./userResponseTypes";
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 
+// Derived review status accepted by the `status` query param on API 7
+// (GET /api/v1/courses) — see the integration guide for the mapping to
+// isVerified/verificationRejectionReason.
+export type CourseStatus = "verified" | "rejected" | "pendingReview";
+
 export interface Course {
   _id: string;
   title: string;

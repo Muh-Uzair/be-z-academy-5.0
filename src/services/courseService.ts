@@ -321,6 +321,27 @@ export const getCoursesService = async (
     });
   }
 
+  // Step 3.5 : Apply optional status filter — a derived combination of
+  // isVerified + verificationRejectionReason, so it can't be expressed by
+  // the generic .filter() below either.
+  if (query.status === "verified") {
+    basePipeline.push({
+      $match: { isVerified: true, verificationRejectionReason: null },
+    });
+  }
+
+  if (query.status === "rejected") {
+    basePipeline.push({
+      $match: { isVerified: false, verificationRejectionReason: { $ne: null } },
+    });
+  }
+
+  if (query.status === "pendingReview") {
+    basePipeline.push({
+      $match: { isVerified: false, verificationRejectionReason: null },
+    });
+  }
+
   // Step 4: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
   // Cast the instructor id filter to ObjectId targeting the raw field so MongoDB
   // can use indexes before any lookups occur.

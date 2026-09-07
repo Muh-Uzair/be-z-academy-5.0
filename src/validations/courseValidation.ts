@@ -126,6 +126,11 @@ export const getCoursesQuerySchema = z
       .literal("null", { error: "verificationRejectionReason must be null" })
       .transform(() => null)
       .optional(),
+    status: z
+      .enum(["verified", "rejected", "pendingReview"], {
+        error: "status must be verified, rejected, or pendingReview",
+      })
+      .optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).default(10),
     sortBy: z.string().trim().min(1).default("createdAt"),

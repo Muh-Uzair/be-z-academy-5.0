@@ -397,10 +397,19 @@ Requires an authenticated session — anonymous callers are rejected with `401`.
 | `instructor` | string | — | Filter by instructor `_id`. |
 | `isVerified` | `"true" \| "false"` | — | Filter by verification state. |
 | `verificationRejectionReason` | `"null"` | — | Literal string `"null"` — filters to courses where this field IS null. |
+| `status` | `"verified" \| "rejected" \| "pendingReview"` | — | Filter by derived review status (see below). Combines with `isVerified`/`verificationRejectionReason` via AND if sent together. |
 | `page` | number (≥1) | `1` | |
 | `limit` | number (≥1) | `10` | |
 | `sortBy` | string | `createdAt` | |
 | `sortOrder` | `"asc" \| "desc"` | `desc` | |
+
+`status` maps to a combination of `isVerified` and `verificationRejectionReason`:
+
+| `status` | Meaning |
+| --- | --- |
+| `verified` | `isVerified: true` and `verificationRejectionReason: null` |
+| `rejected` | `isVerified: false` and `verificationRejectionReason` is not `null` |
+| `pendingReview` | `isVerified: false` and `verificationRejectionReason: null` |
 
 All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
 
