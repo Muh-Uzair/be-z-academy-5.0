@@ -25,6 +25,7 @@ import {
   UploadCourseThumbnailBody,
   UploadCourseVideoBody,
   GetCoursesQuery,
+  GetPublicCoursesQuery,
 } from "../types/courseType";
 import { Pagination } from "../utils/sendResponse";
 import {
@@ -388,6 +389,46 @@ export const getCoursesService = async (
 };
 
 // FUNCTION
+// Public, unauthenticated course listing — always scoped to verified courses
+// only, and never signs/returns a videoUrl (no per-request S3 signing cost
+// for anonymous traffic).
+export const getPublicCoursesService = async (
+  query: GetPublicCoursesQuery,
+): Promise<{
+  courses: Array<Omit<CourseAggregateItem, "videoKey">>;
+  pagination: Pagination | null;
+}> => {
+  const basePipeline: PipelineStage[] = [
+    { $match: { isVerified: true, verificationRejectionReason: null } },
+  ];
+
+  const { data, pagination } = await new APIFeatures(
+    CourseModel,
+    {
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    },
+    basePipeline,
+  )
+    .search(["title"])
+    .sort()
+    .addStages(COURSE_LOOKUP_STAGES)
+    .paginate()
+    .exec();
+
+  const courses = (data as unknown as CourseAggregateItem[]).map((course) => {
+    const rest = { ...course };
+    Reflect.deleteProperty(rest, "videoKey");
+    return rest;
+  });
+
+  return { courses, pagination };
+};
+
+// FUNCTION
 // Runs COURSE_LOOKUP_STAGES against the given $match, returning the single
 // joined course (or undefined if nothing matched).
 const findCourseWithLookups = async (
@@ -464,6 +505,28 @@ export const getCourseDetailsService = async (
   return withSignedVideoUrl(course) as Promise<
     Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }
   >;
+};
+
+// FUNCTION
+// Public, unauthenticated course details — always scoped to verified courses
+// only, and never signs/returns a videoUrl (mirrors getPublicCoursesService).
+export const getPublicCourseDetailsService = async (
+  id: string,
+): Promise<Omit<CourseAggregateItem, "videoKey">> => {
+  const course = await findCourseWithLookups({
+    _id: new Types.ObjectId(id),
+    isVerified: true,
+    verificationRejectionReason: null,
+  });
+
+  if (!course) {
+    throw new AppError(404, "Course not found");
+  }
+
+  const rest = { ...course };
+  Reflect.deleteProperty(rest, "videoKey");
+
+  return rest;
 };
 
 // FUNCTION

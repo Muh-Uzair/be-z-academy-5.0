@@ -137,3 +137,11 @@ export const getCoursesQuerySchema = z
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })
   .strict();
+
+export const getPublicCoursesQuerySchema = z
+  .object({
+    search: z.string().trim().min(1).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).default(10),
+  })
+  .strict();

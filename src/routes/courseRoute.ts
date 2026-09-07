@@ -4,7 +4,9 @@ import {
   uploadCourseVideo,
   createCourse,
   getCourses,
+  getPublicCourses,
   getCourseDetails,
+  getPublicCourseDetails,
   updateCourse,
   updateCourseVerification,
   deleteCourse,
@@ -25,6 +27,7 @@ import {
   uploadCourseThumbnailSchema,
   uploadCourseVideoSchema,
   getCoursesQuerySchema,
+  getPublicCoursesQuerySchema,
 } from "../validations/courseValidation";
 
 const courseRouter = Router();
@@ -121,11 +124,26 @@ courseRouter.get(
   getCourses,
 );
 
+// Public — no auth required. Must stay above GET /:id so "/public" isn't
+// swallowed by that param route.
+courseRouter.get(
+  "/public",
+  validation(getPublicCoursesQuerySchema, "query"),
+  getPublicCourses,
+);
+
 courseRouter.get(
   "/:id",
   protect,
   validation(courseIdParamsSchema, "params"),
   getCourseDetails,
+);
+
+// Public — no auth required.
+courseRouter.get(
+  "/:id/public",
+  validation(courseIdParamsSchema, "params"),
+  getPublicCourseDetails,
 );
 
 export default courseRouter;

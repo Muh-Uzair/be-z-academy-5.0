@@ -6,7 +6,7 @@ Base path: `/api/v1/courses`
 
 ## Integration rules
 
-- Every route in this guide requires an authenticated session, including `GET /` and `GET /:id`: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`). Anonymous callers are rejected with `401`.
+- Every route in this guide requires an authenticated session, including `GET /` and `GET /:id`, **except `GET /public` and `GET /:id/public`**: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`). Anonymous callers are rejected with `401` on every other route.
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. Body and query fields are validated separately; an undocumented field in either causes `400 Validation failed`.
 - JSON request bodies are limited to 10 KB.
@@ -28,7 +28,9 @@ Base path: `/api/v1/courses`
 | `POST /:id/refund` | Student only |
 | `GET /:id/completion-status` | Student only |
 | `GET /` | Any authenticated user (role changes visibility, see below) |
+| `GET /public` | No authentication required |
 | `GET /:id` | Admin, Instructor, or Student (must be logged in; role changes what's returned, see [API 8](#api-8--get-course-details)) |
+| `GET /:id/public` | No authentication required |
 
 A caller with the wrong role receives `403 You do not have permission to perform this action`. A missing/invalid/expired `accessToken` cookie receives the same `401` errors documented for `/auth/me`.
 
@@ -522,6 +524,115 @@ HTTP `200`
 | 404 | `Course not found` | Caller is an admin/instructor and no course exists with that `id`. |
 | 404 | `You are not enrolled in this course` | Caller is a student with no enrollment for this course (also returned when the `id` doesn't exist at all). |
 
+## API 12 — List public courses
+
+`GET /api/v1/courses/public`
+
+No authentication required — no `accessToken` cookie needed. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`). Does **not** return `videoUrl` (no signed URL is generated for anonymous traffic).
+
+### Query parameters
+
+| Param | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `search` | string | — | Case-insensitive search against `title`. |
+| `page` | number (≥1) | `1` | |
+| `limit` | number (≥1) | `10` | |
+
+No other query params are accepted (`400 Validation failed` if sent) — results are always sorted by `createdAt` descending.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Courses fetched successfully",
+  "data": {
+    "courses": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Web Development Bootcamp",
+        "description": "Learn frontend, backend, and full-stack web development from scratch.",
+        "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/....jpg",
+        "price": 49.99,
+        "level": "beginner",
+        "instructorDetails": { "_id": "66c0a1b2c3d4e5f678901111", "fullName": "Jane Doe" },
+        "categoryDetails": { "_id": "66c0a1b2c3d4e5f678901222", "name": "Web Development" },
+        "isVerified": true,
+        "verificationRejectionReason": null,
+        "lastVerificationRejectedAt": null,
+        "averageRating": 4.5,
+        "totalReviews": 12,
+        "totalStudentsEnrolled": 340,
+        "totalDurationInMinutes": 480,
+        "slug": "complete-web-development-bootcamp-a1b2c3d4",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 12,
+      "totalPages": 2,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+Note the absence of `videoUrl` compared to the [API 7](#api-7--list-courses) shape.
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | An invalid or undocumented query param is sent. |
+
+## API 13 — Get public course details
+
+`GET /api/v1/courses/:id/public`
+
+No authentication required. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`) — a rejected/pending course, or one that doesn't exist, returns `404`. Does **not** return `videoUrl`.
+
+### URL params
+
+| Param | Rules |
+| --- | --- |
+| `id` | Required, non-empty string (Mongo `_id`). |
+
+### Success response
+
+HTTP `200`
+
+`course` uses the joined shape (`instructorDetails`/`categoryDetails`, same as [API 12](#api-12--list-public-courses)), without `videoUrl`:
+
+```json
+{
+  "status": "success",
+  "message": "Course details fetched successfully",
+  "data": {
+    "course": {
+      "_id": "66d1a1b2c3d4e5f678901234",
+      "title": "Complete Web Development Bootcamp",
+      "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/....jpg",
+      "instructorDetails": { "_id": "66c0a1b2c3d4e5f678901111", "fullName": "Jane Doe" },
+      "categoryDetails": { "_id": "66c0a1b2c3d4e5f678901222", "name": "Web Development" }
+      /* ...remaining Course fields, see above — no videoUrl */
+    }
+  }
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Invalid value "<value>" for field "_id"` | `id` is not a valid Mongo ObjectId. |
+| 404 | `Course not found` | No verified course exists with that `id` (also returned for a rejected/pending course). |
+
 ## API 9 — Create payment intent (Student)
 
 `POST /api/v1/courses/:id/payment-intent`
@@ -646,4 +757,4 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, and `GetCourseDetailsResponse`.
+Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, and `GetPublicCourseDetailsResponse`.
