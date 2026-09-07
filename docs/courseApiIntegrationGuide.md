@@ -322,7 +322,10 @@ HTTP `200`
 
 `PATCH /api/v1/courses/:id/verification`
 
-Admin only. `verificationRejectionReason` is required when `isVerified: false`. Rejecting redundantly (course is already in the target state) is rejected with an error.
+Admin only. `verificationRejectionReason` is required when `isVerified: false`.
+
+- Approving (`isVerified: true`) is blocked only if the course is already verified. A previously-rejected course can always be approved — its `verificationRejectionReason` is cleared to `null` in the process.
+- Rejecting (`isVerified: false`) is blocked only if the course is already sitting in a rejected state (`isVerified: false` with a `verificationRejectionReason` already recorded). A currently-verified course can always be rejected — a fresh, never-reviewed course (`isVerified: false`, `verificationRejectionReason: null`) can also always be rejected for the first time.
 
 ### URL params
 
@@ -366,7 +369,7 @@ HTTP `200`
 | --- | --- | --- |
 | 400 | `Validation failed` | `isVerified` missing, or rejecting without `verificationRejectionReason`. |
 | 400 | `Course is already verified` | `isVerified: true` sent but the course is already verified. |
-| 400 | `Course is already unverified` | `isVerified: false` sent but the course is already unverified. |
+| 400 | `Course is already unverified` | `isVerified: false` sent but the course is already unverified with a rejection reason already on record (i.e. it was already rejected, not just pending its first review). |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to perform this action` | Caller is not an admin. |
 | 404 | `Course not found` | No course exists with that `id`. |

@@ -492,20 +492,33 @@ export const updateCourseVerificationService = async (
     throw new AppError(404, "Course not found");
   }
 
-  // Step 2: Guard against redundant verify/unverify calls
-  if (course.isVerified === body.isVerified) {
-    const message = body.isVerified
-      ? "Course is already verified"
-      : "Course is already unverified";
-    throw new AppError(400, message);
+  // Step 2: Guard against redundant verify/unverify calls.
+  // Approving only needs to check the course isn't already verified — a
+  // previously-rejected course can always be approved (its rejection reason
+  // is cleared below). Rejecting only needs to check it isn't already sitting
+  // in a rejected state (isVerified: false with a rejection reason already
+  // recorded) — a currently-verified course can always be rejected.
+  if (body.isVerified && course.isVerified) {
+    throw new AppError(400, "Course is already verified");
   }
 
-  // Step 3: Update the course, tracking the rejection timestamp when rejecting
+  if (
+    !body.isVerified &&
+    !course.isVerified &&
+    course.verificationRejectionReason !== null
+  ) {
+    throw new AppError(400, "Course is already unverified");
+  }
+
+  // Step 3: Update the course — approving clears any prior rejection
+  // reason, rejecting tracks the rejection timestamp.
   const updatedCourse = await CourseModel.findByIdAndUpdate(
     id,
     {
       ...body,
-      ...(body.isVerified ? {} : { lastVerificationRejectedAt: new Date() }),
+      ...(body.isVerified
+        ? { verificationRejectionReason: null }
+        : { lastVerificationRejectedAt: new Date() }),
     },
     { new: true, runValidators: true },
   );
