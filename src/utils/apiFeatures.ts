@@ -6,8 +6,8 @@ interface BaseListQuery {
   projection?: string;
   page: number;
   limit: number;
-  sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 // FUNCTION
@@ -83,9 +83,13 @@ class APIFeatures<T> {
     return this;
   }
 
-  // Adds a $sort stage from the query's sortBy/sortOrder.
-  sort(): this {
-    const { sortBy, sortOrder } = this.query;
+  // Adds a $sort stage from the query's sortBy/sortOrder, falling back to
+  // the given defaults when the caller's query doesn't carry them (e.g. a
+  // public endpoint that doesn't expose sortBy/sortOrder to the client).
+  sort(defaultSortBy = "createdAt", defaultSortOrder: "asc" | "desc" = "desc"): this {
+    const sortBy = this.query.sortBy ?? defaultSortBy;
+    const sortOrder = this.query.sortOrder ?? defaultSortOrder;
+
     if (sortBy) {
       this.pipeline.push({ $sort: { [sortBy]: sortOrder === "asc" ? 1 : -1 } });
     }

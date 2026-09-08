@@ -402,17 +402,19 @@ export const getPublicCoursesService = async (
     { $match: { isVerified: true, verificationRejectionReason: null } },
   ];
 
+  // Cast the category filter to ObjectId targeting the raw field so MongoDB
+  // can use indexes before the lookup stages run.
+  const filterQuery = {
+    ...query,
+    category: query.category ? new Types.ObjectId(query.category) : undefined,
+  };
+
   const { data, pagination } = await new APIFeatures(
     CourseModel,
-    {
-      search: query.search,
-      page: query.page,
-      limit: query.limit,
-      sortBy: "createdAt",
-      sortOrder: "desc",
-    },
+    filterQuery,
     basePipeline,
   )
+    .filter(["category"])
     .search(["title"])
     .sort()
     .addStages(COURSE_LOOKUP_STAGES)

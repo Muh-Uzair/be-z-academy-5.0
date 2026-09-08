@@ -83,7 +83,7 @@ export interface UploadCourseVideoResponseData {
   key: string;
 }
 
-export type UploadCourseVideoResponse =
+export type UploadCourseVideoResponse = 
   | SuccessApiResponse<
       UploadCourseVideoResponseData,
       "Course video upload URL generated successfully"

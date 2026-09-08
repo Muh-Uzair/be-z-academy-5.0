@@ -528,13 +528,14 @@ HTTP `200`
 
 `GET /api/v1/courses/public`
 
-No authentication required — no `accessToken` cookie needed. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`). Does **not** return `videoUrl` (no signed URL is generated for anonymous traffic).
+No authentication required — no `accessToken` cookie needed. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`). Does **not** return `videoUrl` (no signed URL is generated for anonymous traffic). Optionally filter by `category`.
 
 ### Query parameters
 
 | Param | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `search` | string | — | Case-insensitive search against `title`. |
+| `category` | string | — | Filter by category `_id`. |
 | `page` | number (≥1) | `1` | |
 | `limit` | number (≥1) | `10` | |
 
