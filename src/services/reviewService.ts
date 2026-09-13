@@ -8,6 +8,7 @@ import {
   CreateReviewBody,
   UpdateReviewBody,
   GetReviewsQuery,
+  GetMyReviewsQuery,
 } from "../types/reviewType";
 import { Pagination } from "../utils/sendResponse";
 import {
@@ -170,6 +171,61 @@ export const getReviewDetailsService = async (
 ): Promise<ReviewListItem> => {
   const pipeline: PipelineStage[] = [
     { $match: { _id: new Types.ObjectId(id) } },
+    ...REVIEW_LOOKUP_STAGES,
+  ];
+
+  const [review] = (await ReviewModel.aggregate(pipeline)) as ReviewListItem[];
+
+  if (!review) {
+    throw new AppError(404, "Review not found");
+  }
+
+  return review;
+};
+
+// FUNCTION
+export const getMyReviewsService = async (
+  studentId: string,
+  query: GetMyReviewsQuery,
+): Promise<{ reviews: ReviewListItem[]; pagination: Pagination | null }> => {
+  // Step 1: Force-scope to the logged-in student; cast reference id filters
+  // to ObjectId, targeting the raw field names so MongoDB can use indexes
+  // before any lookups occur.
+  const filterQuery = {
+    ...query,
+    reviewBy: new Types.ObjectId(studentId),
+    course: query.course ? new Types.ObjectId(query.course) : undefined,
+  };
+
+  // Step 2: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
+  const { data, pagination } = await new APIFeatures(
+    ReviewModel,
+    filterQuery,
+    [],
+  )
+    .filter(["course", "reviewBy", "rating"])
+    .search(["feedback"])
+    .sort()
+    .addStages(REVIEW_LOOKUP_STAGES)
+    .projection()
+    .paginate()
+    .exec();
+
+  return { reviews: data as unknown as ReviewListItem[], pagination };
+};
+
+// FUNCTION
+export const getReviewByCourseAndStudentService = async (
+  courseId: string,
+  studentId: string,
+): Promise<ReviewListItem> => {
+  const pipeline: PipelineStage[] = [
+    {
+      $match: {
+        course: new Types.ObjectId(courseId),
+        reviewBy: new Types.ObjectId(studentId),
+      },
+    },
     ...REVIEW_LOOKUP_STAGES,
   ];
 

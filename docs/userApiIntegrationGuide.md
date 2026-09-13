@@ -16,8 +16,8 @@ Base path: `/api/v1/users`
 
 | Route | Allowed caller |
 | --- | --- |
-| `GET /instructors` | Admin only |
-| `GET /user/:id` | Admin only |
+| `GET /instructors` | Admin or Student |
+| `GET /user/:id` | Admin or Student |
 | `PATCH /user/:id/verification` | Admin only |
 | `GET /get-instructor-onboarding-link` | Instructor only |
 | `PATCH /update-profile` | Any authenticated user (student, instructor, or admin) |
@@ -28,7 +28,7 @@ A caller with the wrong role receives `403 You do not have permission to perform
 
 `GET /api/v1/users/instructors`
 
-Admin only. Returns a paginated, filterable, searchable list of instructor accounts.
+Admin or Student. Returns a paginated, filterable, searchable list of instructor accounts.
 
 ### Query parameters
 
@@ -82,13 +82,13 @@ By default (no `projection` sent), each instructor object contains only the same
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
-| 403 | `You do not have permission to perform this action` | Caller is not an admin. |
+| 403 | `You do not have permission to perform this action` | Caller is not an admin or student (e.g. an instructor). |
 
 ## API 2 — Get user details
 
 `GET /api/v1/users/user/:id`
 
-Admin only. Fetches a single user's public fields, scoped to an expected role.
+Admin or Student. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"` regardless of caller — a student caller isn't restricted to `role=instructor` only.
 
 ### URL params
 
@@ -136,7 +136,7 @@ HTTP `200`
 | --- | --- | --- |
 | 400 | `Validation failed` | `id` is missing or `role` is not one of the allowed values. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
-| 403 | `You do not have permission to perform this action` | Caller is not an admin. |
+| 403 | `You do not have permission to perform this action` | Caller is not an admin or student (e.g. an instructor). |
 | 404 | `<role> not found` | No user exists with that `id` and `role` combination. |
 
 ## API 3 — Approve or reject a user's verification

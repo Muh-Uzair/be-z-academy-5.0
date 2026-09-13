@@ -4,6 +4,8 @@ import {
   createReviewService,
   getReviewsService,
   getReviewDetailsService,
+  getMyReviewsService,
+  getReviewByCourseAndStudentService,
   updateReviewService,
   deleteReviewService,
 } from "../services/reviewService";
@@ -12,6 +14,8 @@ import {
   UpdateReviewBody,
   GetReviewsQuery,
   ReviewIdParams,
+  GetMyReviewsQuery,
+  ReviewByCourseParams,
 } from "../types/reviewType";
 import sendResponse from "../utils/sendResponse";
 
@@ -49,6 +53,39 @@ export const getReviewDetails = catchAsync(
     const { id } = req.validatedParams as ReviewIdParams;
 
     const review = await getReviewDetailsService(id);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Review details fetched successfully",
+      data: { review },
+    });
+  },
+);
+
+export const getMyReviews = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.user!;
+    const query = req.validatedQuery as GetMyReviewsQuery;
+
+    const { reviews, pagination } = await getMyReviewsService(id, query);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Reviews fetched successfully",
+      data: { reviews, pagination },
+    });
+  },
+);
+
+export const getReviewByCourseAndStudent = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { courseId } = req.validatedParams as ReviewByCourseParams;
+    const { id: studentId } = req.user!;
+
+    const review = await getReviewByCourseAndStudentService(
+      courseId,
+      studentId,
+    );
 
     sendResponse(res, 200, {
       status: "success",

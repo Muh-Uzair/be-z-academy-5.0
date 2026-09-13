@@ -56,6 +56,30 @@ export const updateReviewSchema = z
     error: "At least one field must be provided to update the review",
   });
 
+export const reviewByCourseParamsSchema = z
+  .object({
+    courseId: z.string().trim().min(1, { error: "Course id is required" }),
+  })
+  .strict();
+
+export const getMyReviewsQuerySchema = z
+  .object({
+    course: z.string().trim().min(1).optional(),
+    rating: z.coerce
+      .number()
+      .int()
+      .min(REVIEW_RATING_MIN)
+      .max(REVIEW_RATING_MAX)
+      .optional(),
+    search: z.string().trim().min(1).optional(),
+    projection: z.string().trim().min(1).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).default(10),
+    sortBy: z.string().trim().min(1).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict();
+
 export const getReviewsQuerySchema = z
   .object({
     course: z.string().trim().min(1).optional(),

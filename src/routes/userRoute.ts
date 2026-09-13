@@ -25,7 +25,7 @@ const userRouter = Router();
 userRouter.get(
   "/instructors",
   protect,
-  restrictTo(Role.Admin),
+  restrictTo(Role.Admin, Role.Student),
   validation(getInstructorsQuerySchema, "query"),
   getInstructors,
 );
@@ -33,7 +33,7 @@ userRouter.get(
 userRouter.get(
   "/user/:id",
   protect,
-  restrictTo(Role.Admin),
+  restrictTo(Role.Admin, Role.Student),
   validation(userIdParamsSchema, "params"),
   validation(userRoleQuerySchema, "query"),
   getUserDetails,
