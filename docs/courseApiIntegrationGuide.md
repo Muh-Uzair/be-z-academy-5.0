@@ -640,6 +640,8 @@ HTTP `200`
 
 Student only. Course must be verified, the student must not already be enrolled, and the course's instructor must have completed Stripe onboarding. Creates a Stripe `PaymentIntent` with the platform commission split off as an application fee, transferred to the instructor's connected Stripe account.
 
+Calling this again for the same course **always issues a brand-new `clientSecret`**, even if a previous call for the same course was abandoned without paying: any prior unpaid `PaymentIntent` for this student+course is canceled on Stripe and its local record is superseded before the new one is created. Don't cache a `clientSecret` across calls — always use the one from the latest response, and discard the Stripe Elements instance tied to an earlier one.
+
 ### URL params
 
 | Param | Rules |

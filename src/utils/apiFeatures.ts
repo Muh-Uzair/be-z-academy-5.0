@@ -86,7 +86,10 @@ class APIFeatures<T> {
   // Adds a $sort stage from the query's sortBy/sortOrder, falling back to
   // the given defaults when the caller's query doesn't carry them (e.g. a
   // public endpoint that doesn't expose sortBy/sortOrder to the client).
-  sort(defaultSortBy = "createdAt", defaultSortOrder: "asc" | "desc" = "desc"): this {
+  sort(
+    defaultSortBy = "createdAt",
+    defaultSortOrder: "asc" | "desc" = "desc",
+  ): this {
     const sortBy = this.query.sortBy ?? defaultSortBy;
     const sortOrder = this.query.sortOrder ?? defaultSortOrder;
 
@@ -148,10 +151,10 @@ class APIFeatures<T> {
   // $facet result and returns pagination metadata; otherwise returns every
   // matching document as-is, with pagination set to null.
   async exec(): Promise<{ data: T[]; pagination: Pagination | null }> {
-    console.log(
-      "pipeline --------------------------------------- \n",
-      this.pipeline,
-    );
+    // console.log(
+    //   "pipeline --------------------------------------- \n",
+    //   this.pipeline,
+    // );
 
     const results = await this.model.aggregate(this.pipeline);
 

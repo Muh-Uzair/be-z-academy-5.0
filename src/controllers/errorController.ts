@@ -41,6 +41,8 @@ const globalErrorHandler = (
 ): void => {
   let error: AppError;
 
+  console.log("ERROR:", err);
+
   // Convert known Mongoose / MongoDB errors into operational AppErrors
   if (err instanceof mongoose.Error.CastError) {
     error = handleCastError(err);

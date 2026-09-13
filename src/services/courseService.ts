@@ -181,7 +181,7 @@ export const createCoursePaymentIntentService = async (
       email: student.email,
       name: student.fullName,
       metadata: {
-        userId: student.id,
+        userId: student._id.toString(),
       },
     });
 
@@ -227,7 +227,7 @@ export const createCoursePaymentIntentService = async (
     metadata: {
       courseId: courseId, // Used parameter instead of course.id
       studentId,
-      instructorId: instructor.id,
+      instructorId: instructor._id.toString(),
     },
   });
 
@@ -237,7 +237,7 @@ export const createCoursePaymentIntentService = async (
     transactionId: paymentIntent.id,
     student: studentId,
     course: courseId,
-    instructor: instructor.id,
+    instructor: instructor._id,
     totalPrice: amountInCents / 100,
     amountPaid: 0,
     paymentStatus: "pending",
