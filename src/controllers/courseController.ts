@@ -13,6 +13,7 @@ import {
   deleteCourseService,
   createCoursePaymentIntentService,
   requestCourseRefundService,
+  getCourseRefundEligibilityService,
   getCourseCompletionStatusService,
 } from "../services/courseService";
 import {
@@ -204,6 +205,24 @@ export const requestCourseRefund = catchAsync(
       message:
         "Refund initiated successfully. Your money will be returned within 5-10 business days",
       data: null,
+    });
+  },
+);
+
+export const getCourseRefundEligibility = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as CourseIdParams;
+    const studentId = req.user!.id;
+
+    const eligibility = await getCourseRefundEligibilityService(
+      studentId,
+      id,
+    );
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Refund eligibility fetched successfully",
+      data: { eligibility },
     });
   },
 );

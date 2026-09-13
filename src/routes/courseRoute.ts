@@ -12,6 +12,7 @@ import {
   deleteCourse,
   createCoursePaymentIntent,
   requestCourseRefund,
+  getCourseRefundEligibility,
   getCourseCompletionStatus,
 } from "../controllers/courseController";
 import validation from "../middlewares/validation";
@@ -103,6 +104,14 @@ courseRouter.post(
   restrictTo(Role.Student),
   validation(courseIdParamsSchema, "params"),
   requestCourseRefund,
+);
+
+courseRouter.get(
+  "/:id/refund-eligibility",
+  protect,
+  restrictTo(Role.Student),
+  validation(courseIdParamsSchema, "params"),
+  getCourseRefundEligibility,
 );
 
 courseRouter.get(

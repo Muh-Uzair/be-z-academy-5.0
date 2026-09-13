@@ -12,7 +12,7 @@ export const getTransactionsQuerySchema = z
     course: z.string().trim().min(1).optional(),
     instructor: z.string().trim().min(1).optional(),
     paymentStatus: z
-      .enum(["pending", "paid", "failed", "refunded"])
+      .enum(["pending", "paid", "failed", "refund_processing", "refunded"])
       .optional(),
     search: z.string().trim().min(1).optional(),
     projection: z.string().trim().min(1).optional(),

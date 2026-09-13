@@ -154,6 +154,28 @@ export type RequestCourseRefundResponse =
     >
   | ApiErrorResponse;
 
+// API 10a: GET /api/v1/courses/:id/refund-eligibility
+// Response: { status, message, data: { eligibility } }
+export interface CourseRefundEligibility {
+  eligible: boolean;
+  reason: string | null;
+  paymentStatus: "pending" | "paid" | "failed" | "refund_processing" | "refunded";
+  watchPercentage: number;
+  daysSincePurchase: number | null;
+  daysRemaining: number | null;
+}
+
+export interface GetCourseRefundEligibilityResponseData {
+  eligibility: CourseRefundEligibility;
+}
+
+export type GetCourseRefundEligibilityResponse =
+  | SuccessApiResponse<
+      GetCourseRefundEligibilityResponseData,
+      "Refund eligibility fetched successfully"
+    >
+  | ApiErrorResponse;
+
 // API 11: GET /api/v1/courses/:id/completion-status
 // Response: { status, message, data: { completionPercentage, completed } }
 export interface GetCourseCompletionStatusResponseData {

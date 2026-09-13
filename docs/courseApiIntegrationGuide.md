@@ -26,6 +26,7 @@ Base path: `/api/v1/courses`
 | `PATCH /:id/verification` | Admin only |
 | `POST /:id/payment-intent` | Student only |
 | `POST /:id/refund` | Student only |
+| `GET /:id/refund-eligibility` | Student only |
 | `GET /:id/completion-status` | Student only |
 | `GET /` | Any authenticated user (role changes visibility, see below) |
 | `GET /public` | No authentication required |
@@ -696,6 +697,7 @@ No request body.
 - Refund is blocked once the student has watched more than 30% of the course.
 - On success, Stripe reverses the transfer to the instructor and refunds the platform's application fee — the student gets a full 100% refund.
 - **The database is not updated synchronously.** Enrollment removal and transaction status happen asynchronously via the `charge.refunded` Stripe webhook. Don't assume the enrollment disappears immediately after this call returns — re-fetch or poll if you need to confirm.
+- A duplicate/double-click refund request for the same course is rejected outright with `400 A refund for this course is already being processed` — the first request atomically claims the transaction before calling Stripe, so a second concurrent call never reaches Stripe.
 
 ### Success response
 
@@ -717,11 +719,66 @@ HTTP `200`
 | 403 | `You do not have permission to perform this action` | Caller is not a student. |
 | 404 | `You are not enrolled in this course` | No enrollment record for this student+course. |
 | 404 | `No payment record found for this enrollment` | No transaction linked to the enrollment. |
-| 400 | `This course has already been refunded` | Transaction is not in a `paid` state. |
-| 400 | `This payment is not eligible for a refund` | `stripeChargeId` is missing on the transaction. |
+| 400 | `This course has already been refunded` | Transaction is not in a `paid` state (already refunded, or Stripe reports the charge as already refunded). |
+| 400 | `This payment is not eligible for a refund` | Transaction is not in a `paid` state for another reason (e.g. still `pending`/`failed`). |
 | 400 | `Refund window has expired. Refunds are only allowed within 7 days of purchase` | More than 7 days since `amountPaidAt`. |
 | 400 | `You have watched more than 30% of the course and are no longer eligible for a refund` | `enrollment.watchPercentage` exceeds 30%. |
-| 500 | `Unable to process refund: no charge reference found` | Unexpected missing charge reference on the Stripe side. |
+| 400 | `A refund for this course is already being processed` | Another refund request for the same transaction is already in flight (e.g. a duplicate/double-click call). |
+| 500 | `Unable to process refund: no charge reference found` | `stripeChargeId` is missing on the transaction. |
+| 500 | `Unable to process refund. Please try again later` | Stripe rejected the refund for a reason other than "already refunded". |
+
+## API 10a — Get refund eligibility (Student)
+
+`GET /api/v1/courses/:id/refund-eligibility`
+
+Student only. Read-only check — runs the exact same rules as [API 10](#api-10--refund-course-student) (payment state, 7-day window, 30% watch limit) without claiming the transaction or calling Stripe. Use it to show/hide a "Request refund" button and explain why it's disabled, before the student actually submits a refund request.
+
+### URL params
+
+| Param | Rules |
+| --- | --- |
+| `id` | Required, non-empty string (course `_id`). |
+
+No request body.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Refund eligibility fetched successfully",
+  "data": {
+    "eligibility": {
+      "eligible": false,
+      "reason": "You have watched more than 30% of the course and are no longer eligible for a refund",
+      "paymentStatus": "paid",
+      "watchPercentage": 45,
+      "daysSincePurchase": 2.31,
+      "daysRemaining": 5
+    }
+  }
+}
+```
+
+| Field | Notes |
+| --- | --- |
+| `eligible` | `true` only if a refund request would currently succeed. |
+| `reason` | Human-readable explanation when `eligible: false`; `null` when `eligible: true`. |
+| `paymentStatus` | The transaction's current `paymentStatus` (`"paid"`, `"refund_processing"`, `"refunded"`, etc.). |
+| `watchPercentage` | The enrollment's current watch percentage. |
+| `daysSincePurchase` | Days elapsed since `amountPaidAt`; `null` if the transaction was never `paid` (e.g. still `pending`/`failed`). |
+| `daysRemaining` | Days left in the 7-day refund window (floored at 0); `null` under the same condition as `daysSincePurchase`. |
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 403 | `You do not have permission to perform this action` | Caller is not a student. |
+| 404 | `You are not enrolled in this course` | No enrollment record for this student+course. |
+| 404 | `No payment record found for this enrollment` | No transaction linked to the enrollment. |
 
 ## API 11 — Get course completion status (Student)
 
@@ -760,4 +817,4 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, and `GetPublicCourseDetailsResponse`.
+Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, and `GetPublicCourseDetailsResponse`.

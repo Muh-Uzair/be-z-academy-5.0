@@ -82,7 +82,7 @@ The raw `student`, `course`, and `instructor` id fields are never returned direc
 
 `courseDetails` does **not** include `thumbnailUrl` or `videoUrl` (those are only computed on the course endpoints themselves) — fetch `GET /api/v1/courses/:id` separately if you need to display the course's thumbnail or video.
 
-`paymentStatus` is one of `"pending"`, `"paid"`, `"failed"`, `"refunded"`.
+`paymentStatus` is one of `"pending"`, `"paid"`, `"failed"`, `"refund_processing"`, `"refunded"`. `"refund_processing"` is a brief transient state set the moment a refund request is claimed, just before Stripe is called — it flips to `"refunded"` once the `charge.refunded` webhook lands (or back to `"paid"` if the Stripe call itself failed).
 
 ## API 1 — List transactions
 
@@ -97,7 +97,7 @@ Returns a paginated, sortable, searchable, filterable list of transactions, scop
 | `student` | string | — | Filter by student `_id`. |
 | `course` | string | — | Filter by course `_id`. |
 | `instructor` | string | — | Filter by instructor `_id`. |
-| `paymentStatus` | `"pending" \| "paid" \| "failed" \| "refunded"` | — | Filter by payment status. |
+| `paymentStatus` | `"pending" \| "paid" \| "failed" \| "refund_processing" \| "refunded"` | — | Filter by payment status. |
 | `search` | string | — | Case-insensitive search against `transactionId`. |
 | `projection` | string | — | Comma-separated Mongo field projection. |
 | `page` | number (≥1) | `1` | |

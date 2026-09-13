@@ -49,7 +49,12 @@ export interface Transaction {
   totalPrice: number;
   amountPaid: number;
   amountPaidAt: string | null;
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  paymentStatus:
+    | "pending"
+    | "paid"
+    | "failed"
+    | "refund_processing"
+    | "refunded";
   adminCommissionPercentage: number;
   adminCommission: number;
   instructorRevenue: number;

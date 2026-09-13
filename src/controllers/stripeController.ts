@@ -39,23 +39,32 @@ export const handleStripeWebhook = catchAsync(
 
     console.log("Stripe webhook event received:", event.type);
 
+    // Instructor's Stripe Connect onboarding status changed (e.g. payouts/charges enabled)
     if (event.type === "account.updated") {
       const account = event.data.object as Stripe.Account;
       console.log("Account updated:", account.id);
       await handleAccountUpdatedEventService(account);
-    } else if (event.type === "payment_intent.succeeded") {
+    }
+    // A course purchase payment completed successfully
+    else if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log("Payment intent succeeded:", paymentIntent.id);
       await handlePaymentIntentSucceededService(paymentIntent);
-    } else if (event.type === "payment_intent.payment_failed") {
+    }
+    // A course purchase payment attempt failed (e.g. card declined)
+    else if (event.type === "payment_intent.payment_failed") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log("Payment intent failed:", paymentIntent.id);
       await handlePaymentIntentFailedService(paymentIntent);
-    } else if (event.type === "charge.refunded") {
+    }
+    // A previously successful charge was refunded
+    else if (event.type === "charge.refunded") {
       const charge = event.data.object as Stripe.Charge;
       console.log("Charge refunded:", charge.id);
       await handleChargeRefundedService(charge);
-    } else {
+    }
+    // Any other Stripe event type we don't act on
+    else {
       console.log("Unhandled Stripe webhook event type:", event.type);
     }
 
