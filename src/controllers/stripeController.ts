@@ -8,6 +8,7 @@ import sendResponse from "../utils/sendResponse";
 import {
   handleAccountUpdatedEventService,
   handlePaymentIntentSucceededService,
+  handlePaymentIntentFailedService,
   handleChargeRefundedService,
 } from "../services/stripeService";
 
@@ -46,6 +47,10 @@ export const handleStripeWebhook = catchAsync(
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log("Payment intent succeeded:", paymentIntent.id);
       await handlePaymentIntentSucceededService(paymentIntent);
+    } else if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      console.log("Payment intent failed:", paymentIntent.id);
+      await handlePaymentIntentFailedService(paymentIntent);
     } else if (event.type === "charge.refunded") {
       const charge = event.data.object as Stripe.Charge;
       console.log("Charge refunded:", charge.id);
