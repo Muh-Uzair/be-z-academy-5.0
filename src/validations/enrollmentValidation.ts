@@ -27,3 +27,11 @@ export const getEnrollmentsQuerySchema = z
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })
   .strict();
+
+export const updateEnrollmentProgressBodySchema = z
+  .object({
+    lastPositionInSeconds: z.coerce
+      .number()
+      .min(0, { error: "lastPositionInSeconds cannot be negative" }),
+  })
+  .strict();

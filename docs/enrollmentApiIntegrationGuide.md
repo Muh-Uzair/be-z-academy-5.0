@@ -10,7 +10,7 @@ Base path: `/api/v1/enrollments`
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. An undocumented query param causes `400 Validation failed`.
 - Requests under `/api` are limited to 100 per IP per hour.
-- Enrollments are created automatically by the backend (via the Stripe `payment_intent.succeeded` webhook) when a student completes a course payment — there is no create/update/delete endpoint here. This router is read-only.
+- Enrollments are created automatically by the backend (via the Stripe `payment_intent.succeeded` webhook) when a student completes a course payment — there is no create/delete endpoint here. The only mutation this router exposes is the watch-progress update (API 3 below).
 
 ## Roles and access
 
@@ -18,6 +18,7 @@ Base path: `/api/v1/enrollments`
 | --- | --- | --- |
 | `GET /` | Any authenticated user | Admin sees every enrollment; Instructor sees only enrollments in their own courses; Student sees only their own enrollments. |
 | `GET /:id` | Any authenticated user | Admin can view any enrollment; Instructor/Student can only view an enrollment where they are the instructor/student on it (`403` otherwise). |
+| `PATCH /:id/progress` | Any authenticated user | Only the enrolled **student** may update their own enrollment's progress (`403` otherwise, including for Admin/Instructor). |
 
 Unlike other routers, there is no `restrictTo(...)` role gate on these routes — every role is allowed to call them, and the actual scoping/ownership check happens inside the service layer.
 
@@ -183,6 +184,78 @@ HTTP `200`
 | 403 | `You do not have permission to access this enrollment` | Caller is an Instructor/Student who is not a party to this enrollment. |
 | 404 | `Enrollment not found` | No enrollment exists with that `id`. |
 
+## API 3 — Update watch progress
+
+`PATCH /api/v1/enrollments/:id/progress`
+
+Reports how far into the course video the student has played, e.g. from the video player's `timeupdate`/`pause`/`ended` handlers or an `onStop` heartbeat. The backend tracks the **furthest position ever reached** — sending a smaller `lastPositionInSeconds` (e.g. after rewinding to rewatch a part) never lowers `watchPercentage`, and a position beyond the course's duration is capped at 100%.
+
+Side effects on every call:
+- `totalDurationWatchedInMinutes` and `watchPercentage` are recomputed from the furthest position reached.
+- The first time `watchPercentage` crosses 95%, `watchedCompletely` becomes `true` and `watchedCompletelyAt` is set (once — it is never re-set on later calls).
+- This enrollment's `mostRecentlySeen` becomes `true`, and it is cleared to `false` on every other enrollment belonging to the same student — so at most one of a student's enrollments is ever "most recently seen".
+
+### URL params
+
+| Param | Rules |
+| --- | --- |
+| `id` | Required, non-empty string (Mongo `_id`). |
+
+### Request body
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `lastPositionInSeconds` | number | Required, `>= 0`. The video's current playback position in seconds. |
+
+```json
+{
+  "lastPositionInSeconds": 754
+}
+```
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Enrollment progress updated successfully",
+  "data": {
+    "enrollment": {
+      "_id": "66e1a1b2c3d4e5f678901234",
+      "student": "66c0a1b2c3d4e5f678901111",
+      "course": "66d1a1b2c3d4e5f678901234",
+      "instructor": "66c0a1b2c3d4e5f678901222",
+      "transaction": "66f1a1b2c3d4e5f678901555",
+      "enrolledAt": "2026-09-01T12:00:00.000Z",
+      "totalDurationWatchedInMinutes": 12.57,
+      "watchPercentage": 2.62,
+      "watchedCompletely": false,
+      "watchedCompletelyAt": null,
+      "mostRecentlySeen": true,
+      "certificateIssued": false,
+      "certificateIssuedAt": null,
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "updatedAt": "2026-09-14T09:00:00.000Z"
+    }
+  }
+}
+```
+
+Note this response's `enrollment` is the **raw** document — `student`/`course`/`instructor`/`transaction` are plain id strings here, unlike the `studentDetails`/`courseDetails`/`instructorDetails`/`transactionDetails` joined shape returned by API 1 and API 2.
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | `lastPositionInSeconds` is missing, negative, non-numeric, or an undocumented field is sent. |
+| 400 | `This course has no duration set, so progress cannot be tracked` | The enrolled course's `totalDurationInMinutes` is `0`. |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 403 | `You do not have permission to update this enrollment's progress` | Caller is not the student on this enrollment (includes Admin/Instructor). |
+| 404 | `Enrollment not found` | No enrollment exists with that `id`. |
+| 404 | `Course not found` | The enrollment's course was deleted. |
+
 ## Frontend types
 
-Copy [`src/response-types/enrollmentResponseTypes.ts`](../src/response-types/enrollmentResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Enrollment`, `EnrollmentUserSummary`, `EnrollmentCourseSummary`, `EnrollmentTransactionSummary`, `GetEnrollmentsResponse`, and `GetEnrollmentDetailsResponse`.
+Copy [`src/response-types/enrollmentResponseTypes.ts`](../src/response-types/enrollmentResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Enrollment`, `EnrollmentUserSummary`, `EnrollmentCourseSummary`, `EnrollmentTransactionSummary`, `GetEnrollmentsResponse`, `GetEnrollmentDetailsResponse`, `RawEnrollment`, `UpdateEnrollmentProgressRequestBody`, and `UpdateEnrollmentProgressResponse`.

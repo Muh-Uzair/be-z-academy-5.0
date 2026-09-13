@@ -1,7 +1,7 @@
 import { PipelineStage, Types } from "mongoose";
 import EnrollmentModel, { EnrollmentType } from "../models/enrollmentModel";
 import { Role } from "../models/userModel";
-import { CourseType } from "../models/courseModel";
+import CourseModel, { CourseType } from "../models/courseModel";
 import { TransactionType } from "../models/transactionModel";
 import AppError from "../utils/appError";
 import APIFeatures from "../utils/apiFeatures";
@@ -9,6 +9,7 @@ import { GetEnrollmentsQuery } from "../types/enrollmentType";
 import { Pagination } from "../utils/sendResponse";
 import { verifyEnrollmentAccessOrThrow } from "../utils/enrollmentUtil";
 import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
+import { ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE } from "../constants/enrollmentConstant";
 
 interface EnrollmentUserSummary {
   _id: Types.ObjectId;
@@ -170,6 +171,81 @@ export const getEnrollmentDetailsService = async (
 
   // Step 2: Enforce ownership for non-admins
   verifyEnrollmentAccessOrThrow(enrollment, user);
+
+  return enrollment;
+};
+
+// FUNCTION
+export const updateEnrollmentProgressService = async (
+  id: string,
+  lastPositionInSeconds: number,
+  user: { userId: string; role: string },
+): Promise<EnrollmentType> => {
+  // Step 1: Fetch the raw enrollment (not the joined/read-only shape)
+  const enrollment = await EnrollmentModel.findById(id);
+
+  if (!enrollment) {
+    throw new AppError(404, "Enrollment not found");
+  }
+
+  // Step 2: Only the enrolled student can report their own watch progress
+  if (enrollment.student.toString() !== user.userId) {
+    throw new AppError(
+      403,
+      "You do not have permission to update this enrollment's progress",
+    );
+  }
+
+  // Step 3: Course duration is needed to convert the reported position into a percentage
+  const course = await CourseModel.findById(enrollment.course);
+
+  if (!course) {
+    throw new AppError(404, "Course not found");
+  }
+
+  if (course.totalDurationInMinutes <= 0) {
+    throw new AppError(
+      400,
+      "This course has no duration set, so progress cannot be tracked",
+    );
+  }
+
+  // Step 4: Track the furthest position ever reached, not the latest one -
+  // rewinding to rewatch a part shouldn't lower progress already earned, and
+  // seeking past the course duration shouldn't push it above 100%.
+  const reportedPositionInMinutes = Math.min(
+    lastPositionInSeconds / 60,
+    course.totalDurationInMinutes,
+  );
+
+  enrollment.totalDurationWatchedInMinutes = Math.max(
+    enrollment.totalDurationWatchedInMinutes,
+    reportedPositionInMinutes,
+  );
+
+  enrollment.watchPercentage = Math.min(
+    100,
+    (enrollment.totalDurationWatchedInMinutes / course.totalDurationInMinutes) *
+      100,
+  );
+
+  // Step 5: Grant completion once, the first time the threshold is crossed
+  if (
+    !enrollment.watchedCompletely &&
+    enrollment.watchPercentage >= ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE
+  ) {
+    enrollment.watchedCompletely = true;
+    enrollment.watchedCompletelyAt = new Date();
+  }
+
+  enrollment.mostRecentlySeen = true;
+  await enrollment.save();
+
+  // Step 6: Only one enrollment per student can be "most recently seen"
+  await EnrollmentModel.updateMany(
+    { student: user.userId, _id: { $ne: enrollment._id } },
+    { $set: { mostRecentlySeen: false } },
+  );
 
   return enrollment;
 };

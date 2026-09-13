@@ -101,3 +101,41 @@ export type GetEnrollmentDetailsResponse =
       "Enrollment details fetched successfully"
     >
   | ApiErrorResponse;
+
+// API 3: PATCH /api/v1/enrollments/:id/progress
+// Body: { lastPositionInSeconds: number }
+// Response: { status, message, data: { enrollment } }
+// Note: enrollment here is the raw Mongoose document (student/course/instructor/
+// transaction are ids, not the joined *Details summaries from the GET endpoints).
+export interface UpdateEnrollmentProgressRequestBody {
+  lastPositionInSeconds: number;
+}
+
+export interface RawEnrollment {
+  _id: string;
+  student: string;
+  course: string;
+  instructor: string;
+  transaction: string;
+  enrolledAt: string;
+  totalDurationWatchedInMinutes: number;
+  watchPercentage: number;
+  watchedCompletely: boolean;
+  watchedCompletelyAt: string | null;
+  mostRecentlySeen: boolean;
+  certificateIssued: boolean;
+  certificateIssuedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateEnrollmentProgressResponseData {
+  enrollment: RawEnrollment;
+}
+
+export type UpdateEnrollmentProgressResponse =
+  | SuccessApiResponse<
+      UpdateEnrollmentProgressResponseData,
+      "Enrollment progress updated successfully"
+    >
+  | ApiErrorResponse;
