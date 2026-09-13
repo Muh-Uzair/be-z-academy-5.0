@@ -134,6 +134,33 @@ export const createCoursePaymentIntentService = async (
     throw new AppError(400, "You are already enrolled in this course");
   }
 
+  // Step 2b: Ensure the student has a Stripe Customer, creating one lazily
+  // on first purchase (enables future card management/transaction history)
+  const student = await UserModel.findOne({
+    _id: studentId,
+    role: Role.Student,
+  });
+
+  if (!student) {
+    throw new AppError(404, "Student not found");
+  }
+
+  let stripeCustomerId = student.stripeCustomerId;
+
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email: student.email,
+      name: student.fullName,
+      metadata: {
+        userId: student.id,
+      },
+    });
+
+    stripeCustomerId = customer.id;
+    student.stripeCustomerId = stripeCustomerId;
+    await student.save();
+  }
+
   // Step 3: Ensure the course's instructor has completed Stripe onboarding
   const instructor = await UserModel.findOne({
     _id: course.instructor,
@@ -163,6 +190,7 @@ export const createCoursePaymentIntentService = async (
   const paymentIntent = await stripe.paymentIntents.create({
     amount: amountInCents,
     currency: "usd",
+    customer: stripeCustomerId,
     application_fee_amount: adminCommission,
     transfer_data: {
       destination: instructor.stripeAccountId,
@@ -174,7 +202,22 @@ export const createCoursePaymentIntentService = async (
     },
   });
 
-  // Step 6: Return the client secret (and any other data the browser needs
+  // Step 6: Create a pending Transaction record now, keyed by the
+  // PaymentIntent id, so a record exists even before Stripe confirms payment
+  await TransactionModel.create({
+    transactionId: paymentIntent.id,
+    student: studentId,
+    course: courseId,
+    instructor: instructor.id,
+    totalPrice: amountInCents / 100,
+    amountPaid: 0,
+    paymentStatus: "pending",
+    adminCommission: adminCommission / 100,
+    instructorRevenue: (amountInCents - adminCommission) / 100,
+    currency: "usd",
+  });
+
+  // Step 7: Return the client secret (and any other data the browser needs
   // to confirm the payment) to the controller
   return { clientSecret: paymentIntent.client_secret };
 };

@@ -83,29 +83,51 @@ export const handlePaymentIntentSucceededService = async (
   const adminCommission = (paymentIntent.application_fee_amount || 0) / 100;
   const instructorRevenue = totalPrice - adminCommission;
 
-  // Stripe can sometimes send the same webhook twice. 
+  // Stripe can sometimes send the same webhook twice.
   // Let's check if we already processed this payment to avoid duplicates.
-  const existingTransaction = await TransactionModel.findOne({ transactionId: paymentIntent.id });
-  if (existingTransaction) {
+  const existingTransaction = await TransactionModel.findOne({
+    transactionId: paymentIntent.id,
+  });
+
+  if (existingTransaction?.paymentStatus === "paid") {
     console.log(`Transaction ${paymentIntent.id} already processed. Skipping.`);
     return;
   }
 
-  // Step 1: Create a new Transaction record
-  const transaction = await TransactionModel.create({
-    transactionId: paymentIntent.id,
-    student: studentId,
-    course: courseId,
-    instructor: instructorId,
-    totalPrice,
-    amountPaid: totalPrice,
-    amountPaidAt: new Date(),
-    paymentStatus: "paid",
-    adminCommission,
-    instructorRevenue,
-    currency: paymentIntent.currency,
-    stripeChargeId: typeof paymentIntent.latest_charge === "string" ? paymentIntent.latest_charge : paymentIntent.latest_charge?.id || null,
-  });
+  const stripeChargeId =
+    typeof paymentIntent.latest_charge === "string"
+      ? paymentIntent.latest_charge
+      : paymentIntent.latest_charge?.id || null;
+
+  // Step 1: Create the Transaction record, or mark the pending one (created
+  // when the PaymentIntent was issued) as paid
+  let transaction;
+
+  if (existingTransaction) {
+    existingTransaction.paymentStatus = "paid";
+    existingTransaction.amountPaid = totalPrice;
+    existingTransaction.amountPaidAt = new Date();
+    existingTransaction.adminCommission = adminCommission;
+    existingTransaction.instructorRevenue = instructorRevenue;
+    existingTransaction.stripeChargeId = stripeChargeId;
+    await existingTransaction.save();
+    transaction = existingTransaction;
+  } else {
+    transaction = await TransactionModel.create({
+      transactionId: paymentIntent.id,
+      student: studentId,
+      course: courseId,
+      instructor: instructorId,
+      totalPrice,
+      amountPaid: totalPrice,
+      amountPaidAt: new Date(),
+      paymentStatus: "paid",
+      adminCommission,
+      instructorRevenue,
+      currency: paymentIntent.currency,
+      stripeChargeId,
+    });
+  }
 
   // Step 2: Create a new Enrollment record
   await EnrollmentModel.create({

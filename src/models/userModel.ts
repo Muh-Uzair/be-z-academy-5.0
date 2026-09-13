@@ -133,6 +133,11 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    stripeCustomerId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: true,
