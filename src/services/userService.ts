@@ -5,8 +5,11 @@ import { sendVerificationStatusEmail } from "../utils/email";
 import { PROFILE_UPDATABLE_FIELDS } from "../constants/userConstant";
 import APIFeatures from "../utils/apiFeatures";
 import { Pagination } from "../utils/sendResponse";
+import { Types } from "mongoose";
+import EnrollmentModel from "../models/enrollmentModel";
 import {
   GetInstructorsQuery,
+  GetStudentsQuery,
   UpdateUserVerificationBody,
   UpdateProfileBody,
 } from "../types/userType";
@@ -19,7 +22,7 @@ const USER_PUBLIC_PROJECTION =
 // Same fields as USER_PUBLIC_PROJECTION, shaped as a $project stage. Applied
 // as the aggregation's default field list; a caller-supplied `projection`
 // query param can only narrow further, never re-add excluded fields.
-const INSTRUCTOR_LIST_PROJECTION: PipelineStage.Project = {
+const USER_LIST_PROJECTION: PipelineStage.Project = {
   $project: USER_PUBLIC_PROJECTION.split(" ").reduce<Record<string, 1>>(
     (project, field) => ({ ...project, [field]: 1 }),
     {},
@@ -40,20 +43,56 @@ export type InstructorListItem = Pick<
   | "updatedAt"
 > & { _id: unknown };
 
+export type StudentListItem = InstructorListItem;
+
 // FUNCTION
 export const getInstructorsService = async (
   query: GetInstructorsQuery,
+  user: { id: string; role: Role },
 ): Promise<{
   instructors: InstructorListItem[];
   pagination: Pagination | null;
 }> => {
-  // Step 1: Scope to the instructor role and strip sensitive/internal fields by default
+  // Step 1: Scope the base pipeline by role - admins see every instructor,
+  // students see only instructors whose course they have bought.
+  if (user.role === Role.Student) {
+    const basePipeline: PipelineStage[] = [
+      { $match: { student: new Types.ObjectId(user.id) } },
+      { $group: { _id: "$instructor" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "instructor",
+        },
+      },
+      { $unwind: "$instructor" },
+      { $replaceRoot: { newRoot: "$instructor" } },
+      USER_LIST_PROJECTION,
+    ];
+
+    const { data: instructors, pagination } = await new APIFeatures(
+      EnrollmentModel,
+      query,
+      basePipeline,
+    )
+      .filter(["isVerified"])
+      .search(["fullName", "email"])
+      .sort()
+      .projection()
+      .paginate()
+      .exec();
+
+    return { instructors, pagination };
+  }
+
+  // Step 2: Admin - scope to the instructor role and strip sensitive/internal fields by default
   const basePipeline: PipelineStage[] = [
     { $match: { role: "instructor" } },
-    INSTRUCTOR_LIST_PROJECTION,
+    USER_LIST_PROJECTION,
   ];
 
-  // Step 2: Layer the query-driven filter, search, sort, projection and pagination stages
   const { data: instructors, pagination } = await new APIFeatures(
     UserModel,
     query,
@@ -67,6 +106,66 @@ export const getInstructorsService = async (
     .exec();
 
   return { instructors, pagination };
+};
+
+// FUNCTION
+export const getStudentsService = async (
+  query: GetStudentsQuery,
+  user: { id: string; role: Role },
+): Promise<{
+  students: StudentListItem[];
+  pagination: Pagination | null;
+}> => {
+  // Step 1: Scope the base pipeline by role - admins see every student,
+  // instructors see only students enrolled in their own courses.
+  if (user.role === Role.Instructor) {
+    const basePipeline: PipelineStage[] = [
+      { $match: { instructor: new Types.ObjectId(user.id) } },
+      { $group: { _id: "$student" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
+      { $unwind: "$student" },
+      { $replaceRoot: { newRoot: "$student" } },
+      USER_LIST_PROJECTION,
+    ];
+
+    const { data: students, pagination } = await new APIFeatures(
+      EnrollmentModel,
+      query,
+      basePipeline,
+    )
+      .search(["fullName", "email"])
+      .sort()
+      .projection()
+      .paginate()
+      .exec();
+
+    return { students, pagination };
+  }
+
+  const basePipeline: PipelineStage[] = [
+    { $match: { role: "student" } },
+    USER_LIST_PROJECTION,
+  ];
+
+  const { data: students, pagination } = await new APIFeatures(
+    UserModel,
+    query,
+    basePipeline,
+  )
+    .search(["fullName", "email"])
+    .sort()
+    .projection()
+    .paginate()
+    .exec();
+
+  return { students, pagination };
 };
 
 // FUNCTION

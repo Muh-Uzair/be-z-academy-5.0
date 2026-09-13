@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import {
   getInstructorsService,
+  getStudentsService,
   getUserDetailsService,
   updateUserVerificationService,
   updateOwnProfileService,
@@ -9,6 +10,7 @@ import {
 import { getInstructorOnboardingLinkService } from "../services/stripeService";
 import {
   GetInstructorsQuery,
+  GetStudentsQuery,
   UserIdParams,
   UpdateUserVerificationBody,
   UpdateProfileBody,
@@ -19,13 +21,35 @@ import sendResponse from "../utils/sendResponse";
 export const getInstructors = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetInstructorsQuery;
+    const { id, role } = req.user!;
 
-    const { instructors, pagination } = await getInstructorsService(query);
+    const { instructors, pagination } = await getInstructorsService(query, {
+      id,
+      role,
+    });
 
     sendResponse(res, 200, {
       status: "success",
       message: "Instructors fetched successfully",
       data: { instructors, pagination },
+    });
+  },
+);
+
+export const getStudents = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const query = req.validatedQuery as GetStudentsQuery;
+    const { id, role } = req.user!;
+
+    const { students, pagination } = await getStudentsService(query, {
+      id,
+      role,
+    });
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Students fetched successfully",
+      data: { students, pagination },
     });
   },
 );

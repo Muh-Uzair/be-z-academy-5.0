@@ -55,6 +55,17 @@ export const getInstructorsQuerySchema = z
   })
   .strict();
 
+export const getStudentsQuerySchema = z
+  .object({
+    search: z.string().trim().min(1).optional(),
+    projection: z.string().trim().min(1).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).default(10),
+    sortBy: z.string().trim().min(1).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict();
+
 // ─── Shared: Update Own Profile ────────────────────────────────────────────────
 // Superset of every role's editable fields; userServices.ts strips fields the
 // requester's role isn't permitted to change before hitting the database.

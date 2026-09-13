@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getInstructors,
+  getStudents,
   getUserDetails,
   updateUserVerification,
   getInstructorOnboardingLink,
@@ -12,6 +13,7 @@ import restrictTo from "../middlewares/restrictTo";
 import { Role } from "../models/userModel";
 import {
   getInstructorsQuerySchema,
+  getStudentsQuerySchema,
   userIdParamsSchema,
   updateUserVerificationSchema,
   updateProfileSchema,
@@ -49,6 +51,15 @@ userRouter.patch(
   updateUserVerification,
 );
 
+// ─── Admin + Instructor Routes ─────────────────────────────────────────────────
+
+userRouter.get(
+  "/students",
+  protect,
+  restrictTo(Role.Admin, Role.Instructor),
+  validation(getStudentsQuerySchema, "query"),
+  getStudents,
+);
 
 // ─── Instructor Routes ────────────────────────────────────────────────────────
 

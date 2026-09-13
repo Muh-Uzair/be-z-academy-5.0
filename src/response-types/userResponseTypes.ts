@@ -3,7 +3,7 @@
 
 import { AuthUser, SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 
-// Full user document shape as returned by the admin-only user endpoints.
+// Full user document shape as returned by the user-management endpoints.
 // Same public projection as AuthUser (see authResponseTypes.ts).
 export type UserDetails = AuthUser;
 
@@ -32,7 +32,18 @@ export type GetInstructorsResponse =
     >
   | ApiErrorResponse;
 
-// API 2: GET /api/v1/users/user/:id
+// API 2: GET /api/v1/users/students
+// Response: { status, message, data: { students, pagination } }
+export interface GetStudentsResponseData {
+  students: UserDetails[];
+  pagination: Pagination;
+}
+
+export type GetStudentsResponse =
+  | SuccessApiResponse<GetStudentsResponseData, "Students fetched successfully">
+  | ApiErrorResponse;
+
+// API 3: GET /api/v1/users/user/:id
 // Response: { status, message, data: { user } }
 // `message` is "<Role> details fetched successfully" for the requested role.
 export interface GetUserDetailsResponseData {
@@ -46,7 +57,7 @@ export type GetUserDetailsResponse =
     >
   | ApiErrorResponse;
 
-// API 3: PATCH /api/v1/users/user/:id/verification
+// API 4: PATCH /api/v1/users/user/:id/verification
 // Response: { status, message, data: { user } }
 // `message` is "<Role> approved successfully" or "<Role> rejected successfully".
 export interface UpdateUserVerificationResponseData {
@@ -60,7 +71,7 @@ export type UpdateUserVerificationResponse =
     >
   | ApiErrorResponse;
 
-// API 4: GET /api/v1/users/get-instructor-onboarding-link
+// API 5: GET /api/v1/users/get-instructor-onboarding-link
 // Response: { status, message, data: { url } }
 export interface GetInstructorOnboardingLinkResponseData {
   url: string;
@@ -73,7 +84,7 @@ export type GetInstructorOnboardingLinkResponse =
     >
   | ApiErrorResponse;
 
-// API 5: PATCH /api/v1/users/update-profile
+// API 6: PATCH /api/v1/users/update-profile
 // Response: { status, message, data: { user } }
 export interface UpdateProfileResponseData {
   user: UserDetails;
