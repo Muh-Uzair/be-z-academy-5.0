@@ -134,6 +134,35 @@ export const createCoursePaymentIntentService = async (
     throw new AppError(400, "You are already enrolled in this course");
   }
 
+  // Step 2a: If the student already has a pending PaymentIntent for this
+  // course (an abandoned checkout), cancel it on Stripe and mark its
+  // Transaction as failed before issuing a fresh one. This avoids two valid
+  // PaymentIntents existing for the same course, which could lead to the
+  // student being charged twice, and keeps the price in sync if it changed.
+  const existingPendingTransaction = await TransactionModel.findOne({
+    student: studentId,
+    course: courseId,
+    paymentStatus: "pending",
+  });
+
+  if (existingPendingTransaction) {
+    try {
+      await stripe.paymentIntents.cancel(
+        existingPendingTransaction.transactionId,
+      );
+    } catch (err) {
+      // PaymentIntent may already be canceled/succeeded/non-cancelable on
+      // Stripe's side; that's fine, we still supersede our local record.
+      console.error(
+        `Failed to cancel stale PaymentIntent ${existingPendingTransaction.transactionId}:`,
+        err,
+      );
+    }
+
+    existingPendingTransaction.paymentStatus = "failed";
+    await existingPendingTransaction.save();
+  }
+
   // Step 2b: Ensure the student has a Stripe Customer, creating one lazily
   // on first purchase (enables future card management/transaction history)
   const student = await UserModel.findOne({
