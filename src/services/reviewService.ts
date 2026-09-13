@@ -16,6 +16,7 @@ import {
   verifyReviewOwnershipOrThrow,
   verifyReviewDeletePermissionOrThrow,
 } from "../utils/reviewUtil";
+import { recalculateCourseRatingStats } from "../utils/courseUtil";
 import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
 
 interface ReviewUserSummary {
@@ -119,13 +120,18 @@ export const createReviewService = async (
   }
 
   // Step 4: Create the review, deriving the instructor from the course
-  return ReviewModel.create({
+  const review = await ReviewModel.create({
     rating: body.rating,
     feedback: body.feedback,
     reviewBy: studentId,
     course: body.course,
     instructor: course.instructor,
   });
+
+  // Step 5: Keep the course's averageRating/totalReviews in sync
+  await recalculateCourseRatingStats(body.course);
+
+  return review;
 };
 
 // FUNCTION
@@ -254,6 +260,12 @@ export const updateReviewService = async (
     runValidators: true,
   });
 
+  // Step 3: Keep the course's averageRating/totalReviews in sync (only
+  // needed when rating changed, but recalculating is cheap and always safe)
+  if (body.rating !== undefined) {
+    await recalculateCourseRatingStats(review.course.toString());
+  }
+
   return updatedReview!;
 };
 
@@ -267,7 +279,11 @@ export const deleteReviewService = async (
   verifyReviewDeletePermissionOrThrow(review, user);
 
   // Step 2: Delete the review document
+  const courseId = review.course.toString();
   await review.deleteOne();
+
+  // Step 3: Keep the course's averageRating/totalReviews in sync
+  await recalculateCourseRatingStats(courseId);
 
   return null;
 };

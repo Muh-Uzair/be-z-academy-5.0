@@ -11,6 +11,7 @@ Base path: `/api/v1/reviews`
 - Strict validation is used: do not send fields that are not documented for that request. Body and query fields are validated separately; an undocumented field in either causes `400 Validation failed`.
 - Requests under `/api` are limited to 100 per IP per hour.
 - A student may leave exactly one review per course, and only for a course they are enrolled in.
+- Creating, updating (rating change), or deleting a review recalculates that course's `averageRating`/`totalReviews` (see the [course guide](./courseApiIntegrationGuide.md)) — re-fetch the course if you're displaying those fields alongside a review action.
 
 ## Roles and access
 

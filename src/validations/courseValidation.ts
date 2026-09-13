@@ -44,6 +44,9 @@ export const createCourseSchema = z
       .trim()
       .min(1, { error: "Thumbnail is required" }),
     videoKey: z.string().trim().min(1, { error: "Video is required" }),
+    totalDurationInMinutes: z.coerce.number().min(0, {
+      error: "Video duration is required",
+    }),
   })
   .strict();
 
@@ -80,6 +83,7 @@ export const updateCourseSchema = z
       .optional(),
     thumbnailKey: z.string().trim().min(1).optional(),
     videoKey: z.string().trim().min(1).optional(),
+    totalDurationInMinutes: z.coerce.number().min(0).optional(),
     price: z.coerce.number().min(0).optional(),
     level: z
       .enum(Object.values(CourseLevel) as [string, ...string[]])
@@ -89,7 +93,14 @@ export const updateCourseSchema = z
   .strict()
   .refine((data) => Object.keys(data).length > 0, {
     error: "At least one field must be provided to update the course",
-  });
+  })
+  .refine(
+    (data) => !data.videoKey || data.totalDurationInMinutes !== undefined,
+    {
+      error: "totalDurationInMinutes is required when videoKey is sent",
+      path: ["totalDurationInMinutes"],
+    },
+  );
 
 const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png"] as const;
 

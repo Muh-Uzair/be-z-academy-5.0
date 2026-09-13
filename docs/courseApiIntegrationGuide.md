@@ -67,6 +67,8 @@ Every course object returned by these APIs looks like:
 
 The raw `thumbnailKey` and `videoKey` are never exposed in responses — only the derived `thumbnailUrl` and `videoUrl`. In the list endpoint (API 7) and the details endpoint (API 8), `instructor` and `category` are replaced by joined `instructorDetails` and `categoryDetails` objects instead of raw ids; every other endpoint returns them as raw ids.
 
+`averageRating`/`totalReviews` are recalculated from the course's reviews every time one is created, updated, or deleted (see the [review guide](./reviewApiIntegrationGuide.md)). `totalStudentsEnrolled` increments when a purchase completes and decrements when it's refunded. `totalRevenueInstructor`/`totalRevenueAdmin` accumulate on each completed purchase and are reduced on refund. `totalDurationInMinutes` is set directly from the value sent on create ([API 3](#api-3--create-course)) or update ([API 4](#api-4--update-course)) — the backend never inspects the video file itself, so this value is only as accurate as what the frontend computed and sent.
+
 `slug` is generated server-side from the title plus a random suffix — it cannot be set or changed by the client.
 
 ## API 1 — Get course thumbnail upload URL
@@ -193,7 +195,8 @@ Instructor only. Requires the instructor to have completed Stripe Connect onboar
   "level": "beginner",
   "category": "66c0a1b2c3d4e5f678901222",
   "thumbnailKey": "5.0/courses/thumbnails/<uuid>-bootcamp-thumbnail.jpg",
-  "videoKey": "5.0/courses/videos/<uuid>-intro-lecture.mp4"
+  "videoKey": "5.0/courses/videos/<uuid>-intro-lecture.mp4",
+  "totalDurationInMinutes": 42.5
 }
 ```
 
@@ -206,8 +209,11 @@ Instructor only. Requires the instructor to have completed Stripe Connect onboar
 | `category` | Required, non-empty string (Category `_id`). |
 | `thumbnailKey` | Required, non-empty string (S3 object key from API 1). |
 | `videoKey` | Required, non-empty string (S3 object key from API 2). |
+| `totalDurationInMinutes` | Required, number, ≥ 0. |
 
 `instructor` is taken from the logged-in user, not the request body — do not send it. `slug` and `isVerified` are also server-managed and must not be sent.
+
+**`totalDurationInMinutes` must be read from the actual video file on the frontend, not typed in by the instructor.** Before uploading the video (API 2), read its duration client-side — e.g. loading it into an `HTMLVideoElement` and reading `.duration` (seconds), or via whatever video-picker library is in use — convert to minutes, and send that computed value here. The backend has no way to inspect the uploaded file's duration itself.
 
 ### Success response
 
@@ -261,9 +267,12 @@ Instructor only, and only the course's own instructor. All fields are optional, 
 | `description` | Optional, trimmed, 20–5000 characters. |
 | `thumbnailKey` | Optional, non-empty string (S3 object key from API 1). |
 | `videoKey` | Optional, non-empty string (S3 object key from API 2). |
+| `totalDurationInMinutes` | Required (number, ≥ 0) whenever `videoKey` is sent; omit otherwise. |
 | `price` | Optional, number, ≥ 0. |
 | `level` | Optional, one of `"beginner"`, `"intermediate"`, `"advanced"`. |
 | `category` | Optional, non-empty string (Category `_id`). |
+
+Same as [API 3](#api-3--create-course): `totalDurationInMinutes` must be read from the actual video file on the frontend (e.g. an `HTMLVideoElement`'s `.duration`), never typed in by the instructor — and only when a new `videoKey` is being sent, since it replaces the course's current value.
 
 ### Success response
 

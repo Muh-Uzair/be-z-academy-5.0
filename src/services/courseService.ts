@@ -336,7 +336,9 @@ export const createCourseService = async (
   instructorId: string,
   body: CreateCourseBody,
 ): Promise<CourseWithUrls> => {
-  // Step 1: Create the course, tagging the owning instructor and a unique slug
+  // Step 1: Create the course, tagging the owning instructor and a unique
+  // slug. totalDurationInMinutes is computed client-side from the actual
+  // video file — the instructor never types it directly.
   const course = await CourseModel.create({
     ...body,
     instructor: instructorId,
@@ -616,7 +618,9 @@ export const updateCourseService = async (
   const previousThumbnailKey = existingCourse.thumbnailKey;
   const previousVideoKey = existingCourse.videoKey;
 
-  // Step 2: Apply the update
+  // Step 2: Apply the update. totalDurationInMinutes is computed
+  // client-side from the actual video file — the instructor never types it
+  // directly.
   const updatedCourse = await CourseModel.findByIdAndUpdate(id, body, {
     new: true,
     runValidators: true,

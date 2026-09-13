@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { stripe } from "../config/stripe";
 import UserModel, { Role } from "../models/userModel";
+import CourseModel from "../models/courseModel";
 import AppError from "../utils/appError";
 import { STRIPE_ONBOARDING_URL } from "../constants/stripeConstant";
 import TransactionModel from "../models/transactionModel";
@@ -142,6 +143,18 @@ export const handlePaymentIntentSucceededService = async (
     enrolledAt: new Date(),
   });
 
+  // Step 8: Keep the course's aggregate stats in sync
+  await CourseModel.updateOne(
+    { _id: courseId },
+    {
+      $inc: {
+        totalStudentsEnrolled: 1,
+        totalRevenueInstructor: instructorRevenue,
+        totalRevenueAdmin: adminCommission,
+      },
+    },
+  );
+
   console.log(
     `Successfully created Transaction and Enrollment for student ${studentId} in course ${courseId}`,
   );
@@ -214,6 +227,18 @@ export const handleChargeRefundedService = async (
     student: transaction.student,
     course: transaction.course,
   });
+
+  // Step 5: Keep the course's aggregate stats in sync
+  await CourseModel.updateOne(
+    { _id: transaction.course },
+    {
+      $inc: {
+        totalStudentsEnrolled: -1,
+        totalRevenueInstructor: -transaction.instructorRevenue,
+        totalRevenueAdmin: -transaction.adminCommission,
+      },
+    },
+  );
 
   console.log(
     `Refund processed successfully. Transaction ${transaction.transactionId} marked as refunded and enrollment removed.`,
