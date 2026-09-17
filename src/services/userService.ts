@@ -116,46 +116,33 @@ export const getStudentsService = async (
   students: StudentListItem[];
   pagination: Pagination | null;
 }> => {
-  // Step 1: Scope the base pipeline by role - admins see every student,
-  // instructors see only students enrolled in their own courses.
-  if (user.role === Role.Instructor) {
-    const basePipeline: PipelineStage[] = [
-      { $match: { instructor: new Types.ObjectId(user.id) } },
-      { $group: { _id: "$student" } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "student",
-        },
-      },
-      { $unwind: "$student" },
-      { $replaceRoot: { newRoot: "$student" } },
-      USER_LIST_PROJECTION,
-    ];
-
-    const { data: students, pagination } = await new APIFeatures(
-      EnrollmentModel,
-      query,
-      basePipeline,
-    )
-      .search(["fullName", "email"])
-      .sort()
-      .projection()
-      .paginate()
-      .exec();
-
-    return { students, pagination };
-  }
+  // Step 1: Scope the base pipeline by role - admins see every student who
+  // has bought at least one course, instructors see only students who
+  // bought a course from them specifically.
+  const matchStage: PipelineStage[] =
+    user.role === Role.Instructor
+      ? [{ $match: { instructor: new Types.ObjectId(user.id) } }]
+      : [];
 
   const basePipeline: PipelineStage[] = [
+    ...matchStage,
+    { $group: { _id: "$student" } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "student",
+      },
+    },
+    { $unwind: "$student" },
+    { $replaceRoot: { newRoot: "$student" } },
     { $match: { role: "student" } },
     USER_LIST_PROJECTION,
   ];
 
   const { data: students, pagination } = await new APIFeatures(
-    UserModel,
+    EnrollmentModel,
     query,
     basePipeline,
   )
