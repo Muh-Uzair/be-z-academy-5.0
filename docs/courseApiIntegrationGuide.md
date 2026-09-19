@@ -24,6 +24,8 @@ Base path: `/api/v1/courses`
 | `PATCH /:id` | Instructor only (must own the course) |
 | `DELETE /:id` | Instructor only (must own the course) |
 | `PATCH /:id/verification` | Admin only |
+| `GET /student/:id` | Admin only |
+| `GET /instructor/:id` | Admin only |
 | `POST /:id/payment-intent` | Student only |
 | `POST /:id/refund` | Student only |
 | `GET /:id/refund-eligibility` | Student only |
@@ -824,6 +826,89 @@ HTTP `200`
 | 403 | `You do not have permission to perform this action` | Caller is not a student. |
 | 404 | `You are not enrolled in this course` | No enrollment record for this student+course. |
 
+## API 14 — List an instructor's courses (Admin)
+
+`GET /api/v1/courses/instructor/:id`
+
+Admin only. Returns a paginated, sortable, searchable list of all courses belonging to a specific instructor, identified by their user `_id`. Accepts the same query parameters as [API 7](#api-7--list-courses) and returns the same joined response shape.
+
+This is the admin mirror of `GET /api/v1/courses/student/:id` — it impersonates the target instructor's role when scoping the query, so the admin sees exactly what that instructor would see on their own `GET /courses` call.
+
+### URL params
+
+| Param | Rules |
+| --- | --- |
+| `id` | Required, non-empty string (Mongo `_id` of the instructor). |
+
+### Query parameters
+
+Identical to [API 7](#api-7--list-courses):
+
+| Param | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `search` | string | — | Case-insensitive search against `title`. |
+| `projection` | string | — | Comma-separated Mongo field projection. |
+| `instructor` | string | — | Filter by instructor `_id`. |
+| `isVerified` | `"true" \| "false"` | — | Filter by verification state. |
+| `verificationRejectionReason` | `"null"` | — | Filters to courses where this field IS null. |
+| `status` | `"verified" \| "rejected" \| "pendingReview"` | — | Filter by derived review status. |
+| `page` | number (≥1) | `1` | |
+| `limit` | number (≥1) | `10` | |
+| `sortBy` | string | `createdAt` | |
+| `sortOrder` | `"asc" \| "desc"` | `desc` | |
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Instructor's courses fetched successfully",
+  "data": {
+    "courses": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Web Development Bootcamp",
+        "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/....jpg",
+        "videoUrl": "https://s3.<region>.amazonaws.com/<bucket>/...?X-Amz-Signature=...",
+        "price": 49.99,
+        "level": "beginner",
+        "instructorDetails": { "_id": "66c0a1b2c3d4e5f678901111", "fullName": "Jane Doe" },
+        "categoryDetails": { "_id": "66c0a1b2c3d4e5f678901222", "name": "Web Development" },
+        "isVerified": false,
+        "verificationRejectionReason": null,
+        "averageRating": 0,
+        "totalReviews": 0,
+        "totalStudentsEnrolled": 0,
+        "totalDurationInMinutes": 42,
+        "slug": "complete-web-development-bootcamp-a1b2c3d4",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 5,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+Includes **all** of the instructor's courses — verified, rejected, and pending review — since the admin is impersonating the instructor's scope with no extra filtering. Use the `status` or `isVerified` query params to narrow to a specific subset.
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | An invalid or undocumented query param is sent, or `id` is missing. |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 403 | `You do not have permission to perform this action` | Caller is not an admin. |
+
 ## Frontend types
 
-Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, and `GetPublicCourseDetailsResponse`.
+Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, and `GetInstructorCoursesResponse`.

@@ -5,6 +5,8 @@ import {
   getCourseVideoUploadUrlService,
   createCourseService,
   getCoursesService,
+  getStudentCoursesService,
+  getInstructorCoursesService,
   getPublicCoursesService,
   getCourseDetailsService,
   getPublicCourseDetailsService,
@@ -18,6 +20,8 @@ import {
 } from "../services/courseService";
 import {
   CourseIdParams,
+  StudentIdParams,
+  InstructorIdParams,
   CreateCourseBody,
   UpdateCourseBody,
   UpdateCourseVerificationBody,
@@ -82,6 +86,42 @@ export const getCourses = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Courses fetched successfully",
+      data: { courses, pagination },
+    });
+  },
+);
+
+export const getStudentCourses = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as StudentIdParams;
+    const query = req.validatedQuery as GetCoursesQuery;
+
+    const { courses, pagination } = await getStudentCoursesService(
+      id,
+      query,
+    );
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Student's courses fetched successfully",
+      data: { courses, pagination },
+    });
+  },
+);
+
+export const getInstructorCourses = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as InstructorIdParams;
+    const query = req.validatedQuery as GetCoursesQuery;
+
+    const { courses, pagination } = await getInstructorCoursesService(
+      id,
+      query,
+    );
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Instructor's courses fetched successfully",
       data: { courses, pagination },
     });
   },

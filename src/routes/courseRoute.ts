@@ -4,6 +4,8 @@ import {
   uploadCourseVideo,
   createCourse,
   getCourses,
+  getStudentCourses,
+  getInstructorCourses,
   getPublicCourses,
   getCourseDetails,
   getPublicCourseDetails,
@@ -22,6 +24,8 @@ import requireStripeOnboarding from "../middlewares/courseMiddleware";
 import { Role } from "../models/userModel";
 import {
   courseIdParamsSchema,
+  studentIdParamsSchema,
+  instructorIdParamsSchema,
   createCourseSchema,
   updateCourseSchema,
   updateCourseVerificationSchema,
@@ -42,6 +46,24 @@ courseRouter.patch(
   validation(courseIdParamsSchema, "params"),
   validation(updateCourseVerificationSchema, "body"),
   updateCourseVerification,
+);
+
+courseRouter.get(
+  "/student/:id",
+  protect,
+  restrictTo(Role.Admin),
+  validation(studentIdParamsSchema, "params"),
+  validation(getCoursesQuerySchema, "query"),
+  getStudentCourses,
+);
+
+courseRouter.get(
+  "/instructor/:id",
+  protect,
+  restrictTo(Role.Admin),
+  validation(instructorIdParamsSchema, "params"),
+  validation(getCoursesQuerySchema, "query"),
+  getInstructorCourses,
 );
 
 // ─── Instructor Routes ────────────────────────────────────────────────────────

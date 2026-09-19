@@ -14,6 +14,18 @@ export const courseIdParamsSchema = z
   })
   .strict();
 
+export const studentIdParamsSchema = z
+  .object({
+    id: z.string().min(1, { error: "Student id is required" }),
+  })
+  .strict();
+
+export const instructorIdParamsSchema = z
+  .object({
+    id: z.string().min(1, { error: "Instructor id is required" }),
+  })
+  .strict();
+
 export const createCourseSchema = z
   .object({
     title: z

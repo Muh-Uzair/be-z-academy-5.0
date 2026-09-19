@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   courseIdParamsSchema,
+  studentIdParamsSchema,
+  instructorIdParamsSchema,
   createCourseSchema,
   updateCourseSchema,
   updateCourseVerificationSchema,
@@ -11,6 +13,8 @@ import {
 } from "../validations/courseValidation";
 
 export type CourseIdParams = z.infer<typeof courseIdParamsSchema>;
+export type StudentIdParams = z.infer<typeof studentIdParamsSchema>;
+export type InstructorIdParams = z.infer<typeof instructorIdParamsSchema>;
 export type CreateCourseBody = z.infer<typeof createCourseSchema>;
 export type UpdateCourseBody = z.infer<typeof updateCourseSchema>;
 export type UpdateCourseVerificationBody = z.infer<

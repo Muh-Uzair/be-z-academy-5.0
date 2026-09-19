@@ -464,6 +464,33 @@ export const getCoursesService = async (
 };
 
 // FUNCTION
+// Admin-only: courses a specific student is enrolled in. Reuses
+// getCoursesService's Role.Student scoping by impersonating that student,
+// since the enrollment-based filtering logic is identical.
+export const getStudentCoursesService = async (
+  studentId: string,
+  query: GetCoursesQuery,
+): Promise<{
+  courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
+  pagination: Pagination | null;
+}> => {
+  return getCoursesService(query, { id: studentId, role: Role.Student });
+};
+
+// FUNCTION
+// Admin-only: courses of a specific instructor. Reuses
+// getCoursesService's Role.Instructor scoping by impersonating that instructor.
+export const getInstructorCoursesService = async (
+  instructorId: string,
+  query: GetCoursesQuery,
+): Promise<{
+  courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
+  pagination: Pagination | null;
+}> => {
+  return getCoursesService(query, { id: instructorId, role: Role.Instructor });
+};
+
+// FUNCTION
 // Public, unauthenticated course listing — always scoped to verified courses
 // only, and never signs/returns a videoUrl (no per-request S3 signing cost
 // for anonymous traffic).
