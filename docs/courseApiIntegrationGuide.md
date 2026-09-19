@@ -909,6 +909,90 @@ Includes **all** of the instructor's courses — verified, rejected, and pending
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to perform this action` | Caller is not an admin. |
 
+## API 15 — List a student's courses (Admin)
+
+`GET /api/v1/courses/student/:id`
+
+Admin only. Returns a paginated, sortable, searchable list of all courses a specific student is enrolled in, identified by their user `_id`. Accepts the same query parameters as [API 7](#api-7--list-courses) and returns the same joined response shape.
+
+This is the admin mirror for a student's courses — it impersonates the target student's role when scoping the query, so the admin sees exactly what that student would see on their own `GET /courses` call.
+
+### URL params
+
+| Param | Rules |
+| --- | --- |
+| `id` | Required, non-empty string (Mongo `_id` of the student). |
+
+### Query parameters
+
+Identical to [API 7](#api-7--list-courses):
+
+| Param | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `search` | string | — | Case-insensitive search against `title`. |
+| `projection` | string | — | Comma-separated Mongo field projection. |
+| `instructor` | string | — | Filter by instructor `_id`. |
+| `isVerified` | `"true" \| "false"` | — | Filter by verification state. |
+| `verificationRejectionReason` | `"null"` | — | Filters to courses where this field IS null. |
+| `status` | `"verified" \| "rejected" \| "pendingReview"` | — | Filter by derived review status. |
+| `page` | number (≥1) | `1` | |
+| `limit` | number (≥1) | `10` | |
+| `sortBy` | string | `createdAt` | |
+| `sortOrder` | `"asc" \| "desc"` | `desc` | |
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Student's courses fetched successfully",
+  "data": {
+    "courses": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Web Development Bootcamp",
+        "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/....jpg",
+        "videoUrl": "https://s3.<region>.amazonaws.com/<bucket>/...?X-Amz-Signature=...",
+        "price": 49.99,
+        "level": "beginner",
+        "instructorDetails": { "_id": "66c0a1b2c3d4e5f678901111", "fullName": "Jane Doe" },
+        "categoryDetails": { "_id": "66c0a1b2c3d4e5f678901222", "name": "Web Development" },
+        "isVerified": true,
+        "verificationRejectionReason": null,
+        "lastVerificationRejectedAt": null,
+        "averageRating": 4.5,
+        "totalReviews": 12,
+        "totalStudentsEnrolled": 340,
+        "totalDurationInMinutes": 480,
+        "slug": "complete-web-development-bootcamp-a1b2c3d4",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 5,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+Includes **all** of the courses the student is enrolled in.
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | An invalid or undocumented query param is sent, or `id` is missing. |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 403 | `You do not have permission to perform this action` | Caller is not an admin. |
+
 ## Frontend types
 
-Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, and `GetInstructorCoursesResponse`.
+Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, `GetInstructorCoursesResponse`, and `GetStudentCoursesResponse`.

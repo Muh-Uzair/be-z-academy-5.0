@@ -255,3 +255,16 @@ export type GetInstructorCoursesResponse =
       "Instructor's courses fetched successfully"
     >
   | ApiErrorResponse;
+
+// API 15: GET /api/v1/courses/student/:id
+// Admin only. Same response envelope as API 7 (GetCoursesResponse) — the
+// data shape is identical, only the success message differs.
+// Response: { status, message, data: { courses, pagination } }
+export type GetStudentCoursesResponseData = GetCoursesResponseData;
+
+export type GetStudentCoursesResponse =
+  | SuccessApiResponse<
+      GetStudentCoursesResponseData,
+      "Student's courses fetched successfully"
+    >
+  | ApiErrorResponse;
