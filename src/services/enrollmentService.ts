@@ -8,7 +8,10 @@ import APIFeatures from "../utils/apiFeatures";
 import { GetEnrollmentsQuery } from "../types/enrollmentType";
 import { Pagination } from "../utils/sendResponse";
 import { verifyEnrollmentAccessOrThrow } from "../utils/enrollmentUtil";
-import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
+import {
+  excludeUserFields,
+  excludeCourseInternalFields,
+} from "../utils/lookupProjections";
 import { ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE } from "../constants/enrollmentConstant";
 
 interface EnrollmentUserSummary {
@@ -77,7 +80,9 @@ const ENROLLMENT_LOOKUP_STAGES: PipelineStage[] = [
       as: "transactionDetails",
     },
   },
-  { $unwind: { path: "$transactionDetails", preserveNullAndEmptyArrays: true } },
+  {
+    $unwind: { path: "$transactionDetails", preserveNullAndEmptyArrays: true },
+  },
   {
     $project: {
       student: 0,
@@ -95,7 +100,10 @@ const ENROLLMENT_LOOKUP_STAGES: PipelineStage[] = [
 export const getEnrollmentsService = async (
   query: GetEnrollmentsQuery,
   user: { userId: string; role: string },
-): Promise<{ enrollments: EnrollmentListItem[]; pagination: Pagination | null }> => {
+): Promise<{
+  enrollments: EnrollmentListItem[];
+  pagination: Pagination | null;
+}> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
@@ -125,7 +133,6 @@ export const getEnrollmentsService = async (
       basePipeline.push({
         $match: {
           watchPercentage: { $gt: 0 },
-          watchedCompletely: false,
         },
       });
     }
@@ -246,7 +253,8 @@ export const updateEnrollmentProgressService = async (
   // Step 5: Grant completion once, the first time the threshold is crossed
   if (
     !enrollment.watchedCompletely &&
-    enrollment.watchPercentage >= ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE
+    enrollment.watchPercentage >=
+      ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE
   ) {
     enrollment.watchedCompletely = true;
     enrollment.watchedCompletelyAt = new Date();
