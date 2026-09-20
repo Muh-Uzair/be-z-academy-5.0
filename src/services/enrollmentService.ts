@@ -227,15 +227,20 @@ export const updateEnrollmentProgressService = async (
     course.totalDurationInMinutes,
   );
 
-  enrollment.totalDurationWatchedInMinutes = Math.max(
-    enrollment.totalDurationWatchedInMinutes,
-    reportedPositionInMinutes,
+  enrollment.totalDurationWatchedInMinutes = Number(
+    Math.max(
+      enrollment.totalDurationWatchedInMinutes,
+      reportedPositionInMinutes,
+    ).toFixed(2),
   );
 
-  enrollment.watchPercentage = Math.min(
-    100,
-    (enrollment.totalDurationWatchedInMinutes / course.totalDurationInMinutes) *
+  enrollment.watchPercentage = Number(
+    Math.min(
       100,
+      (enrollment.totalDurationWatchedInMinutes /
+        course.totalDurationInMinutes) *
+        100,
+    ).toFixed(2),
   );
 
   // Step 5: Grant completion once, the first time the threshold is crossed
