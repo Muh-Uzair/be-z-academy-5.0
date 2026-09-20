@@ -28,10 +28,12 @@ export type ApiErrorResponse = {
 // cookies instead of the JSON response body.
 export type EmptyAuthResponseData = null;
 
-// Unified public user shape returned by both POST /signin and GET /me.
+// Public user shape returned by POST /signin and GET /me. GET /me additionally
+// includes stripeOnboardingComplete for instructors.
 // Sensitive or internal fields (password, otp, otpExpires, __v,
-// stripeAccountId, stripeOnboardingComplete, verificationRejectionReason,
-// lastVerificationRejectedAt) are never included.
+// stripeAccountId, verificationRejectionReason, lastVerificationRejectedAt)
+// are never included. stripeOnboardingComplete is included for instructors
+// in GET /me only.
 export interface AuthUser {
   _id: string;
   fullName: string;
@@ -42,6 +44,7 @@ export interface AuthUser {
   highestEducation: string;
   yearsOfExperience: number;
   isVerified: boolean;
+  stripeOnboardingComplete?: boolean;
   createdAt: string;
   updatedAt: string;
 }

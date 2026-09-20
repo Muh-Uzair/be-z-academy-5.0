@@ -162,7 +162,9 @@ export const getUserDetailsService = async (
 ): Promise<HydratedDocument<UserType>> => {
   // Step 1: Find the user, scoped to the expected role, selecting only public fields
   const user = await UserModel.findOne({ _id: id, role }).select(
-    USER_PUBLIC_PROJECTION,
+    role === Role.Instructor
+      ? `${USER_PUBLIC_PROJECTION} stripeOnboardingComplete`
+      : USER_PUBLIC_PROJECTION,
   );
 
   // Step 2: Ensure it exists

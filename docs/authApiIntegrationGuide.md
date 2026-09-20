@@ -401,7 +401,7 @@ No request body is required; this endpoint ignores it. The request must include 
 
 1. Validates the `accessToken` cookie.
 2. Uses its user ID and role to load the matching user.
-3. Returns the same user shape as the sign-in response. Sensitive and internal fields (`password`, `otp`, `otpExpires`, `__v`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, `lastVerificationRejectedAt`) are never included.
+3. Returns the same user shape as the sign-in response. For instructors, the response additionally includes `stripeOnboardingComplete`. Sensitive and internal fields (`password`, `otp`, `otpExpires`, `__v`, `stripeAccountId`, `verificationRejectionReason`, `lastVerificationRejectedAt`) are never included.
 
 ### Success response
 
@@ -426,6 +426,14 @@ HTTP `200`
       "updatedAt": "2026-08-25T10:00:00.000Z"
     }
   }
+}
+```
+
+For an instructor, `data.user` additionally includes:
+
+```json
+{
+  "stripeOnboardingComplete": true
 }
 ```
 
