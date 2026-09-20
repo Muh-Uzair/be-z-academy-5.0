@@ -16,6 +16,10 @@ export const getEnrollmentsQuerySchema = z
       .enum(["true", "false"])
       .transform((val) => val === "true")
       .optional(),
+    continueWatching: z
+      .enum(["true", "false"])
+      .transform((val) => val === "true")
+      .optional(),
     certificateIssued: z
       .enum(["true", "false"])
       .transform((val) => val === "true")

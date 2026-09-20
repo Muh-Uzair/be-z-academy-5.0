@@ -75,6 +75,23 @@ export interface Enrollment {
   updatedAt: string;
 }
 
+// Query parameters for API 1. Set continueWatching to true to return only
+// started but incomplete courses for the authenticated student.
+export interface GetEnrollmentsQueryParams {
+  student?: string;
+  course?: string;
+  instructor?: string;
+  transaction?: string;
+  watchedCompletely?: "true" | "false";
+  continueWatching?: "true" | "false";
+  certificateIssued?: "true" | "false";
+  projection?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
 // API 1: GET /api/v1/enrollments
 // Response: { status, message, data: { enrollments, pagination } }
 export interface GetEnrollmentsResponseData {

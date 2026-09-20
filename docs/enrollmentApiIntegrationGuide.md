@@ -114,6 +114,7 @@ Returns a paginated, sortable, filterable list of enrollments, scoped by the cal
 | `instructor` | string | — | Filter by instructor `_id`. |
 | `transaction` | string | — | Filter by transaction `_id`. |
 | `watchedCompletely` | `"true" \| "false"` | — | Filter by completion state. |
+| `continueWatching` | `"true" \| "false"` | — | For students, when `true`, return only courses that have been started (`watchPercentage > 0`) but are not complete. Ignored for Admin and Instructor callers. |
 | `certificateIssued` | `"true" \| "false"` | — | Filter by certificate-issued state. |
 | `projection` | string | — | Comma-separated Mongo field projection. |
 | `page` | number (≥1) | `1` | |
@@ -122,6 +123,15 @@ Returns a paginated, sortable, filterable list of enrollments, scoped by the cal
 | `sortOrder` | `"asc" \| "desc"` | `desc` | |
 
 All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side. There is no `search` param on this endpoint.
+
+For the Continue Watching page, use:
+
+`GET /api/v1/enrollments?continueWatching=true`
+
+The response keeps the standard enrollment shape. The frontend can use
+`mostRecentlySeen: true` to identify the student's latest course for the hero
+section, while the remaining returned enrollments can be shown in the course
+grid.
 
 ### Success response
 

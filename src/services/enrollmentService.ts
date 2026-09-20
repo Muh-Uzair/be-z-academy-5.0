@@ -120,6 +120,15 @@ export const getEnrollmentsService = async (
     });
   } else if (user.role === Role.Student) {
     basePipeline.push({ $match: { student: new Types.ObjectId(user.userId) } });
+
+    if (query.continueWatching) {
+      basePipeline.push({
+        $match: {
+          watchPercentage: { $gt: 0 },
+          watchedCompletely: false,
+        },
+      });
+    }
   }
 
   // Step 3: Layer the query-driven filter, sort, lookup, projection, and pagination stages.
