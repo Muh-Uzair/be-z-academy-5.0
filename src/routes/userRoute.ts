@@ -22,8 +22,6 @@ import {
 
 const userRouter = Router();
 
-// ─── Admin Routes ─────────────────────────────────────────────────────────────
-
 userRouter.get(
   "/instructors",
   protect,
@@ -51,8 +49,6 @@ userRouter.patch(
   updateUserVerification,
 );
 
-// ─── Admin + Instructor Routes ─────────────────────────────────────────────────
-
 userRouter.get(
   "/students",
   protect,
@@ -61,18 +57,12 @@ userRouter.get(
   getStudents,
 );
 
-// ─── Instructor Routes ────────────────────────────────────────────────────────
-
 userRouter.get(
   "/get-instructor-onboarding-link",
   protect,
   restrictTo(Role.Instructor),
   getInstructorOnboardingLink,
 );
-
-// ─── Student Routes ───────────────────────────────────────────────────────────
-
-// ─── Shared Routes ────────────────────────────────────────────────────────────
 
 userRouter.patch(
   "/update-profile",
