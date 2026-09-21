@@ -353,12 +353,13 @@ export const createCourseService = async (
 export const getCoursesService = async (
   query: GetCoursesQuery,
   user: { id: string; role: string },
+  additionalBasePipeline: PipelineStage[] = [],
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
   pagination: Pagination | null;
 }> => {
   // Step 1: Build the base pipeline
-  const basePipeline: PipelineStage[] = [{ $match: {} }];
+  const basePipeline: PipelineStage[] = [{ $match: {} }, ...additionalBasePipeline];
 
   // Step 2 : Scope the result set by role — this endpoint requires auth
   // (route-level protect), so anonymous callers never reach here.
@@ -464,17 +465,38 @@ export const getCoursesService = async (
 };
 
 // FUNCTION
-// Admin-only: courses a specific student is enrolled in. Reuses
-// getCoursesService's Role.Student scoping by impersonating that student,
-// since the enrollment-based filtering logic is identical.
+// Admins can see all courses a specific student is enrolled in. Instructors
+// are additionally scoped to enrollments in their own courses.
 export const getStudentCoursesService = async (
   studentId: string,
   query: GetCoursesQuery,
+  requester: { id: string; role: string },
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
   pagination: Pagination | null;
 }> => {
-  return getCoursesService(query, { id: studentId, role: Role.Student });
+  const basePipeline: PipelineStage[] = [{ $match: {} }];
+  const enrollmentMatch: { student: Types.ObjectId; instructor?: Types.ObjectId } = {
+    student: new Types.ObjectId(studentId),
+  };
+
+  if (requester.role === Role.Instructor) {
+    enrollmentMatch.instructor = new Types.ObjectId(requester.id);
+  }
+
+  const enrolledCourseIds = await EnrollmentModel.distinct(
+    "course",
+    enrollmentMatch,
+  );
+
+  basePipeline.push({
+    $match: { _id: { $in: enrolledCourseIds } },
+  });
+
+  return getCoursesService(query, {
+    id: studentId,
+    role: Role.Admin,
+  }, basePipeline);
 };
 
 // FUNCTION

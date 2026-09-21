@@ -257,8 +257,10 @@ export type GetInstructorCoursesResponse =
   | ApiErrorResponse;
 
 // API 15: GET /api/v1/courses/student/:id
-// Admin only. Same response envelope as API 7 (GetCoursesResponse) — the
-// data shape is identical, only the success message differs.
+// Admin or Instructor. Admins see all courses the student is enrolled in;
+// instructors see only that student's enrollments in their own courses.
+// Same response envelope as API 7 (GetCoursesResponse) — the data shape is
+// identical, only the success message differs.
 // Response: { status, message, data: { courses, pagination } }
 export type GetStudentCoursesResponseData = GetCoursesResponseData;
 

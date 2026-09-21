@@ -24,7 +24,7 @@ Base path: `/api/v1/courses`
 | `PATCH /:id` | Instructor only (must own the course) |
 | `DELETE /:id` | Instructor only (must own the course) |
 | `PATCH /:id/verification` | Admin only |
-| `GET /student/:id` | Admin only |
+| `GET /student/:id` | Admin or Instructor |
 | `GET /instructor/:id` | Admin only |
 | `POST /:id/payment-intent` | Student only |
 | `POST /:id/refund` | Student only |
@@ -909,13 +909,18 @@ Includes **all** of the instructor's courses — verified, rejected, and pending
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to perform this action` | Caller is not an admin. |
 
-## API 15 — List a student's courses (Admin)
+## API 15 — List a student's courses (Admin or Instructor)
 
 `GET /api/v1/courses/student/:id`
 
-Admin only. Returns a paginated, sortable, searchable list of all courses a specific student is enrolled in, identified by their user `_id`. Accepts the same query parameters as [API 7](#api-7--list-courses) and returns the same joined response shape.
+Admin or Instructor. Returns a paginated, sortable, searchable list of courses a specific student is enrolled in, identified by their user `_id`. Accepts the same query parameters as [API 7](#api-7--list-courses) and returns the same joined response shape.
 
-This is the admin mirror for a student's courses — it impersonates the target student's role when scoping the query, so the admin sees exactly what that student would see on their own `GET /courses` call.
+Admins see all courses the student is enrolled in. Instructors see only the courses where both of these conditions are true:
+
+- The requested student is enrolled in the course.
+- The authenticated instructor owns the course.
+
+An instructor cannot use this endpoint to view the student's courses belonging to another instructor.
 
 ### URL params
 
@@ -991,7 +996,7 @@ Includes **all** of the courses the student is enrolled in.
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent, or `id` is missing. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
-| 403 | `You do not have permission to perform this action` | Caller is not an admin. |
+| 403 | `You do not have permission to perform this action` | Caller is not an admin or instructor. |
 
 ## Frontend types
 

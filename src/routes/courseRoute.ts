@@ -37,6 +37,7 @@ import {
 
 const courseRouter = Router();
 
+// DIVIDER Admin
 courseRouter.patch(
   "/:id/verification",
   protect,
@@ -49,7 +50,7 @@ courseRouter.patch(
 courseRouter.get(
   "/student/:id",
   protect,
-  restrictTo(Role.Admin),
+  restrictTo(Role.Admin, Role.Instructor),
   validation(studentIdParamsSchema, "params"),
   validation(getCoursesQuerySchema, "query"),
   getStudentCourses,
@@ -64,6 +65,7 @@ courseRouter.get(
   getInstructorCourses,
 );
 
+// DIVIDER Instructor
 courseRouter.post(
   "/upload-thumbnail",
   protect,
@@ -106,6 +108,7 @@ courseRouter.delete(
   deleteCourse,
 );
 
+// DIVIDER Student
 courseRouter.post(
   "/:id/payment-intent",
   protect,
@@ -138,6 +141,7 @@ courseRouter.get(
   getCourseCompletionStatus,
 );
 
+// DIVIDER Shared authenticated routes
 courseRouter.get(
   "/",
   protect,
@@ -145,8 +149,7 @@ courseRouter.get(
   getCourses,
 );
 
-// Public — no auth required. Must stay above GET /:id so "/public" isn't
-// swallowed by that param route.
+// DIVIDER  Public routes
 courseRouter.get(
   "/public",
   validation(getPublicCoursesQuerySchema, "query"),
@@ -154,17 +157,16 @@ courseRouter.get(
 );
 
 courseRouter.get(
+  "/:id/public",
+  validation(courseIdParamsSchema, "params"),
+  getPublicCourseDetails,
+);
+
+courseRouter.get(
   "/:id",
   protect,
   validation(courseIdParamsSchema, "params"),
   getCourseDetails,
-);
-
-// Public — no auth required.
-courseRouter.get(
-  "/:id/public",
-  validation(courseIdParamsSchema, "params"),
-  getPublicCourseDetails,
 );
 
 export default courseRouter;

@@ -99,6 +99,7 @@ export const getStudentCourses = catchAsync(
     const { courses, pagination } = await getStudentCoursesService(
       id,
       query,
+      req.user!,
     );
 
     sendResponse(res, 200, {
