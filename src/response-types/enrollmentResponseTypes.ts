@@ -11,17 +11,13 @@ export interface EnrollmentUserSummary {
   avatar: string | null;
 }
 
-// Every enrollment endpoint joins the raw course document as courseDetails
-// without computing thumbnailUrl/videoUrl (that only happens on the course
-// endpoints themselves) — thumbnailKey/videoKey are stripped for safety, but
-// no image/video URL is available here. Fetch GET /courses/:id separately
-// if you need to display the course's thumbnail or video.
 export interface EnrollmentCourseSummary {
   _id: string;
   title: string;
   description: string;
   price: number;
   level: "beginner" | "intermediate" | "advanced";
+  thumbnailUrl: string;
   instructor: string;
   category: string;
   isVerified: boolean;

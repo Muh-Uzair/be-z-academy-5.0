@@ -8,11 +8,9 @@ import APIFeatures from "../utils/apiFeatures";
 import { GetEnrollmentsQuery } from "../types/enrollmentType";
 import { Pagination } from "../utils/sendResponse";
 import { verifyEnrollmentAccessOrThrow } from "../utils/enrollmentUtil";
-import {
-  excludeUserFields,
-  excludeCourseInternalFields,
-} from "../utils/lookupProjections";
+import { excludeUserFields } from "../utils/lookupProjections";
 import { ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE } from "../constants/enrollmentConstant";
+import { getPublicS3Url } from "./s3Service";
 
 interface EnrollmentUserSummary {
   _id: Types.ObjectId;
@@ -24,7 +22,16 @@ interface EnrollmentUserSummary {
 type EnrollmentCourseSummary = Omit<
   CourseType,
   "thumbnailKey" | "videoKey" | "instructor" | "category"
->;
+> & {
+  thumbnailUrl: string;
+};
+
+type EnrollmentAggregateItem = Omit<
+  EnrollmentListItem,
+  "courseDetails"
+> & {
+  courseDetails: EnrollmentCourseSummary & { thumbnailKey: string };
+};
 
 // Shape of each enrollment once ENROLLMENT_LOOKUP_STAGES has joined and
 // replaced student/course/instructor/transaction ids with public-safe
@@ -39,8 +46,8 @@ export type EnrollmentListItem = Omit<
   transactionDetails: TransactionType;
 };
 
-// Each reference is joined into a *Details field so the response shape is
-// already correct without any post-processing mapper.
+// Each reference is joined into a *Details field. The course thumbnail key is
+// retained until the service converts it to a public URL after aggregation.
 // The final $project drops the original ObjectId fields that are superseded
 // by the joined documents, and scrubs sensitive fields that $lookup would
 // otherwise pull in from the joined documents unfiltered.
@@ -91,10 +98,24 @@ const ENROLLMENT_LOOKUP_STAGES: PipelineStage[] = [
       transaction: 0,
       ...excludeUserFields("studentDetails"),
       ...excludeUserFields("instructorDetails"),
-      ...excludeCourseInternalFields("courseDetails"),
+      "courseDetails.videoKey": 0,
     },
   },
 ];
+
+const withCourseThumbnailUrl = (
+  enrollment: EnrollmentAggregateItem,
+): EnrollmentListItem => {
+  const { thumbnailKey, ...courseDetails } = enrollment.courseDetails;
+
+  return {
+    ...enrollment,
+    courseDetails: {
+      ...courseDetails,
+      thumbnailUrl: getPublicS3Url(thumbnailKey),
+    },
+  };
+};
 
 // FUNCTION
 export const getEnrollmentsService = async (
@@ -163,7 +184,11 @@ export const getEnrollmentsService = async (
   // The pipeline's $lookup/$project stages reshape each document into
   // EnrollmentListItem, which APIFeatures' generic Model<EnrollmentType>
   // can't express — cast once at this boundary.
-  return { enrollments: data as unknown as EnrollmentListItem[], pagination };
+  const enrollments = (data as unknown as EnrollmentAggregateItem[]).map(
+    withCourseThumbnailUrl,
+  );
+
+  return { enrollments, pagination };
 };
 
 // FUNCTION
@@ -179,7 +204,7 @@ export const getEnrollmentDetailsService = async (
 
   const [enrollment] = (await EnrollmentModel.aggregate(
     pipeline,
-  )) as EnrollmentListItem[];
+  )) as EnrollmentAggregateItem[];
 
   if (!enrollment) {
     throw new AppError(404, "Enrollment not found");
@@ -188,7 +213,7 @@ export const getEnrollmentDetailsService = async (
   // Step 2: Enforce ownership for non-admins
   verifyEnrollmentAccessOrThrow(enrollment, user);
 
-  return enrollment;
+  return withCourseThumbnailUrl(enrollment);
 };
 
 // FUNCTION

@@ -43,6 +43,7 @@ Every enrollment object returned by these APIs looks like:
     "description": "Learn frontend, backend, and full-stack web development from scratch.",
     "price": 49.99,
     "level": "beginner",
+    "thumbnailUrl": "https://s3.us-east-1.amazonaws.com/example-bucket/5.0/courses/thumbnails/course.jpg",
     "instructor": "66c0a1b2c3d4e5f678901222",
     "category": "66c0a1b2c3d4e5f678901333",
     "isVerified": true,
@@ -97,7 +98,7 @@ Every enrollment object returned by these APIs looks like:
 
 The raw `student`, `course`, `instructor`, and `transaction` id fields are never returned directly — they are always replaced by the joined `studentDetails`, `courseDetails`, `instructorDetails`, and `transactionDetails` objects. `studentDetails`/`instructorDetails` never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`.
 
-`courseDetails` does **not** include `thumbnailUrl` or `videoUrl` (those are only computed on the course endpoints themselves) — fetch `GET /api/v1/courses/:id` separately if you need to display the course's thumbnail or video.
+`courseDetails` includes `thumbnailUrl` for displaying the course thumbnail. It does not include `videoUrl`; fetch `GET /api/v1/courses/:id` separately if you need the course video.
 
 ## API 1 — List enrollments
 
