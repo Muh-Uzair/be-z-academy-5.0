@@ -18,7 +18,7 @@ Base path: `/api/v1/users`
 | ------------------------------------- | ------------------------------------------------------ |
 | `GET /instructors`                    | Admin or Student                                       |
 | `GET /students`                       | Admin or Instructor                                    |
-| `GET /user/:id`                       | Admin or Student                                       |
+| `GET /user/:id`                       | Admin, Student, or Instructor                          |
 | `PATCH /user/:id/verification`        | Admin only                                             |
 | `GET /get-instructor-onboarding-link` | Instructor only                                        |
 | `PATCH /update-profile`               | Any authenticated user (student, instructor, or admin) |
@@ -148,7 +148,14 @@ By default (no `projection` sent), each student object contains only the same pu
 
 `GET /api/v1/users/user/:id`
 
-Admin or Student. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"` regardless of caller — a student caller isn't restricted to `role=instructor` only.
+Admin, Student, or Instructor. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"`. An instructor may view a student only when that student is enrolled in at least one course owned by the requesting instructor.
+
+When calling this endpoint as an instructor:
+
+- The requested `role` must be `"student"`.
+- The backend checks for an enrollment containing both the requested student ID and the authenticated instructor ID.
+- Enrollment in another instructor's course does not grant access.
+- If no matching enrollment exists, the API returns `403`.
 
 ### URL params
 
@@ -181,6 +188,7 @@ HTTP `200`
       "highestEducation": "Master's degree",
       "yearsOfExperience": 6,
       "isVerified": true,
+      "stripeOnboardingComplete": true,
       "createdAt": "2026-08-25T10:00:00.000Z",
       "updatedAt": "2026-08-25T10:00:00.000Z"
     }
@@ -196,7 +204,7 @@ HTTP `200`
 | ----------- | --------------------------------------------------- | ----------------------------------------------------------- |
 | 400         | `Validation failed`                                 | `id` is missing or `role` is not one of the allowed values. |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                |
-| 403         | `You do not have permission to perform this action` | Caller is not an admin or student (e.g. an instructor).     |
+| 403         | `You do not have permission to perform this action`<br>`You do not have permission to view this student's details` | Caller is not an admin, student, or instructor, or an instructor requests a student who is not enrolled in one of the instructor's courses. |
 | 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.       |
 
 ## API 4 — Approve or reject a user's verification

@@ -37,8 +37,6 @@ import {
 
 const courseRouter = Router();
 
-// ─── Admin Routes ─────────────────────────────────────────────────────────────
-
 courseRouter.patch(
   "/:id/verification",
   protect,
@@ -65,8 +63,6 @@ courseRouter.get(
   validation(getCoursesQuerySchema, "query"),
   getInstructorCourses,
 );
-
-// ─── Instructor Routes ────────────────────────────────────────────────────────
 
 courseRouter.post(
   "/upload-thumbnail",
@@ -110,8 +106,6 @@ courseRouter.delete(
   deleteCourse,
 );
 
-// ─── Student Routes ───────────────────────────────────────────────────────────
-
 courseRouter.post(
   "/:id/payment-intent",
   protect,
@@ -143,10 +137,6 @@ courseRouter.get(
   validation(courseIdParamsSchema, "params"),
   getCourseCompletionStatus,
 );
-
-// ─── Shared Routes ────────────────────────────────────────────────────────────
-// Both routes below require auth; visibility/detail level then depends on
-// the caller's role — see getCoursesService / getCourseDetailsService.
 
 courseRouter.get(
   "/",

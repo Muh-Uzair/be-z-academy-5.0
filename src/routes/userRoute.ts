@@ -33,7 +33,7 @@ userRouter.get(
 userRouter.get(
   "/user/:id",
   protect,
-  restrictTo(Role.Admin, Role.Student),
+  restrictTo(Role.Admin, Role.Student, Role.Instructor),
   validation(userIdParamsSchema, "params"),
   validation(userRoleQuerySchema, "query"),
   getUserDetails,

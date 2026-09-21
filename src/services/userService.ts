@@ -159,7 +159,22 @@ export const getStudentsService = async (
 export const getUserDetailsService = async (
   id: string,
   role: Role,
+  requester: { id: string; role: Role },
 ): Promise<HydratedDocument<UserType>> => {
+  if (requester.role === Role.Instructor && role === Role.Student) {
+    const enrollment = await EnrollmentModel.exists({
+      student: new Types.ObjectId(id),
+      instructor: new Types.ObjectId(requester.id),
+    });
+
+    if (!enrollment) {
+      throw new AppError(
+        403,
+        "You do not have permission to view this student's details",
+      );
+    }
+  }
+
   // Step 1: Find the user, scoped to the expected role, selecting only public fields
   const user = await UserModel.findOne({ _id: id, role }).select(
     role === Role.Instructor

@@ -117,7 +117,7 @@ export const getMe = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id, role } = req.user!;
 
-    const user = await getUserDetailsService(id, role as Role);
+    const user = await getUserDetailsService(id, role as Role, { id, role });
 
     sendResponse(res, 200, {
       status: "success",

@@ -3,8 +3,8 @@
 
 import { AuthUser, SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 
-// Full user document shape as returned by the user-management endpoints.
-// Same public projection as AuthUser (see authResponseTypes.ts).
+// Public user shape returned by the user-management endpoints.
+// Instructor details may additionally include stripeOnboardingComplete.
 export type UserDetails = AuthUser;
 
 export type UserRole = "admin" | "instructor" | "student";
@@ -46,6 +46,9 @@ export type GetStudentsResponse =
 // API 3: GET /api/v1/users/user/:id
 // Response: { status, message, data: { user } }
 // `message` is "<Role> details fetched successfully" for the requested role.
+// Allowed callers: admin, student, or instructor. An instructor may request
+// student details only when the student is enrolled in one of that
+// instructor's courses.
 export interface GetUserDetailsResponseData {
   user: UserDetails;
 }

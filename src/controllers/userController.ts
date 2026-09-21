@@ -58,8 +58,9 @@ export const getUserDetails = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const { id } = req.validatedParams as UserIdParams;
     const { role } = req.validatedQuery as UserRoleQuery;
+    const requester = req.user!;
 
-    const user = await getUserDetailsService(id, role);
+    const user = await getUserDetailsService(id, role, requester);
 
     sendResponse(res, 200, {
       status: "success",
