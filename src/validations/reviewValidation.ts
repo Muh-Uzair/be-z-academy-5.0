@@ -62,9 +62,8 @@ export const reviewByCourseParamsSchema = z
   })
   .strict();
 
-export const getMyReviewsQuerySchema = z
+export const getReviewsByCourseQuerySchema = z
   .object({
-    course: z.string().trim().min(1).optional(),
     rating: z.coerce
       .number()
       .int()

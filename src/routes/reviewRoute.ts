@@ -3,8 +3,7 @@ import {
   createReview,
   getReviews,
   getReviewDetails,
-  getMyReviews,
-  getReviewByCourseAndStudent,
+  getReviewsByCourseId,
   updateReview,
   deleteReview,
 } from "../controllers/reviewController";
@@ -17,8 +16,8 @@ import {
   updateReviewSchema,
   reviewIdParamsSchema,
   getReviewsQuerySchema,
-  getMyReviewsQuerySchema,
   reviewByCourseParamsSchema,
+  getReviewsByCourseQuerySchema,
 } from "../validations/reviewValidation";
 
 const reviewRouter = Router();
@@ -37,21 +36,13 @@ reviewRouter.get(
   getReviews,
 );
 
-// Must be declared before "/:id" so "me" isn't swallowed as a review id.
-reviewRouter.get(
-  "/me",
-  protect,
-  restrictTo(Role.Student),
-  validation(getMyReviewsQuerySchema, "query"),
-  getMyReviews,
-);
-
 reviewRouter.get(
   "/course/:courseId",
   protect,
-  restrictTo(Role.Student),
+  restrictTo(Role.Student, Role.Instructor, Role.Admin),
   validation(reviewByCourseParamsSchema, "params"),
-  getReviewByCourseAndStudent,
+  validation(getReviewsByCourseQuerySchema, "query"),
+  getReviewsByCourseId,
 );
 
 reviewRouter.get(

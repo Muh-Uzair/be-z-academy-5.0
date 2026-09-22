@@ -8,7 +8,7 @@ import {
   CreateReviewBody,
   UpdateReviewBody,
   GetReviewsQuery,
-  GetMyReviewsQuery,
+  GetReviewsByCourseQuery,
 } from "../types/reviewType";
 import { Pagination } from "../utils/sendResponse";
 import {
@@ -190,38 +190,7 @@ export const getReviewDetailsService = async (
 };
 
 // FUNCTION
-export const getMyReviewsService = async (
-  studentId: string,
-  query: GetMyReviewsQuery,
-): Promise<{ reviews: ReviewListItem[]; pagination: Pagination | null }> => {
-  // Step 1: Force-scope to the logged-in student; cast reference id filters
-  // to ObjectId, targeting the raw field names so MongoDB can use indexes
-  // before any lookups occur.
-  const filterQuery = {
-    ...query,
-    reviewBy: new Types.ObjectId(studentId),
-    course: query.course ? new Types.ObjectId(query.course) : undefined,
-  };
-
-  // Step 2: Layer the query-driven filter, search, sort, lookup, projection, and pagination stages.
-  const { data, pagination } = await new APIFeatures(
-    ReviewModel,
-    filterQuery,
-    [],
-  )
-    .filter(["course", "reviewBy", "rating"])
-    .search(["feedback"])
-    .sort()
-    .addStages(REVIEW_LOOKUP_STAGES)
-    .projection()
-    .paginate()
-    .exec();
-
-  return { reviews: data as unknown as ReviewListItem[], pagination };
-};
-
-// FUNCTION
-export const getReviewByCourseAndStudentService = async (
+export const getStudentReviewByCourseService = async (
   courseId: string,
   studentId: string,
 ): Promise<ReviewListItem> => {
@@ -242,6 +211,45 @@ export const getReviewByCourseAndStudentService = async (
   }
 
   return review;
+};
+
+// FUNCTION
+export const getCourseReviewsService = async (
+  courseId: string,
+  userId: string,
+  role: string,
+  query: GetReviewsByCourseQuery,
+): Promise<{ reviews: ReviewListItem[]; pagination: Pagination | null }> => {
+  // Instructor: verify the course belongs to them
+  if (role === "instructor") {
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      throw new AppError(404, "Course not found");
+    }
+    if (course.instructor.toString() !== userId) {
+      throw new AppError(403, "You do not have permission to view reviews for this course");
+    }
+  }
+
+  const filterQuery = {
+    ...query,
+    course: new Types.ObjectId(courseId),
+  };
+
+  const { data, pagination } = await new APIFeatures(
+    ReviewModel,
+    filterQuery,
+    [],
+  )
+    .filter(["course", "rating"])
+    .search(["feedback"])
+    .sort()
+    .addStages(REVIEW_LOOKUP_STAGES)
+    .projection()
+    .paginate()
+    .exec();
+
+  return { reviews: data as unknown as ReviewListItem[], pagination };
 };
 
 // FUNCTION

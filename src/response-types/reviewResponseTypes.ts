@@ -84,30 +84,30 @@ export type GetReviewsResponse =
   | SuccessApiResponse<GetReviewsResponseData, "Reviews fetched successfully">
   | ApiErrorResponse;
 
-// API 3a: GET /api/v1/reviews/me
-// Response: { status, message, data: { reviews, pagination } }
-export interface GetMyReviewsResponseData {
+// API 3b: GET /api/v1/reviews/course/:courseId
+// Student: returns the single review left by the logged-in student for that course.
+// Admin: returns all reviews for that course (paginated).
+// Instructor: returns all reviews for that course if it belongs to them (paginated).
+export interface GetReviewsByCourseIdStudentResponseData {
+  review: Review;
+}
+
+export type GetReviewsByCourseIdStudentResponse =
+  | SuccessApiResponse<
+      GetReviewsByCourseIdStudentResponseData,
+      "Review details fetched successfully"
+    >
+  | ApiErrorResponse;
+
+export interface GetReviewsByCourseIdResponseData {
   reviews: Review[];
   pagination: Pagination;
 }
 
-export type GetMyReviewsResponse =
+export type GetReviewsByCourseIdResponse =
   | SuccessApiResponse<
-      GetMyReviewsResponseData,
+      GetReviewsByCourseIdResponseData,
       "Reviews fetched successfully"
-    >
-  | ApiErrorResponse;
-
-// API 3b: GET /api/v1/reviews/course/:courseId
-// Response: { status, message, data: { review } }
-export interface GetReviewByCourseAndStudentResponseData {
-  review: Review;
-}
-
-export type GetReviewByCourseAndStudentResponse =
-  | SuccessApiResponse<
-      GetReviewByCourseAndStudentResponseData,
-      "Review details fetched successfully"
     >
   | ApiErrorResponse;
 

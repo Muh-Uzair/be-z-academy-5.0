@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
+import { Role } from "../models/userModel";
 import {
   createReviewService,
   getReviewsService,
   getReviewDetailsService,
-  getMyReviewsService,
-  getReviewByCourseAndStudentService,
+  getStudentReviewByCourseService,
+  getCourseReviewsService,
   updateReviewService,
   deleteReviewService,
 } from "../services/reviewService";
@@ -14,8 +15,8 @@ import {
   UpdateReviewBody,
   GetReviewsQuery,
   ReviewIdParams,
-  GetMyReviewsQuery,
   ReviewByCourseParams,
+  GetReviewsByCourseQuery,
 } from "../types/reviewType";
 import sendResponse from "../utils/sendResponse";
 
@@ -62,35 +63,32 @@ export const getReviewDetails = catchAsync(
   },
 );
 
-export const getMyReviews = catchAsync(
+export const getReviewsByCourseId = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.user!;
-    const query = req.validatedQuery as GetMyReviewsQuery;
+    const { courseId } = req.validatedParams as ReviewByCourseParams;
+    const { id: userId, role } = req.user!;
 
-    const { reviews, pagination } = await getMyReviewsService(id, query);
+    if (role === Role.Student) {
+      const review = await getStudentReviewByCourseService(courseId, userId);
+      sendResponse(res, 200, {
+        status: "success",
+        message: "Review details fetched successfully",
+        data: { review },
+      });
+      return;
+    }
 
+    const query = req.validatedQuery as GetReviewsByCourseQuery;
+    const { reviews, pagination } = await getCourseReviewsService(
+      courseId,
+      userId,
+      role,
+      query,
+    );
     sendResponse(res, 200, {
       status: "success",
       message: "Reviews fetched successfully",
       data: { reviews, pagination },
-    });
-  },
-);
-
-export const getReviewByCourseAndStudent = catchAsync(
-  async (req: Request, res: Response): Promise<void> => {
-    const { courseId } = req.validatedParams as ReviewByCourseParams;
-    const { id: studentId } = req.user!;
-
-    const review = await getReviewByCourseAndStudentService(
-      courseId,
-      studentId,
-    );
-
-    sendResponse(res, 200, {
-      status: "success",
-      message: "Review details fetched successfully",
-      data: { review },
     });
   },
 );
