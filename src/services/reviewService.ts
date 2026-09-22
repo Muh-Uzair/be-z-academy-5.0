@@ -193,7 +193,7 @@ export const getReviewDetailsService = async (
 export const getStudentReviewByCourseService = async (
   courseId: string,
   studentId: string,
-): Promise<ReviewListItem> => {
+): Promise<ReviewListItem | null> => {
   const pipeline: PipelineStage[] = [
     {
       $match: {
@@ -206,11 +206,7 @@ export const getStudentReviewByCourseService = async (
 
   const [review] = (await ReviewModel.aggregate(pipeline)) as ReviewListItem[];
 
-  if (!review) {
-    throw new AppError(404, "Review not found");
-  }
-
-  return review;
+  return review ?? null;
 };
 
 // FUNCTION

@@ -220,12 +220,26 @@ Behavior differs by role:
 
 HTTP `200`
 
+If the student has reviewed this course:
+
 ```json
 {
   "status": "success",
   "message": "Review details fetched successfully",
   "data": {
     "review": { /* joined review shape, see above */ }
+  }
+}
+```
+
+If the student has **not** reviewed this course:
+
+```json
+{
+  "status": "success",
+  "message": "Review details fetched successfully",
+  "data": {
+    "review": null
   }
 }
 ```
@@ -261,7 +275,7 @@ HTTP `200`
 | 403 | `You do not have permission to perform this action` | Caller is not a student, instructor, or admin. |
 | 403 | `You do not have permission to view reviews for this course` | Instructor is not the owner of this course. |
 | 404 | `Course not found` | Instructor case — no course exists with that `courseId`. |
-| 404 | `Review not found` | Student case — the logged-in student has no review for this course. |
+
 
 ## API 3 — Get review details
 

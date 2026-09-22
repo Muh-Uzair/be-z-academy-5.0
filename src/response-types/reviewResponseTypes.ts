@@ -89,7 +89,7 @@ export type GetReviewsResponse =
 // Admin: returns all reviews for that course (paginated).
 // Instructor: returns all reviews for that course if it belongs to them (paginated).
 export interface GetReviewsByCourseIdStudentResponseData {
-  review: Review;
+  review: Review | null;
 }
 
 export type GetReviewsByCourseIdStudentResponse =
