@@ -59,7 +59,7 @@ courseRouter.get(
 courseRouter.get(
   "/instructor/:id",
   protect,
-  restrictTo(Role.Admin),
+  restrictTo(Role.Admin, Role.Student),
   validation(instructorIdParamsSchema, "params"),
   validation(getCoursesQuerySchema, "query"),
   getInstructorCourses,

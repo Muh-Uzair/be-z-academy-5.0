@@ -244,8 +244,11 @@ export type GetPublicCourseDetailsResponse =
   | ApiErrorResponse;
 
 // API 14: GET /api/v1/courses/instructor/:id
-// Admin only. Same response envelope as API 7 (GetCoursesResponse) — the
+// Admin or Student. Same response envelope as API 7 (GetCoursesResponse) — the
 // data shape is identical, only the success message differs.
+// Role-based visibility:
+//   Admin   → all courses of the instructor (verified + unverified + rejected)
+//   Student → only verified courses of the instructor (isVerified: true, verificationRejectionReason: null)
 // Response: { status, message, data: { courses, pagination } }
 export type GetInstructorCoursesResponseData = GetCoursesResponseData;
 

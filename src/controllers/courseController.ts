@@ -118,6 +118,7 @@ export const getInstructorCourses = catchAsync(
     const { courses, pagination } = await getInstructorCoursesService(
       id,
       query,
+      req.user!,
     );
 
     sendResponse(res, 200, {

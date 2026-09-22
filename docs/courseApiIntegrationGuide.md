@@ -25,7 +25,7 @@ Base path: `/api/v1/courses`
 | `DELETE /:id` | Instructor only (must own the course) |
 | `PATCH /:id/verification` | Admin only |
 | `GET /student/:id` | Admin or Instructor |
-| `GET /instructor/:id` | Admin only |
+| `GET /instructor/:id` | Admin or Student |
 | `POST /:id/payment-intent` | Student only |
 | `POST /:id/refund` | Student only |
 | `GET /:id/refund-eligibility` | Student only |
@@ -826,13 +826,20 @@ HTTP `200`
 | 403 | `You do not have permission to perform this action` | Caller is not a student. |
 | 404 | `You are not enrolled in this course` | No enrollment record for this student+course. |
 
-## API 14 — List an instructor's courses (Admin)
+## API 14 — List an instructor's courses (Admin or Student)
 
 `GET /api/v1/courses/instructor/:id`
 
-Admin only. Returns a paginated, sortable, searchable list of all courses belonging to a specific instructor, identified by their user `_id`. Accepts the same query parameters as [API 7](#api-7--list-courses) and returns the same joined response shape.
+Admin or Student. Returns a paginated, sortable, searchable list of courses belonging to a specific instructor, identified by their user `_id`. Accepts the same query parameters as [API 7](#api-7--list-courses) and returns the same joined response shape.
 
-This is the admin mirror of `GET /api/v1/courses/student/:id` — it impersonates the target instructor's role when scoping the query, so the admin sees exactly what that instructor would see on their own `GET /courses` call.
+### Role-based visibility
+
+| Caller | Sees |
+| --- | --- |
+| Admin | All courses of the instructor — verified, rejected, and pending review. |
+| Student | Only **verified** courses of the instructor (`isVerified: true`, `verificationRejectionReason: null`). |
+
+A Student calling this endpoint sees the same courses that would appear on the instructor's public profile — useful for browsing before purchasing.
 
 ### URL params
 
@@ -907,7 +914,7 @@ Includes **all** of the instructor's courses — verified, rejected, and pending
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent, or `id` is missing. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
-| 403 | `You do not have permission to perform this action` | Caller is not an admin. |
+| 403 | `You do not have permission to perform this action` | Caller is not an admin or student. |
 
 ## API 15 — List a student's courses (Admin or Instructor)
 

@@ -500,16 +500,30 @@ export const getStudentCoursesService = async (
 };
 
 // FUNCTION
-// Admin-only: courses of a specific instructor. Reuses
-// getCoursesService's Role.Instructor scoping by impersonating that instructor.
+// Admin + Student: courses of a specific instructor.
+// Admin sees all courses; Students see only verified courses (for browsing/purchase).
 export const getInstructorCoursesService = async (
   instructorId: string,
   query: GetCoursesQuery,
+  requester: { id: string; role: string },
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
   pagination: Pagination | null;
 }> => {
-  return getCoursesService(query, { id: instructorId, role: Role.Instructor });
+  const additionalBasePipeline: PipelineStage[] = [];
+
+  // Students sirf verified courses dekhte hain
+  if (requester.role === Role.Student) {
+    additionalBasePipeline.push({
+      $match: { isVerified: true, verificationRejectionReason: null },
+    });
+  }
+
+  return getCoursesService(
+    query,
+    { id: instructorId, role: Role.Instructor },
+    additionalBasePipeline,
+  );
 };
 
 // FUNCTION
