@@ -81,7 +81,7 @@ const userSchema = new Schema(
         `Years of experience cannot exceed ${USER_YEARS_OF_EXPERIENCE_MAX}`,
       ],
     },
-    avatar: {
+    avatarKey: {
       type: String,
       default: null,
       trim: true,

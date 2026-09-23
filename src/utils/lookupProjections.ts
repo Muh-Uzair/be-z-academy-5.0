@@ -10,6 +10,7 @@ export const excludeUserFields = (detailsField: string): Record<string, 0> => ({
   [`${detailsField}.otp`]: 0,
   [`${detailsField}.otpExpires`]: 0,
   [`${detailsField}.stripeAccountId`]: 0,
+  [`${detailsField}.stripeCustomerId`]: 0,
   [`${detailsField}.stripeOnboardingComplete`]: 0,
   [`${detailsField}.verificationRejectionReason`]: 0,
   [`${detailsField}.lastVerificationRejectedAt`]: 0,

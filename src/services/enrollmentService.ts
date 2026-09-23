@@ -11,12 +11,13 @@ import { verifyEnrollmentAccessOrThrow } from "../utils/enrollmentUtil";
 import { excludeUserFields } from "../utils/lookupProjections";
 import { ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE } from "../constants/enrollmentConstant";
 import { getPublicS3Url } from "./s3Service";
+import { formatUserAvatarUrl } from "./userService";
 
 interface EnrollmentUserSummary {
   _id: Types.ObjectId;
   fullName: string;
   email: string;
-  avatar: string | null;
+  avatarKey: string | null;
 }
 
 type EnrollmentCourseSummary = Omit<
@@ -40,9 +41,9 @@ export type EnrollmentListItem = Omit<
   EnrollmentType,
   "student" | "course" | "instructor" | "transaction"
 > & {
-  studentDetails: EnrollmentUserSummary;
+  studentDetails: Omit<EnrollmentUserSummary, "avatarKey"> & { avatar: string | null };
   courseDetails: EnrollmentCourseSummary;
-  instructorDetails: EnrollmentUserSummary;
+  instructorDetails: Omit<EnrollmentUserSummary, "avatarKey"> & { avatar: string | null };
   transactionDetails: TransactionType;
 };
 
@@ -108,13 +109,17 @@ const withCourseThumbnailUrl = (
 ): EnrollmentListItem => {
   const { thumbnailKey, ...courseDetails } = enrollment.courseDetails;
 
+  const formatted = { ...enrollment };
+  if (formatted.studentDetails) formatted.studentDetails = formatUserAvatarUrl(formatted.studentDetails) as any;
+  if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+
   return {
-    ...enrollment,
+    ...formatted,
     courseDetails: {
       ...courseDetails,
       thumbnailUrl: getPublicS3Url(thumbnailKey),
     },
-  };
+  } as unknown as EnrollmentListItem;
 };
 
 // FUNCTION

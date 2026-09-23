@@ -106,3 +106,14 @@ export interface UpdateProfileResponseData {
 export type UpdateProfileResponse =
   | SuccessApiResponse<UpdateProfileResponseData, "Profile updated successfully">
   | ApiErrorResponse;
+
+// API 8: POST /api/v1/users/profile/upload-avatar
+// Response: { status, message, data: { uploadUrl, fields } }
+export interface UploadAvatarResponseData {
+  uploadUrl: string;
+  fields: Record<string, string>;
+}
+
+export type UploadAvatarResponse =
+  | SuccessApiResponse<UploadAvatarResponseData, "Avatar upload URL generated successfully">
+  | ApiErrorResponse;

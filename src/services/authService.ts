@@ -16,6 +16,7 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt";
 import { USER_PUBLIC_PROJECTION } from "./userService";
+import { getPublicS3Url } from "./s3Service";
 
 // FUNCTION
 export const signupService = async (body: SignupBody): Promise<null> => {
@@ -185,7 +186,7 @@ export const signinService = async (
       fullName: user.fullName,
       email: user.email,
       role: user.role,
-      avatar: user.avatar,
+      avatar: user.avatarKey ? getPublicS3Url(user.avatarKey) : null,
       bio: user.bio,
       highestEducation: user.highestEducation,
       yearsOfExperience: user.yearsOfExperience,

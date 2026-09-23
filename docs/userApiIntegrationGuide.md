@@ -23,6 +23,7 @@ Base path: `/api/v1/users`
 | `GET /get-instructor-onboarding-link` | Instructor only                                        |
 | `GET /profile`                        | Any authenticated user (student, instructor, or admin) |
 | `PATCH /profile`                      | Any authenticated user (student, instructor, or admin) |
+| `POST /profile/upload-avatar`         | Any authenticated user (student, instructor, or admin) |
 
 A caller with the wrong role receives `403 You do not have permission to perform this action`. A missing/invalid/expired `accessToken` cookie receives the same `401` errors documented for `/auth/me`.
 
@@ -368,7 +369,7 @@ Available to any authenticated user (student, instructor, or admin). Updates the
 | Field               | Student | Instructor | Admin |
 | ------------------- | ------- | ---------- | ----- |
 | `fullName`          | ✅      | ✅         | ✅    |
-| `avatar`            | ✅      | ✅         | ✅    |
+| `avatarKey`         | ✅      | ✅         | ✅    |
 | `bio`               | ✅      | ✅         | ❌    |
 | `highestEducation`  | ✅      | ✅         | ❌    |
 | `yearsOfExperience` | ❌      | ✅         | ❌    |
@@ -383,14 +384,14 @@ Sending a field your role isn't allowed to change returns a `403`, not a validat
   "bio": "Senior backend engineering instructor",
   "highestEducation": "PhD",
   "yearsOfExperience": 7,
-  "avatar": "https://cdn.example.com/avatars/jane.png"
+  "avatarKey": "user-avatars/123-abc.png"
 }
 ```
 
 | Field               | Rules                                          |
 | ------------------- | ---------------------------------------------- |
 | `fullName`          | String, trimmed, 2–100 characters.             |
-| `avatar`            | Non-empty string, or `null` to clear it.       |
+| `avatarKey`         | Non-empty string, or `null` to clear it.       |
 | `bio`               | Non-empty string, trimmed, max 500 characters. |
 | `highestEducation`  | Non-empty string, trimmed, max 150 characters. |
 | `yearsOfExperience` | Number, 0–60.                                  |
@@ -431,6 +432,62 @@ HTTP `200`
 | 401         | _(see auth guide `/me` 401 rows)_             | Access-token cookie missing/invalid/expired.                                                                         |
 | 403         | `<role>s are not allowed to update: <fields>` | One or more sent fields are outside the caller's role's editable set. Lists every disallowed field, comma-separated. |
 | 404         | `User not found`                              | The signed-in user's account no longer exists.                                                                       |
+
+## API 8 — Get avatar S3 upload URL
+
+`POST /api/v1/users/profile/upload-avatar`
+
+Available to any authenticated user (student, instructor, or admin). Generates a time-limited S3 presigned POST URL for directly uploading an avatar image from the browser, bypassing backend streaming limits.
+
+### Request body
+
+```json
+{
+  "fileName": "my-photo.jpg",
+  "fileType": "image/jpeg"
+}
+```
+
+| Field      | Rules                                    |
+| ---------- | ---------------------------------------- |
+| `fileName` | Required, non-empty string.              |
+| `fileType` | Required, non-empty string (e.g. `image/jpeg` or `image/png`). |
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Avatar upload URL generated successfully",
+  "data": {
+    "uploadUrl": "https://s3.amazonaws.com/your-bucket",
+    "fields": {
+      "key": "user-avatars/uuid.jpeg",
+      "bucket": "your-bucket",
+      "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+      "X-Amz-Credential": "...",
+      "X-Amz-Date": "20260825T100000Z",
+      "Policy": "...",
+      "X-Amz-Signature": "..."
+    }
+  }
+}
+```
+
+Upload the file directly to S3 by submitting a `multipart/form-data` request to `data.uploadUrl`. The form fields must exactly match the key-value pairs in `data.fields`, appended in order, with the actual file appended last under the key `file`.
+
+After a successful `204 No Content` response from S3, the client must save the `fields.key` value and send it as `avatarKey` to `PATCH /profile`.
+
+### Possible errors
+
+| HTTP status | Message                                         | When                                                               |
+| ----------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| 400         | `Validation failed`                             | Body is empty or missing `fileName` / `fileType`.                  |
+| 400         | `Unsupported file type: <type>`                 | The `fileType` is not an allowed image MIME type.                  |
+| 401         | _(see auth guide `/me` 401 rows)_               | Access-token cookie missing/invalid/expired.                       |
+| 500         | `Failed to generate S3 upload URL`              | AWS credentials/permissions are misconfigured.                     |
 
 ## Frontend types
 

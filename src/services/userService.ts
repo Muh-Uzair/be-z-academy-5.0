@@ -12,12 +12,23 @@ import {
   GetStudentsQuery,
   UpdateUserVerificationBody,
   UpdateProfileBody,
+  UploadAvatarBody,
 } from "../types/userType";
+import {
+  buildS3ObjectKey,
+  getPresignedPostUrlService,
+  deleteS3ObjectService,
+  getPublicS3Url,
+} from "./s3Service";
+import {
+  USER_AVATAR_S3_FOLDER,
+  USER_MAX_AVATAR_SIZE_IN_BYTES,
+} from "../constants/s3Constant";
 
 // Projection used for both the current-user response and the instructor
 // list, so no endpoint ever exposes password/otp/stripe internals by default.
 const USER_PUBLIC_PROJECTION =
-  "_id fullName email role avatar bio highestEducation yearsOfExperience isVerified createdAt updatedAt";
+  "_id fullName email role avatarKey bio highestEducation yearsOfExperience isVerified createdAt updatedAt";
 
 // Same fields as USER_PUBLIC_PROJECTION, shaped as a $project stage. Applied
 // as the aggregation's default field list; a caller-supplied `projection`
@@ -34,14 +45,26 @@ export type InstructorListItem = Pick<
   | "fullName"
   | "email"
   | "role"
-  | "avatar"
   | "bio"
   | "highestEducation"
   | "yearsOfExperience"
   | "isVerified"
   | "createdAt"
   | "updatedAt"
-> & { _id: unknown };
+> & { _id: unknown; avatar: string | null };
+
+export const formatUserAvatarUrl = (user: any) => {
+  if (!user) return user;
+  
+  // If it's a mongoose document, convert to plain object
+  const plainUser = typeof user.toObject === "function" ? user.toObject() : user;
+
+  const { avatarKey, ...rest } = plainUser;
+  return {
+    ...rest,
+    avatar: avatarKey ? getPublicS3Url(avatarKey) : null,
+  };
+};
 
 export type StudentListItem = InstructorListItem;
 
@@ -84,7 +107,7 @@ export const getInstructorsService = async (
       .paginate()
       .exec();
 
-    return { instructors, pagination };
+    return { instructors: instructors.map(formatUserAvatarUrl), pagination };
   }
 
   // Step 2: Admin - scope to the instructor role and strip sensitive/internal fields by default
@@ -105,7 +128,7 @@ export const getInstructorsService = async (
     .paginate()
     .exec();
 
-  return { instructors, pagination };
+  return { instructors: instructors.map(formatUserAvatarUrl), pagination };
 };
 
 // FUNCTION
@@ -152,7 +175,7 @@ export const getStudentsService = async (
     .paginate()
     .exec();
 
-  return { students, pagination };
+  return { students: students.map(formatUserAvatarUrl), pagination };
 };
 
 // FUNCTION
@@ -187,7 +210,7 @@ export const getUserDetailsService = async (
     throw new AppError(404, `${role} not found`);
   }
 
-  return user;
+  return formatUserAvatarUrl(user);
 };
 
 export { USER_PUBLIC_PROJECTION };
@@ -221,7 +244,7 @@ export const getOwnProfileService = async (
   if (!user) {
     throw new AppError(404, "User not found");
   }
-  return user;
+  return formatUserAvatarUrl(user);
 };
 
 // FUNCTION
@@ -243,8 +266,18 @@ export const updateOwnProfileService = async (
     );
   }
 
-  // Step 2: Apply the update
-  return updateUserService(id, body);
+  // Step 2: Delete old avatar if replacing it
+  if (body.avatarKey) {
+    const existingUser = await UserModel.findById(id).select("avatarKey");
+    if (existingUser?.avatarKey && existingUser.avatarKey !== body.avatarKey) {
+      // Intentionally not awaiting so it runs in background
+      deleteS3ObjectService(existingUser.avatarKey).catch(console.error);
+    }
+  }
+
+  // Step 3: Apply the update
+  const updatedUser = await updateUserService(id, body);
+  return formatUserAvatarUrl(updatedUser);
 };
 
 // FUNCTION
@@ -281,5 +314,23 @@ export const updateUserVerificationService = async (
     rejectionReason: body.verificationRejectionReason,
   });
 
-  return updatedUser;
+  return formatUserAvatarUrl(updatedUser);
+};
+
+// FUNCTION
+export const uploadAvatarService = async (
+  userId: string,
+  { fileName, fileType }: UploadAvatarBody,
+): Promise<{ uploadUrl: string; fields: Record<string, string> }> => {
+  const key = buildS3ObjectKey(
+    USER_AVATAR_S3_FOLDER,
+    fileName,
+    fileType,
+    userId,
+  );
+  return getPresignedPostUrlService(
+    key,
+    fileType,
+    USER_MAX_AVATAR_SIZE_IN_BYTES,
+  );
 };

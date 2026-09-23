@@ -8,12 +8,13 @@ import { GetTransactionsQuery } from "../types/transactionType";
 import { Pagination } from "../utils/sendResponse";
 import { verifyTransactionAccessOrThrow } from "../utils/transactionUtil";
 import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
+import { formatUserAvatarUrl } from "./userService";
 
 interface TransactionUserSummary {
   _id: Types.ObjectId;
   fullName: string;
   email: string;
-  avatar: string | null;
+  avatarKey: string | null;
 }
 
 type TransactionCourseSummary = Omit<
@@ -28,9 +29,9 @@ export type TransactionListItem = Omit<
   TransactionType,
   "student" | "course" | "instructor"
 > & {
-  studentDetails: TransactionUserSummary;
+  studentDetails: Omit<TransactionUserSummary, "avatarKey"> & { avatar: string | null };
   courseDetails: TransactionCourseSummary;
-  instructorDetails: TransactionUserSummary;
+  instructorDetails: Omit<TransactionUserSummary, "avatarKey"> & { avatar: string | null };
 };
 
 // Each reference is joined into a *Details field so the response shape is
@@ -125,8 +126,15 @@ export const getTransactionsService = async (
   // The pipeline's $lookup/$project stages reshape each document into
   // TransactionListItem, which APIFeatures' generic Model<TransactionType>
   // can't express — cast once at this boundary.
+  const transactions = (data as unknown as TransactionListItem[]).map((t) => {
+    const formatted = { ...t };
+    if (formatted.studentDetails) formatted.studentDetails = formatUserAvatarUrl(formatted.studentDetails) as any;
+    if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+    return formatted;
+  });
+
   return {
-    transactions: data as unknown as TransactionListItem[],
+    transactions,
     pagination,
   };
 };
@@ -153,5 +161,9 @@ export const getTransactionDetailsService = async (
   // Step 2: Enforce ownership for non-admins
   verifyTransactionAccessOrThrow(transaction, user);
 
-  return transaction;
+  const formatted = { ...transaction };
+  if (formatted.studentDetails) formatted.studentDetails = formatUserAvatarUrl(formatted.studentDetails) as any;
+  if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+
+  return formatted;
 };

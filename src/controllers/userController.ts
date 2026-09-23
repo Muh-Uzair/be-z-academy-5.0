@@ -7,6 +7,7 @@ import {
   updateUserVerificationService,
   updateOwnProfileService,
   getOwnProfileService,
+  uploadAvatarService,
 } from "../services/userService";
 import { getInstructorOnboardingLinkService } from "../services/stripeService";
 import {
@@ -16,6 +17,7 @@ import {
   UpdateUserVerificationBody,
   UpdateProfileBody,
   UserRoleQuery,
+  UploadAvatarBody,
 } from "../types/userType";
 import sendResponse from "../utils/sendResponse";
 
@@ -131,6 +133,21 @@ export const updateUserVerification = catchAsync(
         ? `${role.charAt(0).toUpperCase() + role.slice(1)} approved successfully`
         : `${role.charAt(0).toUpperCase() + role.slice(1)} rejected successfully`,
       data: { user },
+    });
+  },
+);
+
+export const uploadAvatar = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const body = req.validatedBody as UploadAvatarBody;
+
+    const data = await uploadAvatarService(userId, body);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Avatar upload URL generated successfully",
+      data,
     });
   },
 );

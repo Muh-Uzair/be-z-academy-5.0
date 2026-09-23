@@ -6,6 +6,7 @@ import {
   updateUserVerificationSchema,
   updateProfileSchema,
   userRoleQuerySchema,
+  uploadAvatarSchema,
 } from "../validations/userValidation";
 
 export type GetInstructorsQuery = z.infer<typeof getInstructorsQuerySchema>;
@@ -16,4 +17,5 @@ export type UpdateUserVerificationBody = z.infer<
 >;
 export type UpdateProfileBody = z.infer<typeof updateProfileSchema>;
 export type UserRoleQuery = z.infer<typeof userRoleQuerySchema>;
+export type UploadAvatarBody = z.infer<typeof uploadAvatarSchema>;
 

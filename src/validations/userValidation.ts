@@ -82,7 +82,7 @@ export const updateProfileSchema = z
         error: `Full name cannot exceed ${USER_FULL_NAME_MAX_LENGTH} characters`,
       })
       .optional(),
-    avatar: z.string().trim().min(1).nullable().optional(),
+    avatarKey: z.string().trim().min(1).nullable().optional(),
     bio: z
       .string()
       .trim()
@@ -113,3 +113,10 @@ export const updateProfileSchema = z
   .refine((data) => Object.keys(data).length > 0, {
     error: "At least one field must be provided to update the profile",
   });
+
+export const uploadAvatarSchema = z
+  .object({
+    fileName: z.string().trim().min(1, { error: "File name is required" }),
+    fileType: z.string().trim().min(1, { error: "File type is required" }),
+  })
+  .strict();

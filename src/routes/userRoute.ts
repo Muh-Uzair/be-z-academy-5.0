@@ -7,6 +7,7 @@ import {
   getInstructorOnboardingLink,
   updateProfile,
   getProfile,
+  uploadAvatar,
 } from "../controllers/userController";
 import validation from "../middlewares/validation";
 import protect from "../middlewares/protect";
@@ -19,6 +20,7 @@ import {
   updateUserVerificationSchema,
   updateProfileSchema,
   userRoleQuerySchema,
+  uploadAvatarSchema,
 } from "../validations/userValidation";
 
 const userRouter = Router();
@@ -76,6 +78,13 @@ userRouter.patch(
   protect,
   validation(updateProfileSchema, "body"),
   updateProfile,
+);
+
+userRouter.post(
+  "/profile/upload-avatar",
+  protect,
+  validation(uploadAvatarSchema, "body"),
+  uploadAvatar,
 );
 
 export default userRouter;

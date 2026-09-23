@@ -19,6 +19,7 @@ import {
   excludeUserFields,
   excludeCategoryInternalFields,
 } from "../utils/lookupProjections";
+import { formatUserAvatarUrl } from "./userService";
 import {
   CreateCourseBody,
   UpdateCourseBody,
@@ -41,7 +42,7 @@ interface CourseInstructorSummary {
   _id: Types.ObjectId;
   fullName: string;
   email: string;
-  avatar: string | null;
+  avatarKey: string | null;
 }
 
 interface CourseCategorySummary {
@@ -65,7 +66,7 @@ type CourseAggregateItem = Omit<
   "thumbnailKey" | "videoKey" | "instructor" | "category"
 > & {
   thumbnailUrl: string;
-  instructorDetails: CourseInstructorSummary;
+  instructorDetails: Omit<CourseInstructorSummary, "avatarKey"> & { avatar: string | null };
   categoryDetails: CourseCategorySummary;
 };
 
@@ -279,6 +280,10 @@ const withSignedVideoUrl = async (
   // Step 4: Strip the raw key and attach the signed URL
   const rest = { ...plain };
   Reflect.deleteProperty(rest, "videoKey");
+
+  if (rest.instructorDetails) {
+    rest.instructorDetails = formatUserAvatarUrl(rest.instructorDetails);
+  }
 
   return { ...rest, videoUrl } as unknown as CourseWithUrls;
 };
@@ -562,6 +567,11 @@ export const getPublicCoursesService = async (
   const courses = (data as unknown as CourseAggregateItem[]).map((course) => {
     const rest = { ...course };
     Reflect.deleteProperty(rest, "videoKey");
+
+    if (rest.instructorDetails) {
+      rest.instructorDetails = formatUserAvatarUrl(rest.instructorDetails) as any;
+    }
+
     return rest;
   });
 
@@ -665,6 +675,10 @@ export const getPublicCourseDetailsService = async (
 
   const rest = { ...course };
   Reflect.deleteProperty(rest, "videoKey");
+
+  if (rest.instructorDetails) {
+    rest.instructorDetails = formatUserAvatarUrl(rest.instructorDetails) as any;
+  }
 
   return rest;
 };

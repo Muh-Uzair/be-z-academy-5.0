@@ -14,13 +14,13 @@ export const USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH = 500;
 
 // Fields each role is allowed to change through the shared update-profile API.
 export const PROFILE_UPDATABLE_FIELDS = {
-  admin: ["fullName", "avatar"],
+  admin: ["fullName", "avatarKey"],
   instructor: [
-    "avatar",
+    "avatarKey",
     "fullName",
     "highestEducation",
     "yearsOfExperience",
     "bio",
   ],
-  student: ["avatar", "fullName", "highestEducation", "bio"],
+  student: ["avatarKey", "fullName", "highestEducation", "bio"],
 } as const;

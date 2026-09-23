@@ -18,12 +18,13 @@ import {
 } from "../utils/reviewUtil";
 import { recalculateCourseRatingStats } from "../utils/courseUtil";
 import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
+import { formatUserAvatarUrl } from "./userService";
 
 interface ReviewUserSummary {
   _id: Types.ObjectId;
   fullName: string;
   email: string;
-  avatar: string | null;
+  avatarKey: string | null;
 }
 
 type ReviewCourseSummary = Omit<
@@ -37,9 +38,9 @@ export type ReviewListItem = Omit<
   ReviewType,
   "reviewBy" | "course" | "instructor"
 > & {
-  reviewByDetails: ReviewUserSummary;
+  reviewByDetails: Omit<ReviewUserSummary, "avatarKey"> & { avatar: string | null };
   courseDetails: ReviewCourseSummary;
-  instructorDetails: ReviewUserSummary;
+  instructorDetails: Omit<ReviewUserSummary, "avatarKey"> & { avatar: string | null };
 };
 
 // Each reference is joined into a *Details field so the response shape is
@@ -168,7 +169,14 @@ export const getReviewsService = async (
   // The pipeline's $lookup/$project stages reshape each document into
   // ReviewListItem, which APIFeatures' generic Model<ReviewType> can't
   // express — cast once at this boundary.
-  return { reviews: data as unknown as ReviewListItem[], pagination };
+  const reviews = (data as unknown as ReviewListItem[]).map((r) => {
+    const formatted = { ...r };
+    if (formatted.reviewByDetails) formatted.reviewByDetails = formatUserAvatarUrl(formatted.reviewByDetails) as any;
+    if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+    return formatted;
+  });
+
+  return { reviews, pagination };
 };
 
 // FUNCTION
@@ -186,7 +194,11 @@ export const getReviewDetailsService = async (
     throw new AppError(404, "Review not found");
   }
 
-  return review;
+  const formatted = { ...review };
+  if (formatted.reviewByDetails) formatted.reviewByDetails = formatUserAvatarUrl(formatted.reviewByDetails) as any;
+  if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+
+  return formatted;
 };
 
 // FUNCTION
@@ -206,7 +218,13 @@ export const getStudentReviewByCourseService = async (
 
   const [review] = (await ReviewModel.aggregate(pipeline)) as ReviewListItem[];
 
-  return review ?? null;
+  if (!review) return null;
+
+  const formatted = { ...review };
+  if (formatted.reviewByDetails) formatted.reviewByDetails = formatUserAvatarUrl(formatted.reviewByDetails) as any;
+  if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+
+  return formatted;
 };
 
 // FUNCTION
@@ -245,7 +263,14 @@ export const getCourseReviewsService = async (
     .paginate()
     .exec();
 
-  return { reviews: data as unknown as ReviewListItem[], pagination };
+  const reviews = (data as unknown as ReviewListItem[]).map((r) => {
+    const formatted = { ...r };
+    if (formatted.reviewByDetails) formatted.reviewByDetails = formatUserAvatarUrl(formatted.reviewByDetails) as any;
+    if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
+    return formatted;
+  });
+
+  return { reviews, pagination };
 };
 
 // FUNCTION
