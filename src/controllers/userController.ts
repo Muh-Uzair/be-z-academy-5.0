@@ -6,6 +6,7 @@ import {
   getUserDetailsService,
   updateUserVerificationService,
   updateOwnProfileService,
+  getOwnProfileService,
 } from "../services/userService";
 import { getInstructorOnboardingLinkService } from "../services/stripeService";
 import {
@@ -94,6 +95,19 @@ export const updateProfile = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Profile updated successfully",
+      data: { user },
+    });
+  },
+);
+
+export const getProfile = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.user!;
+    const user = await getOwnProfileService(id);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Profile fetched successfully",
       data: { user },
     });
   },

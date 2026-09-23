@@ -21,7 +21,8 @@ Base path: `/api/v1/users`
 | `GET /user/:id`                       | Admin, Student, or Instructor                          |
 | `PATCH /user/:id/verification`        | Admin only                                             |
 | `GET /get-instructor-onboarding-link` | Instructor only                                        |
-| `PATCH /update-profile`               | Any authenticated user (student, instructor, or admin) |
+| `GET /profile`                        | Any authenticated user (student, instructor, or admin) |
+| `PATCH /profile`                      | Any authenticated user (student, instructor, or admin) |
 
 A caller with the wrong role receives `403 You do not have permission to perform this action`. A missing/invalid/expired `accessToken` cookie receives the same `401` errors documented for `/auth/me`.
 
@@ -317,9 +318,48 @@ Redirect the instructor's browser to `data.url` to complete Stripe onboarding. T
 | 404         | `Instructor not found`                              | The signed-in instructor's account no longer exists. |
 | 500         | `Something went wrong. Please try again later.`     | Unexpected server or Stripe API error.               |
 
-## API 6 — Update own profile
+## API 6 — Get own profile
 
-`PATCH /api/v1/users/update-profile`
+`GET /api/v1/users/profile`
+
+Available to any authenticated user (student, instructor, or admin). Fetches the signed-in user's own profile details.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Profile fetched successfully",
+  "data": {
+    "user": {
+      "_id": "66d1a1b2c3d4e5f678901234",
+      "fullName": "Jane Smith",
+      "email": "jane@example.com",
+      "role": "instructor",
+      "avatar": "https://cdn.example.com/avatars/jane.png",
+      "bio": "Backend engineering instructor",
+      "highestEducation": "Master's degree",
+      "yearsOfExperience": 6,
+      "isVerified": true,
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "updatedAt": "2026-08-25T10:00:00.000Z"
+    }
+  }
+}
+```
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                                 |
+| ----------- | --------------------------------------------------- | ---------------------------------------------------- |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.         |
+| 404         | `User not found`                                    | The signed-in user's account no longer exists.       |
+
+## API 7 — Update own profile
+
+`PATCH /api/v1/users/profile`
 
 Available to any authenticated user (student, instructor, or admin). Updates the signed-in user's own profile. All fields are optional, but at least one must be sent, and each role may only update its own allowed subset.
 
@@ -394,4 +434,4 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `UpdateProfileResponse`, and the shared `UserDetails`/`Pagination` types.
+Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, and the shared `UserDetails`/`Pagination` types.

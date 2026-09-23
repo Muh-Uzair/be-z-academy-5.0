@@ -6,6 +6,7 @@ import {
   updateUserVerification,
   getInstructorOnboardingLink,
   updateProfile,
+  getProfile,
 } from "../controllers/userController";
 import validation from "../middlewares/validation";
 import protect from "../middlewares/protect";
@@ -64,8 +65,14 @@ userRouter.get(
   getInstructorOnboardingLink,
 );
 
+userRouter.get(
+  "/profile",
+  protect,
+  getProfile,
+);
+
 userRouter.patch(
-  "/update-profile",
+  "/profile",
   protect,
   validation(updateProfileSchema, "body"),
   updateProfile,

@@ -214,6 +214,17 @@ export const updateUserService = async (
 };
 
 // FUNCTION
+export const getOwnProfileService = async (
+  id: string,
+): Promise<HydratedDocument<UserType>> => {
+  const user = await UserModel.findById(id).select(USER_PUBLIC_PROJECTION);
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+  return user;
+};
+
+// FUNCTION
 export const updateOwnProfileService = async (
   id: string,
   role: Role,

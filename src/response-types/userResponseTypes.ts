@@ -87,7 +87,17 @@ export type GetInstructorOnboardingLinkResponse =
     >
   | ApiErrorResponse;
 
-// API 6: PATCH /api/v1/users/update-profile
+// API 6: GET /api/v1/users/profile
+// Response: { status, message, data: { user } }
+export interface GetProfileResponseData {
+  user: UserDetails;
+}
+
+export type GetProfileResponse =
+  | SuccessApiResponse<GetProfileResponseData, "Profile fetched successfully">
+  | ApiErrorResponse;
+
+// API 7: PATCH /api/v1/users/profile
 // Response: { status, message, data: { user } }
 export interface UpdateProfileResponseData {
   user: UserDetails;
