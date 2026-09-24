@@ -12,6 +12,13 @@ export const USER_YEARS_OF_EXPERIENCE_MAX = 60;
 
 export const USER_VERIFICATION_REJECTION_REASON_MAX_LENGTH = 500;
 
+export const USER_AVATAR_S3_FOLDER = "5.0/users/avatars";
+export const USER_MAX_AVATAR_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5MB
+
+const ALLOWED_AVATAR_FILE_TYPES = ["image/jpeg", "image/png"] as const;
+export type AllowedAvatarFileType = (typeof ALLOWED_AVATAR_FILE_TYPES)[number];
+export { ALLOWED_AVATAR_FILE_TYPES };
+
 // Fields each role is allowed to change through the shared update-profile API.
 export const PROFILE_UPDATABLE_FIELDS = {
   admin: ["fullName", "avatarKey"],

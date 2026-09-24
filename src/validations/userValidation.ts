@@ -8,6 +8,7 @@ import {
   USER_HIGHEST_EDUCATION_MAX_LENGTH,
   USER_YEARS_OF_EXPERIENCE_MIN,
   USER_YEARS_OF_EXPERIENCE_MAX,
+  ALLOWED_AVATAR_FILE_TYPES,
 } from "../constants/userConstant";
 
 export const userIdParamsSchema = z
@@ -117,6 +118,8 @@ export const updateProfileSchema = z
 export const uploadAvatarSchema = z
   .object({
     fileName: z.string().trim().min(1, { error: "File name is required" }),
-    fileType: z.string().trim().min(1, { error: "File type is required" }),
+    fileType: z.enum(ALLOWED_AVATAR_FILE_TYPES, {
+      error: "Avatar must be a JPEG or PNG image",
+    }),
   })
   .strict();

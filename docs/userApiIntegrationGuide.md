@@ -448,10 +448,10 @@ Available to any authenticated user (student, instructor, or admin). Generates a
 }
 ```
 
-| Field      | Rules                                    |
-| ---------- | ---------------------------------------- |
-| `fileName` | Required, non-empty string.              |
-| `fileType` | Required, non-empty string (e.g. `image/jpeg` or `image/png`). |
+| Field      | Rules                                                    |
+| ---------- | -------------------------------------------------------- |
+| `fileName` | Required, non-empty string.                              |
+| `fileType` | Required. Must be exactly `"image/jpeg"` or `"image/png"`. Any other value returns `400 Validation failed`. |
 
 ### Success response
 
@@ -464,31 +464,31 @@ HTTP `200`
   "data": {
     "uploadUrl": "https://s3.amazonaws.com/your-bucket",
     "fields": {
-      "key": "user-avatars/uuid.jpeg",
+      "Content-Type": "image/jpeg",
       "bucket": "your-bucket",
       "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
       "X-Amz-Credential": "...",
       "X-Amz-Date": "20260825T100000Z",
       "Policy": "...",
       "X-Amz-Signature": "..."
-    }
+    },
+    "key": "5.0/users/avatars/{uuid}-my-photo.jpeg"
   }
 }
 ```
 
 Upload the file directly to S3 by submitting a `multipart/form-data` request to `data.uploadUrl`. The form fields must exactly match the key-value pairs in `data.fields`, appended in order, with the actual file appended last under the key `file`.
 
-After a successful `204 No Content` response from S3, the client must save the `fields.key` value and send it as `avatarKey` to `PATCH /profile`.
+After a successful `204 No Content` response from S3, send `data.key` as `avatarKey` to `PATCH /profile` to persist the avatar on the user's profile.
 
 ### Possible errors
 
-| HTTP status | Message                                         | When                                                               |
-| ----------- | ----------------------------------------------- | ------------------------------------------------------------------ |
-| 400         | `Validation failed`                             | Body is empty or missing `fileName` / `fileType`.                  |
-| 400         | `Unsupported file type: <type>`                 | The `fileType` is not an allowed image MIME type.                  |
-| 401         | _(see auth guide `/me` 401 rows)_               | Access-token cookie missing/invalid/expired.                       |
-| 500         | `Failed to generate S3 upload URL`              | AWS credentials/permissions are misconfigured.                     |
+| HTTP status | Message                                             | When                                                                       |
+| ----------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| 400         | `Validation failed`                                 | Body is missing `fileName`/`fileType`, or `fileType` is not `image/jpeg` or `image/png`. |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                               |
+| 500         | `Failed to generate S3 upload URL`                  | AWS credentials/permissions are misconfigured.                             |
 
 ## Frontend types
 
-Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, and the shared `UserDetails`/`Pagination` types.
+Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, `UploadAvatarResponse`, and the shared `UserDetails`/`Pagination` types.

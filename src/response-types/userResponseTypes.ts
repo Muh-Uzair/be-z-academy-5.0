@@ -108,10 +108,11 @@ export type UpdateProfileResponse =
   | ApiErrorResponse;
 
 // API 8: POST /api/v1/users/profile/upload-avatar
-// Response: { status, message, data: { uploadUrl, fields } }
+// Response: { status, message, data: { uploadUrl, fields, key } }
 export interface UploadAvatarResponseData {
   uploadUrl: string;
   fields: Record<string, string>;
+  key: string;
 }
 
 export type UploadAvatarResponse =

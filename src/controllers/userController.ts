@@ -139,15 +139,14 @@ export const updateUserVerification = catchAsync(
 
 export const uploadAvatar = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user!.id;
     const body = req.validatedBody as UploadAvatarBody;
 
-    const data = await uploadAvatarService(userId, body);
+    const { uploadUrl, fields, key } = await uploadAvatarService(body);
 
     sendResponse(res, 200, {
       status: "success",
       message: "Avatar upload URL generated successfully",
-      data,
+      data: { uploadUrl, fields, key },
     });
   },
 );

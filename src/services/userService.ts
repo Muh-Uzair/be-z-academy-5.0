@@ -1,4 +1,5 @@
 import { HydratedDocument, PipelineStage } from "mongoose";
+import { randomUUID } from "crypto";
 import UserModel, { Role, UserType } from "../models/userModel";
 import AppError from "../utils/appError";
 import { sendVerificationStatusEmail } from "../utils/email";
@@ -23,7 +24,7 @@ import {
 import {
   USER_AVATAR_S3_FOLDER,
   USER_MAX_AVATAR_SIZE_IN_BYTES,
-} from "../constants/s3Constant";
+} from "../constants/userConstant";
 
 // Projection used for both the current-user response and the instructor
 // list, so no endpoint ever exposes password/otp/stripe internals by default.
@@ -319,15 +320,17 @@ export const updateUserVerificationService = async (
 
 // FUNCTION
 export const uploadAvatarService = async (
-  userId: string,
   { fileName, fileType }: UploadAvatarBody,
-): Promise<{ uploadUrl: string; fields: Record<string, string> }> => {
+): Promise<{ uploadUrl: string; fields: Record<string, string>; key: string }> => {
+  // Step 1: Build a unique S3 key for the avatar, with the correct extension
   const key = buildS3ObjectKey(
     USER_AVATAR_S3_FOLDER,
     fileName,
     fileType,
-    userId,
+    randomUUID(),
   );
+
+  // Step 2: Generate a presigned POST policy capped at the max avatar size
   return getPresignedPostUrlService(
     key,
     fileType,
