@@ -9,6 +9,7 @@ import stripeRouter from "./routes/stripeRoute";
 import enrollmentRouter from "./routes/enrollmentRoute";
 import transactionRouter from "./routes/transactionRoute";
 import reviewRouter from "./routes/reviewRoute";
+import statRouter from "./routes/statRoute";
 import AppError from "./utils/appError";
 import globalErrorHandler from "./controllers/errorController";
 import sendResponse from "./utils/sendResponse";
@@ -128,6 +129,7 @@ app.use("/api/v1/courses", courseRouter);
 app.use("/api/v1/enrollments", enrollmentRouter);
 app.use("/api/v1/transactions", transactionRouter);
 app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/stats", statRouter);
 
 // ─── Unhandled Routes ─────────────────────────────────────────────────────────
 
