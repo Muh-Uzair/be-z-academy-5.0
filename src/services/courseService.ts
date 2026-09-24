@@ -623,6 +623,49 @@ export const getFeaturedCoursesService = async (): Promise<
 };
 
 // FUNCTION
+// Public, unauthenticated trending course listing — returns the top 3
+// verified courses with the highest totalStudentsEnrolled. Never signs/returns a videoUrl.
+export const getTrendingCoursesService = async (): Promise<
+  Array<Omit<CourseAggregateItem, "videoKey">>
+> => {
+  const courses = await CourseModel.aggregate([
+    {
+      $match: {
+        isVerified: true,
+        verificationRejectionReason: null,
+      },
+    },
+    {
+      $sort: {
+        totalStudentsEnrolled: -1,
+        createdAt: -1,
+      },
+    },
+    {
+      $limit: 3,
+    },
+    ...COURSE_LOOKUP_STAGES,
+  ]);
+
+  const formattedCourses = (courses as unknown as CourseAggregateItem[]).map(
+    (course) => {
+      const rest = { ...course };
+      Reflect.deleteProperty(rest, "videoKey");
+
+      if (rest.instructorDetails) {
+        rest.instructorDetails = formatUserAvatarUrl(
+          rest.instructorDetails,
+        ) as any;
+      }
+
+      return rest;
+    },
+  );
+
+  return formattedCourses;
+};
+
+// FUNCTION
 // Runs COURSE_LOOKUP_STAGES against the given $match, returning the single
 // joined course (or undefined if nothing matched).
 const findCourseWithLookups = async (

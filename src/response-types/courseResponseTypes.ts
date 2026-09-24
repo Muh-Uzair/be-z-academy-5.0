@@ -228,6 +228,19 @@ export type GetFeaturedCoursesResponse =
     >
   | ApiErrorResponse;
 
+// API 17: GET /api/v1/courses/trending
+// Response: { status, message, data: { courses } }
+export interface GetTrendingCoursesResponseData {
+  courses: PublicCourseListItem[];
+}
+
+export type GetTrendingCoursesResponse =
+  | SuccessApiResponse<
+      GetTrendingCoursesResponseData,
+      "Trending courses fetched successfully"
+    >
+  | ApiErrorResponse;
+
 // API 8: GET /api/v1/courses/:id
 // Response: { status, message, data: { course } }
 // Always the joined shape (instructorDetails/categoryDetails, same as

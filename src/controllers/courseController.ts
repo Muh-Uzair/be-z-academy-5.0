@@ -9,6 +9,7 @@ import {
   getInstructorCoursesService,
   getPublicCoursesService,
   getFeaturedCoursesService,
+  getTrendingCoursesService,
   getCourseDetailsService,
   getPublicCourseDetailsService,
   updateCourseService,
@@ -151,6 +152,18 @@ export const getFeaturedCourses = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Featured courses fetched successfully",
+      data: { courses },
+    });
+  },
+);
+
+export const getTrendingCourses = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const courses = await getTrendingCoursesService();
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Trending courses fetched successfully",
       data: { courses },
     });
   },

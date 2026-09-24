@@ -8,6 +8,7 @@ import {
   getInstructorCourses,
   getPublicCourses,
   getFeaturedCourses,
+  getTrendingCourses,
   getCourseDetails,
   getPublicCourseDetails,
   updateCourse,
@@ -152,6 +153,7 @@ courseRouter.get(
 
 // DIVIDER  Public routes
 courseRouter.get("/featured", getFeaturedCourses);
+courseRouter.get("/trending", getTrendingCourses);
 
 courseRouter.get(
   "/public",
