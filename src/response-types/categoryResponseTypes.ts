@@ -13,6 +13,10 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface TopCategory extends Category {
+  courseCount: number;
+}
+
 // API 1: POST /api/v1/categories/upload-image
 // Response: { status, message, data: { uploadUrl, fields, key } }
 export interface UploadCategoryImageResponseData {
@@ -55,7 +59,20 @@ export type GetCategoriesResponse =
     >
   | ApiErrorResponse;
 
-// API 4: GET /api/v1/categories/:id
+// API 4: GET /api/v1/categories/top
+// Response: { status, message, data: { categories } }
+export interface GetTopCategoriesResponseData {
+  categories: TopCategory[];
+}
+
+export type GetTopCategoriesResponse =
+  | SuccessApiResponse<
+      GetTopCategoriesResponseData,
+      "Top categories fetched successfully"
+    >
+  | ApiErrorResponse;
+
+// API 5: GET /api/v1/categories/:id
 // Response: { status, message, data: { category } }
 export interface GetCategoryDetailsResponseData {
   category: Category;
@@ -68,7 +85,7 @@ export type GetCategoryDetailsResponse =
     >
   | ApiErrorResponse;
 
-// API 5: PATCH /api/v1/categories/:id
+// API 6: PATCH /api/v1/categories/:id
 // Response: { status, message, data: { category } }
 export interface UpdateCategoryResponseData {
   category: Category;
@@ -81,7 +98,7 @@ export type UpdateCategoryResponse =
     >
   | ApiErrorResponse;
 
-// API 6: DELETE /api/v1/categories/:id
+// API 7: DELETE /api/v1/categories/:id
 // Response: { status, message, data: null }
 export type DeleteCategoryResponse =
   | SuccessApiResponse<null, "Category deleted successfully">

@@ -3,6 +3,7 @@ import catchAsync from "../utils/catchAsync";
 import {
   createCategoryService,
   getCategoriesService,
+  getTopCategoriesService,
   getCategoryDetailsService,
   updateCategoryService,
   deleteCategoryService,
@@ -56,6 +57,18 @@ export const getCategories = catchAsync(
       status: "success",
       message: "Categories fetched successfully",
       data: { categories, pagination },
+    });
+  },
+);
+
+export const getTopCategories = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const categories = await getTopCategoriesService();
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Top categories fetched successfully",
+      data: { categories },
     });
   },
 );

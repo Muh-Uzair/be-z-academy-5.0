@@ -20,6 +20,7 @@ Base path: `/api/v1/categories`
 | `POST /upload-image` | Admin only |
 | `POST /` | Admin only |
 | `GET /` | Public (no auth required) |
+| `GET /top` | Public (no auth required) |
 | `GET /:id` | Public (no auth required) |
 | `PATCH /:id` | Admin only |
 | `DELETE /:id` | Admin only |
@@ -206,7 +207,37 @@ HTTP `200`
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent. |
 
-## API 4 — Get category details
+## API 4 — Get top categories
+
+`GET /api/v1/categories/top`
+
+Public. Returns exactly the top 4 categories sorted by highest course count.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Top categories fetched successfully",
+  "data": {
+    "categories": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "name": "Web Development",
+        "description": "Courses covering frontend, backend, and full-stack web development.",
+        "imageUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/categories/images/....jpg",
+        "courseCount": 15,
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+## API 5 — Get category details
 
 `GET /api/v1/categories/:id`
 
@@ -246,7 +277,7 @@ HTTP `200`
 | 400 | `Validation failed` | `id` is missing. |
 | 404 | `Category not found` | No category exists with that `id`. |
 
-## API 5 — Update category
+## API 6 — Update category
 
 `PATCH /api/v1/categories/:id`
 
@@ -304,7 +335,7 @@ HTTP `200`
 | 403 | `You do not have permission to perform this action` | Caller is not an admin. |
 | 404 | `Category not found` | No category exists with that `id`. |
 
-## API 6 — Delete category
+## API 7 — Delete category
 
 `DELETE /api/v1/categories/:id`
 
@@ -339,4 +370,4 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/categoryResponseTypes.ts`](../src/response-types/categoryResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Category`, `UploadCategoryImageResponse`, `CreateCategoryResponse`, `GetCategoriesResponse`, `GetCategoryDetailsResponse`, `UpdateCategoryResponse`, and `DeleteCategoryResponse`.
+Copy [`src/response-types/categoryResponseTypes.ts`](../src/response-types/categoryResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Category`, `TopCategory`, `UploadCategoryImageResponse`, `CreateCategoryResponse`, `GetCategoriesResponse`, `GetTopCategoriesResponse`, `GetCategoryDetailsResponse`, `UpdateCategoryResponse`, and `DeleteCategoryResponse`.

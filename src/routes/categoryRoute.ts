@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createCategory,
   getCategories,
+  getTopCategories,
   getCategoryDetails,
   updateCategory,
   deleteCategory,
@@ -42,6 +43,8 @@ categoryRouter.get(
   validation(getCategoriesQuerySchema, "query"),
   getCategories,
 );
+
+categoryRouter.get("/top", getTopCategories);
 
 categoryRouter.get(
   "/:id",

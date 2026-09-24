@@ -89,6 +89,50 @@ export const getCategoriesService = async (
 };
 
 // FUNCTION
+export const getTopCategoriesService = async (): Promise<
+  Array<Omit<CategoryType, "imageKey"> & { imageUrl: string; courseCount: number }>
+> => {
+  // Step 1: Aggregation pipeline to join courses, count them, sort by count, and limit to 4
+  const topCategories = await CategoryModel.aggregate([
+    {
+      $lookup: {
+        from: "courses",
+        localField: "_id",
+        foreignField: "category",
+        as: "categoryCourses",
+      },
+    },
+    {
+      $addFields: {
+        courseCount: { $size: "$categoryCourses" },
+      },
+    },
+    {
+      $sort: { courseCount: -1, createdAt: -1 },
+    },
+    {
+      $limit: 4,
+    },
+    {
+      $project: {
+        categoryCourses: 0, // Exclude the raw array of courses
+        __v: 0,
+      },
+    },
+  ]);
+
+  // Step 2: Format the response to swap imageKey with public S3 imageUrl
+  const categoriesWithImageUrl = topCategories.map(
+    ({ imageKey, ...rest }) => ({
+      ...rest,
+      imageUrl: getPublicS3Url(imageKey),
+    }),
+  );
+
+  return categoriesWithImageUrl;
+};
+
+// FUNCTION
 export const getCategoryDetailsService = async (
   id: string,
 ): Promise<CategoryType> => {
