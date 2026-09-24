@@ -31,6 +31,7 @@ Base path: `/api/v1/courses`
 | `GET /:id/refund-eligibility` | Student only |
 | `GET /:id/completion-status` | Student only |
 | `GET /` | Any authenticated user (role changes visibility, see below) |
+| `GET /featured` | No authentication required |
 | `GET /public` | No authentication required |
 | `GET /:id` | Admin, Instructor, or Student (must be logged in; role changes what's returned, see [API 8](#api-8--get-course-details)) |
 | `GET /:id/public` | No authentication required |
@@ -645,6 +646,47 @@ HTTP `200`
 | --- | --- | --- |
 | 400 | `Invalid value "<value>" for field "_id"` | `id` is not a valid Mongo ObjectId. |
 | 404 | `Course not found` | No verified course exists with that `id` (also returned for a rejected/pending course). |
+
+## API 16 — List featured courses
+
+`GET /api/v1/courses/featured`
+
+No authentication required — no `accessToken` cookie needed. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`). Returns exactly the top 3 highest-rated courses (sorted by `averageRating`, then `totalReviews`). Does **not** return `videoUrl`.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Featured courses fetched successfully",
+  "data": {
+    "courses": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Web Development Bootcamp",
+        "description": "Learn frontend, backend, and full-stack web development from scratch.",
+        "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/....jpg",
+        "price": 49.99,
+        "level": "beginner",
+        "instructorDetails": { "_id": "66c0a1b2c3d4e5f678901111", "fullName": "Jane Doe" },
+        "categoryDetails": { "_id": "66c0a1b2c3d4e5f678901222", "name": "Web Development" },
+        "isVerified": true,
+        "verificationRejectionReason": null,
+        "lastVerificationRejectedAt": null,
+        "averageRating": 4.9,
+        "totalReviews": 1500,
+        "totalStudentsEnrolled": 3400,
+        "totalDurationInMinutes": 480,
+        "slug": "complete-web-development-bootcamp-a1b2c3d4",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z"
+      }
+    ]
+  }
+}
+```
 
 ## API 9 — Create payment intent (Student)
 

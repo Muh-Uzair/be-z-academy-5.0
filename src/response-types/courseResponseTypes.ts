@@ -215,6 +215,19 @@ export type GetPublicCoursesResponse =
     >
   | ApiErrorResponse;
 
+// API 16: GET /api/v1/courses/featured
+// Response: { status, message, data: { courses } }
+export interface GetFeaturedCoursesResponseData {
+  courses: PublicCourseListItem[];
+}
+
+export type GetFeaturedCoursesResponse =
+  | SuccessApiResponse<
+      GetFeaturedCoursesResponseData,
+      "Featured courses fetched successfully"
+    >
+  | ApiErrorResponse;
+
 // API 8: GET /api/v1/courses/:id
 // Response: { status, message, data: { course } }
 // Always the joined shape (instructorDetails/categoryDetails, same as

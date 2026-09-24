@@ -7,6 +7,7 @@ import {
   getStudentCourses,
   getInstructorCourses,
   getPublicCourses,
+  getFeaturedCourses,
   getCourseDetails,
   getPublicCourseDetails,
   updateCourse,
@@ -150,6 +151,8 @@ courseRouter.get(
 );
 
 // DIVIDER  Public routes
+courseRouter.get("/featured", getFeaturedCourses);
+
 courseRouter.get(
   "/public",
   validation(getPublicCoursesQuerySchema, "query"),
