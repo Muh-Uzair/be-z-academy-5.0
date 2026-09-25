@@ -165,6 +165,17 @@ export const getPublicCoursesQuerySchema = z
   .object({
     search: z.string().trim().min(1).optional(),
     category: z.string().trim().min(1).optional(),
+    level: z
+      .enum(Object.values(CourseLevel) as [string, ...string[]])
+      .optional(),
+    instructor: z.string().trim().min(1).optional(),
+    minPrice: z.coerce.number().min(0).optional(),
+    maxPrice: z.coerce.number().min(0).optional(),
+    minRating: z.coerce.number().min(0).max(5).optional(),
+    minDuration: z.coerce.number().min(0).optional(),
+    maxDuration: z.coerce.number().min(0).optional(),
+    sortBy: z.string().trim().min(1).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).default(10),
   })

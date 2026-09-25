@@ -541,15 +541,36 @@ export const getPublicCoursesService = async (
   courses: Array<Omit<CourseAggregateItem, "videoKey">>;
   pagination: Pagination | null;
 }> => {
-  const basePipeline: PipelineStage[] = [
-    { $match: { isVerified: true, verificationRejectionReason: null } },
-  ];
+  const matchStage: Record<string, unknown> = {
+    isVerified: true,
+    verificationRejectionReason: null,
+  };
 
-  // Cast the category filter to ObjectId targeting the raw field so MongoDB
+  // Add range filters directly to the base match stage
+  if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+    matchStage.price = {};
+    if (query.minPrice !== undefined) (matchStage.price as any).$gte = query.minPrice;
+    if (query.maxPrice !== undefined) (matchStage.price as any).$lte = query.maxPrice;
+  }
+
+  if (query.minRating !== undefined) {
+    matchStage.averageRating = { $gte: query.minRating };
+  }
+
+  if (query.minDuration !== undefined || query.maxDuration !== undefined) {
+    matchStage.totalDurationInMinutes = {};
+    if (query.minDuration !== undefined) (matchStage.totalDurationInMinutes as any).$gte = query.minDuration;
+    if (query.maxDuration !== undefined) (matchStage.totalDurationInMinutes as any).$lte = query.maxDuration;
+  }
+
+  const basePipeline: PipelineStage[] = [{ $match: matchStage }];
+
+  // Cast ID fields to ObjectId targeting the raw field so MongoDB
   // can use indexes before the lookup stages run.
   const filterQuery = {
     ...query,
     category: query.category ? new Types.ObjectId(query.category) : undefined,
+    instructor: query.instructor ? new Types.ObjectId(query.instructor) : undefined,
   };
 
   const { data, pagination } = await new APIFeatures(
@@ -557,7 +578,7 @@ export const getPublicCoursesService = async (
     filterQuery,
     basePipeline,
   )
-    .filter(["category"])
+    .filter(["category", "level", "instructor"])
     .search(["title"])
     .sort()
     .addStages(COURSE_LOOKUP_STAGES)

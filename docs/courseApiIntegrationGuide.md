@@ -542,7 +542,7 @@ HTTP `200`
 
 `GET /api/v1/courses/public`
 
-No authentication required — no `accessToken` cookie needed. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`). Does **not** return `videoUrl` (no signed URL is generated for anonymous traffic). Optionally filter by `category`.
+No authentication required — no `accessToken` cookie needed. Always scoped to verified courses only (`isVerified: true` and `verificationRejectionReason: null`). Does **not** return `videoUrl` (no signed URL is generated for anonymous traffic). Optionally filter by `category`, `level`, `instructor`, `price`, `rating`, and `duration`.
 
 ### Query parameters
 
@@ -550,10 +550,19 @@ No authentication required — no `accessToken` cookie needed. Always scoped to 
 | --- | --- | --- | --- |
 | `search` | string | — | Case-insensitive search against `title`. |
 | `category` | string | — | Filter by category `_id`. |
+| `level` | `"beginner" \| "intermediate" \| "advanced"` | — | Filter by course difficulty level. |
+| `instructor` | string | — | Filter by instructor `_id`. |
+| `minPrice` | number (≥0) | — | Filter courses with price greater than or equal to this value. |
+| `maxPrice` | number (≥0) | — | Filter courses with price less than or equal to this value. |
+| `minRating` | number (0-5) | — | Filter courses with average rating greater than or equal to this value. |
+| `minDuration` | number (≥0) | — | Filter courses with total duration (in minutes) greater than or equal to this value. |
+| `maxDuration` | number (≥0) | — | Filter courses with total duration (in minutes) less than or equal to this value. |
+| `sortBy` | string | `createdAt` | Field to sort the results by (e.g., `price`, `averageRating`). |
+| `sortOrder` | `"asc" \| "desc"` | `desc` | Sort direction. |
 | `page` | number (≥1) | `1` | |
 | `limit` | number (≥1) | `10` | |
 
-No other query params are accepted (`400 Validation failed` if sent) — results are always sorted by `createdAt` descending.
+No other query params are accepted (`400 Validation failed` if sent).
 
 ### Success response
 
