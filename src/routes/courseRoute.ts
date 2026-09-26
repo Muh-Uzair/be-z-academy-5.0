@@ -151,13 +151,6 @@ courseRouter.get(
   getCourses,
 );
 
-courseRouter.get(
-  "/:id",
-  protect,
-  validation(courseIdParamsSchema, "params"),
-  getCourseDetails,
-);
-
 // DIVIDER  Public routes
 courseRouter.get("/featured", getFeaturedCourses);
 courseRouter.get("/trending", getTrendingCourses);
@@ -172,6 +165,14 @@ courseRouter.get(
   "/:id/public",
   validation(courseIdParamsSchema, "params"),
   getPublicCourseDetails,
+);
+
+// DIVIDER Shared authenticated routes
+courseRouter.get(
+  "/:id",
+  protect,
+  validation(courseIdParamsSchema, "params"),
+  getCourseDetails,
 );
 
 export default courseRouter;
