@@ -133,6 +133,33 @@ export const getInstructorsService = async (
 };
 
 // FUNCTION
+export const getPublicInstructorsService = async (
+  query: GetInstructorsQuery,
+): Promise<{
+  instructors: InstructorListItem[];
+  pagination: Pagination | null;
+}> => {
+  // Public - scope to the instructor role and verified status, stripping sensitive fields
+  const basePipeline: PipelineStage[] = [
+    { $match: { role: "instructor", isVerified: true } },
+    USER_LIST_PROJECTION,
+  ];
+
+  const { data: instructors, pagination } = await new APIFeatures(
+    UserModel,
+    query,
+    basePipeline,
+  )
+    .search(["fullName", "email"])
+    .sort()
+    .projection()
+    .paginate()
+    .exec();
+
+  return { instructors: instructors.map(formatUserAvatarUrl), pagination };
+};
+
+// FUNCTION
 export const getStudentsService = async (
   query: GetStudentsQuery,
   user: { id: string; role: Role },

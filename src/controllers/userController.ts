@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import {
   getInstructorsService,
+  getPublicInstructorsService,
   getStudentsService,
   getUserDetailsService,
   updateUserVerificationService,
@@ -34,6 +35,20 @@ export const getInstructors = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Instructors fetched successfully",
+      data: { instructors, pagination },
+    });
+  },
+);
+
+export const getPublicInstructors = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const query = req.validatedQuery as GetInstructorsQuery;
+
+    const { instructors, pagination } = await getPublicInstructorsService(query);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Public instructors fetched successfully",
       data: { instructors, pagination },
     });
   },

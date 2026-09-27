@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getInstructors,
+  getPublicInstructors,
   getStudents,
   getUserDetails,
   updateUserVerification,
@@ -31,6 +32,12 @@ userRouter.get(
   restrictTo(Role.Admin, Role.Student),
   validation(getInstructorsQuerySchema, "query"),
   getInstructors,
+);
+
+userRouter.get(
+  "/instructors/public",
+  validation(getInstructorsQuerySchema, "query"),
+  getPublicInstructors,
 );
 
 userRouter.get(

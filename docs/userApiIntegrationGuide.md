@@ -17,6 +17,7 @@ Base path: `/api/v1/users`
 | Route                                 | Allowed caller                                         |
 | ------------------------------------- | ------------------------------------------------------ |
 | `GET /instructors`                    | Admin or Student                                       |
+| `GET /instructors/public`             | Public (No auth required)                              |
 | `GET /students`                       | Admin or Instructor                                    |
 | `GET /user/:id`                       | Admin, Student, or Instructor                          |
 | `PATCH /user/:id/verification`        | Admin only                                             |
@@ -87,7 +88,64 @@ By default (no `projection` sent), each instructor object contains only the same
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.            |
 | 403         | `You do not have permission to perform this action` | Caller is not an admin or student (e.g. an instructor). |
 
-## API 2 — List students
+## API 2 — List public instructors
+
+`GET /api/v1/users/instructors/public`
+
+Public (No auth required). Returns a paginated, filterable, searchable list of verified instructor accounts. This endpoint is open to the public.
+
+### Query parameters
+
+| Param        | Type                | Default     | Notes                                                           |
+| ------------ | ------------------- | ----------- | --------------------------------------------------------------- |
+| `search`     | string              | —           | Case-insensitive search across `fullName` and `email`.          |
+| `projection` | string              | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
+| `page`       | number (≥1)         | `1`         |                                                                 |
+| `limit`      | number (≥1)         | `10`        |                                                                 |
+| `sortBy`     | string              | `createdAt` |                                                                 |
+| `sortOrder`  | `"asc" \| "desc"`   | `desc`      |                                                                 |
+
+All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Public instructors fetched successfully",
+  "data": {
+    "instructors": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "fullName": "Jane Smith",
+        "email": "jane@example.com",
+        "role": "instructor",
+        "isVerified": true
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 42,
+      "totalPages": 5,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+By default (no `projection` sent), each instructor object contains only public fields. Sensitive/internal fields are never included.
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                                    |
+| ----------- | --------------------------------------------------- | ------------------------------------------------------- |
+| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.         |
+
+## API 3 — List students
 
 `GET /api/v1/users/students`
 
@@ -146,7 +204,7 @@ By default (no `projection` sent), each student object contains only the same pu
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.           |
 | 403         | `You do not have permission to perform this action` | Caller is not an admin or instructor (e.g. a student). |
 
-## API 3 — Get user details
+## API 4 — Get user details
 
 `GET /api/v1/users/user/:id`
 
@@ -209,7 +267,7 @@ HTTP `200`
 | 403         | `You do not have permission to perform this action`<br>`You do not have permission to view this student's details` | Caller is not an admin, student, or instructor, or an instructor requests a student who is not enrolled in one of the instructor's courses. |
 | 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.       |
 
-## API 4 — Approve or reject a user's verification
+## API 5 — Approve or reject a user's verification
 
 `PATCH /api/v1/users/user/:id/verification`
 
@@ -288,7 +346,7 @@ HTTP `200`
 | 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.                                                  |
 | 500         | `Something went wrong. Please try again later.`     | Unexpected server or email-delivery error.                                                             |
 
-## API 5 — Get instructor Stripe onboarding link
+## API 6 — Get instructor Stripe onboarding link
 
 `GET /api/v1/users/get-instructor-onboarding-link`
 
@@ -319,7 +377,7 @@ Redirect the instructor's browser to `data.url` to complete Stripe onboarding. T
 | 404         | `Instructor not found`                              | The signed-in instructor's account no longer exists. |
 | 500         | `Something went wrong. Please try again later.`     | Unexpected server or Stripe API error.               |
 
-## API 6 — Get own profile
+## API 7 — Get own profile
 
 `GET /api/v1/users/profile`
 
@@ -358,7 +416,7 @@ HTTP `200`
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.         |
 | 404         | `User not found`                                    | The signed-in user's account no longer exists.       |
 
-## API 7 — Update own profile
+## API 8 — Update own profile
 
 `PATCH /api/v1/users/profile`
 
@@ -433,7 +491,7 @@ HTTP `200`
 | 403         | `<role>s are not allowed to update: <fields>` | One or more sent fields are outside the caller's role's editable set. Lists every disallowed field, comma-separated. |
 | 404         | `User not found`                              | The signed-in user's account no longer exists.                                                                       |
 
-## API 8 — Get avatar S3 upload URL
+## API 9 — Get avatar S3 upload URL
 
 `POST /api/v1/users/profile/upload-avatar`
 
@@ -491,4 +549,4 @@ After a successful `204 No Content` response from S3, send `data.key` as `avatar
 
 ## Frontend types
 
-Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, `UploadAvatarResponse`, and the shared `UserDetails`/`Pagination` types.
+Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetPublicInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, `UploadAvatarResponse`, and the shared `UserDetails`/`Pagination` types.

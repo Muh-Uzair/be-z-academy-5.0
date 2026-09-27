@@ -32,6 +32,20 @@ export type GetInstructorsResponse =
     >
   | ApiErrorResponse;
 
+// API 1.5: GET /api/v1/users/instructors/public
+// Response: { status, message, data: { instructors, pagination } }
+export interface GetPublicInstructorsResponseData {
+  instructors: UserDetails[];
+  pagination: Pagination;
+}
+
+export type GetPublicInstructorsResponse =
+  | SuccessApiResponse<
+      GetPublicInstructorsResponseData,
+      "Public instructors fetched successfully"
+    >
+  | ApiErrorResponse;
+
 // API 2: GET /api/v1/users/students
 // Response: { status, message, data: { students, pagination } }
 export interface GetStudentsResponseData {
