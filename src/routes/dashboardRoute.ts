@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAdminDashboard } from "../controllers/dashboardController";
+import { getAdminDashboard, getInstructorDashboard } from "../controllers/dashboardController";
 import protect from "../middlewares/protect";
 import restrictTo from "../middlewares/restrictTo";
 import validation from "../middlewares/validation";
@@ -14,6 +14,14 @@ dashboardRouter.get(
   restrictTo(Role.Admin),
   validation(adminDashboardQuerySchema, "query"),
   getAdminDashboard,
+);
+
+dashboardRouter.get(
+  "/instructor",
+  protect,
+  restrictTo(Role.Instructor),
+  validation(adminDashboardQuerySchema, "query"),
+  getInstructorDashboard,
 );
 
 export default dashboardRouter;

@@ -1,7 +1,11 @@
 import TransactionModel from "../models/transactionModel";
 import UserModel from "../models/userModel";
 import CourseModel from "../models/courseModel";
+import EnrollmentModel from "../models/enrollmentModel";
+import ReviewModel from "../models/reviewModel";
+import { Types } from "mongoose";
 import { AdminDashboardQuery } from "../types/dashboardType";
+import { InstructorDashboardQuery } from "../types/dashboardType";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -407,5 +411,354 @@ export const getAdminDashboardService = async (
     userGrowth,
     topCourses,
     recentUsers,
+  };
+};
+
+// ─── Instructor Dashboard Types ───────────────────────────────────────────────
+
+export interface InstructorSummaryCard {
+  current: number;
+  previous: number;
+  changePercent: number | null;
+}
+
+/** One slice of the revenue-by-course donut chart. */
+export interface CourseRevenueSlice {
+  courseId: unknown;
+  courseTitle: string;
+  instructorRevenue: number;
+}
+
+/** One point on the enrollments trend line chart. */
+export interface EnrollmentTrendPoint {
+  label: string;
+  newEnrollments: number;
+}
+
+/** Row in the Course Performance table. */
+export interface InstructorCoursePerformance {
+  _id: unknown;
+  title: string;
+  isVerified: boolean;
+  totalStudentsEnrolled: number;
+  averageRating: number;
+  /** Average watchPercentage across all enrollments for this course (0-100). */
+  avgCompletionPercent: number;
+  /** Cumulative instructor revenue on this course (all-time). */
+  totalRevenueInstructor: number;
+}
+
+/** Row in the Recent Reviews table. */
+export interface InstructorRecentReview {
+  _id: unknown;
+  rating: number;
+  feedback: string;
+  courseTitle: string;
+  studentName: string;
+  createdAt: Date;
+}
+
+export interface InstructorDashboardData {
+  period: string;
+  summary: {
+    totalRevenue: InstructorSummaryCard;
+    totalAdminCommission: InstructorSummaryCard;
+    totalStudents: InstructorSummaryCard;
+    totalCourses: {
+      live: number;
+      pending: number;
+    };
+    averageRating: number;
+  };
+  revenueByCourseTrend: CourseRevenueSlice[];
+  enrollmentTrend: EnrollmentTrendPoint[];
+  coursePerformance: InstructorCoursePerformance[];
+  recentReviews: InstructorRecentReview[];
+}
+
+// ─── Instructor Dashboard Service ────────────────────────────────────────────
+
+export const getInstructorDashboardService = async (
+  query: InstructorDashboardQuery,
+  instructorId: string,
+): Promise<InstructorDashboardData> => {
+  const { period } = query;
+  const instructorOid = new Types.ObjectId(instructorId);
+  const {
+    currentStart,
+    currentEnd,
+    previousStart,
+    previousEnd,
+    bucketFormat,
+    buckets,
+  } = getPeriodBounds(period);
+
+  const [
+    currentRevStats,
+    previousRevStats,
+    currentStudentCount,
+    previousStudentCount,
+    liveCourseCount,
+    pendingCourseCount,
+    overallRatingResult,
+    revenueByCourseTrendRaw,
+    enrollmentTrendRaw,
+    coursePerformanceRaw,
+    recentReviews,
+  ] = await Promise.all([
+    // 1. Current period — instructor revenue & admin commission
+    TransactionModel.aggregate([
+      {
+        $match: {
+          instructor: instructorOid,
+          paymentStatus: "paid",
+          amountPaidAt: { $gte: currentStart, $lte: currentEnd },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$instructorRevenue" },
+          totalAdminCommission: { $sum: "$adminCommission" },
+        },
+      },
+    ]),
+
+    // 2. Previous period — instructor revenue & admin commission
+    TransactionModel.aggregate([
+      {
+        $match: {
+          instructor: instructorOid,
+          paymentStatus: "paid",
+          amountPaidAt: { $gte: previousStart, $lt: previousEnd },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$instructorRevenue" },
+          totalAdminCommission: { $sum: "$adminCommission" },
+        },
+      },
+    ]),
+
+    // 3. Current period — distinct students enrolled in instructor's courses
+    EnrollmentModel.distinct("student", {
+      instructor: instructorOid,
+      createdAt: { $gte: currentStart, $lte: currentEnd },
+    }),
+
+    // 4. Previous period — distinct students
+    EnrollmentModel.distinct("student", {
+      instructor: instructorOid,
+      createdAt: { $gte: previousStart, $lt: previousEnd },
+    }),
+
+    // 5. Live courses count
+    CourseModel.countDocuments({
+      instructor: instructorOid,
+      isVerified: true,
+      verificationRejectionReason: null,
+    }),
+
+    // 6. Pending courses count (submitted but not yet verified/rejected)
+    CourseModel.countDocuments({
+      instructor: instructorOid,
+      isVerified: false,
+      verificationRejectionReason: null,
+    }),
+
+    // 7. Overall average rating across all instructor's courses
+    CourseModel.aggregate<{ avgRating: number }>([
+      {
+        $match: {
+          instructor: instructorOid,
+          isVerified: true,
+          totalReviews: { $gt: 0 },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$averageRating" },
+        },
+      },
+    ]),
+
+    // 8. Revenue by course (donut) — current period
+    TransactionModel.aggregate<{ _id: unknown; courseTitle: string; instructorRevenue: number }>([
+      {
+        $match: {
+          instructor: instructorOid,
+          paymentStatus: "paid",
+          amountPaidAt: { $gte: currentStart, $lte: currentEnd },
+        },
+      },
+      {
+        $group: {
+          _id: "$course",
+          instructorRevenue: { $sum: "$instructorRevenue" },
+        },
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "_id",
+          as: "courseDoc",
+        },
+      },
+      { $unwind: { path: "$courseDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          courseTitle: { $ifNull: ["$courseDoc.title", "Unknown"] },
+          instructorRevenue: 1,
+        },
+      },
+      { $sort: { instructorRevenue: -1 } },
+      { $limit: 8 },
+    ]),
+
+    // 9. Enrollment trend — bucketed by period
+    EnrollmentModel.aggregate<{ _id: string; newEnrollments: number }>([
+      {
+        $match: {
+          instructor: instructorOid,
+          createdAt: { $gte: currentStart, $lte: currentEnd },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: bucketFormat, date: "$createdAt" },
+          },
+          newEnrollments: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+
+    // 10. Course performance table — all instructor courses
+    CourseModel.aggregate<InstructorCoursePerformance>([
+      { $match: { instructor: instructorOid } },
+      { $sort: { totalStudentsEnrolled: -1 } },
+      {
+        $lookup: {
+          from: "enrollments",
+          localField: "_id",
+          foreignField: "course",
+          as: "enrollments",
+        },
+      },
+      {
+        $project: {
+          title: 1,
+          isVerified: 1,
+          totalStudentsEnrolled: 1,
+          averageRating: 1,
+          totalRevenueInstructor: 1,
+          avgCompletionPercent: {
+            $cond: [
+              { $gt: [{ $size: "$enrollments" }, 0] },
+              {
+                $round: [
+                  { $multiply: [{ $avg: "$enrollments.watchPercentage" }, 100] },
+                  1,
+                ],
+              },
+              0,
+            ],
+          },
+        },
+      },
+    ]),
+
+    // 11. Recent 5 reviews for this instructor
+    ReviewModel.aggregate<InstructorRecentReview>([
+      { $match: { instructor: instructorOid } },
+      { $sort: { createdAt: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "reviewBy",
+          foreignField: "_id",
+          as: "studentDoc",
+        },
+      },
+      { $unwind: { path: "$studentDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "course",
+          foreignField: "_id",
+          as: "courseDoc",
+        },
+      },
+      { $unwind: { path: "$courseDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          rating: 1,
+          feedback: 1,
+          createdAt: 1,
+          courseTitle: { $ifNull: ["$courseDoc.title", "Unknown"] },
+          studentName: { $ifNull: ["$studentDoc.fullName", "Unknown"] },
+        },
+      },
+    ]),
+  ]);
+
+  // ── Extract scalars ────────────────────────────────────────────────────────
+
+  const curRev = currentRevStats[0] ?? { totalRevenue: 0, totalAdminCommission: 0 };
+  const prevRev = previousRevStats[0] ?? { totalRevenue: 0, totalAdminCommission: 0 };
+  const avgRating = overallRatingResult[0]?.avgRating
+    ? Math.round(overallRatingResult[0].avgRating * 10) / 10
+    : 0;
+
+  // ── Fill enrollment trend buckets ─────────────────────────────────────────
+
+  const enrollMap = new Map(enrollmentTrendRaw.map((r) => [r._id, r.newEnrollments]));
+  const enrollmentTrend: EnrollmentTrendPoint[] = buckets.map((label) => ({
+    label,
+    newEnrollments: enrollMap.get(label) ?? 0,
+  }));
+
+  // ── Shape revenue-by-course slices ────────────────────────────────────────
+
+  const revenueByCourseTrend: CourseRevenueSlice[] = revenueByCourseTrendRaw.map((r) => ({
+    courseId: r._id,
+    courseTitle: r.courseTitle,
+    instructorRevenue: r.instructorRevenue,
+  }));
+
+  return {
+    period,
+    summary: {
+      totalRevenue: {
+        current: curRev.totalRevenue,
+        previous: prevRev.totalRevenue,
+        changePercent: pctChange(curRev.totalRevenue, prevRev.totalRevenue),
+      },
+      totalAdminCommission: {
+        current: curRev.totalAdminCommission,
+        previous: prevRev.totalAdminCommission,
+        changePercent: pctChange(curRev.totalAdminCommission, prevRev.totalAdminCommission),
+      },
+      totalStudents: {
+        current: currentStudentCount.length,
+        previous: previousStudentCount.length,
+        changePercent: pctChange(currentStudentCount.length, previousStudentCount.length),
+      },
+      totalCourses: {
+        live: liveCourseCount,
+        pending: pendingCourseCount,
+      },
+      averageRating: avgRating,
+    },
+    revenueByCourseTrend,
+    enrollmentTrend,
+    coursePerformance: coursePerformanceRaw,
+    recentReviews,
   };
 };

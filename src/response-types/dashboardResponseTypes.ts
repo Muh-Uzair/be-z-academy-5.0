@@ -86,3 +86,78 @@ export interface AdminDashboardData {
 export type GetAdminDashboardResponse =
   | SuccessApiResponse<AdminDashboardData, "Admin dashboard data fetched successfully">
   | ApiErrorResponse;
+
+// ─── Instructor Dashboard ─────────────────────────────────────────────────────
+
+export interface InstructorSummaryCard {
+  current: number;
+  previous: number;
+  changePercent: number | null;
+}
+
+/** One slice of the revenue-by-course donut chart. */
+export interface CourseRevenueSlice {
+  courseId: string;
+  courseTitle: string;
+  /** Instructor's share of revenue (in USD cents). */
+  instructorRevenue: number;
+}
+
+/** One point on the enrollments trend line chart. */
+export interface EnrollmentTrendPoint {
+  /** Same label format as AdminDashboardData chart points. */
+  label: string;
+  newEnrollments: number;
+}
+
+/** Row in the Course Performance table. */
+export interface InstructorCoursePerformance {
+  _id: string;
+  title: string;
+  isVerified: boolean;
+  totalStudentsEnrolled: number;
+  averageRating: number;
+  /** Average watch percentage across all enrollments (0–100, 1 decimal). */
+  avgCompletionPercent: number;
+  /** All-time cumulative instructor revenue for this course (in USD cents). */
+  totalRevenueInstructor: number;
+}
+
+/** Row in the Recent Reviews table. */
+export interface InstructorRecentReview {
+  _id: string;
+  rating: number;
+  feedback: string;
+  courseTitle: string;
+  studentName: string;
+  createdAt: string; // ISO-8601
+}
+
+// API 2: GET /api/v1/dashboard/instructor
+export interface InstructorDashboardData {
+  period: "week" | "month" | "year";
+  summary: {
+    totalRevenue: InstructorSummaryCard;
+    totalAdminCommission: InstructorSummaryCard;
+    totalStudents: InstructorSummaryCard;
+    totalCourses: {
+      live: number;
+      pending: number;
+    };
+    /** Weighted average rating across all verified courses (1 decimal). 0 if no reviews yet. */
+    averageRating: number;
+  };
+  /** Up to 8 slices sorted by instructorRevenue descending (scoped to selected period). */
+  revenueByCourseTrend: CourseRevenueSlice[];
+  /** Enrollment count per bucket, same length/labels as admin revenueTrend. */
+  enrollmentTrend: EnrollmentTrendPoint[];
+  /** All instructor courses sorted by totalStudentsEnrolled descending. */
+  coursePerformance: InstructorCoursePerformance[];
+  /** 5 most recent reviews across all instructor's courses. */
+  recentReviews: InstructorRecentReview[];
+}
+
+export type GetInstructorDashboardResponse =
+  | SuccessApiResponse<InstructorDashboardData, "Instructor dashboard data fetched successfully">
+  | ApiErrorResponse;
+

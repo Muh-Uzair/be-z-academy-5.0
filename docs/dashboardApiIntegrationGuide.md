@@ -12,9 +12,10 @@ Base path: `/api/v1/dashboard`
 
 ## Roles and access
 
-| Route          | Allowed caller |
-| -------------- | -------------- |
-| `GET /admin`   | Admin only     |
+| Route             | Allowed caller |
+| ----------------- | -------------- |
+| `GET /admin`      | Admin only     |
+| `GET /instructor` | Instructor only |
 
 ---
 
@@ -151,6 +152,130 @@ All **revenue/commission** values are in **USD cents** (e.g. `5423000` = $54,230
 
 ---
 
+## API 2 — Get instructor dashboard
+
+`GET /api/v1/dashboard/instructor`
+
+Instructor only. Returns all data required to render the instructor dashboard in a single request:
+- **Summary cards** — Total Revenue (instructor share), Admin Commission, Total Students, Total Courses (live/pending), Average Rating.
+- **Revenue by course (donut chart)** — up to 8 slices, each showing the instructor's revenue for one course in the selected period.
+- **Enrollment trend (line chart)** — new enrollments per time bucket over the selected period.
+- **Course performance table** — all instructor courses with enrollments, avg completion %, and revenue.
+- **Recent 5 reviews** — across all instructor's courses.
+
+### Query parameters
+
+| Param    | Type                            | Default   | Notes                                                      |
+| -------- | ------------------------------- | --------- | ---------------------------------------------------------- |
+| `period` | `"week" \| "month" \| "year"` | `"month"` | Controls the time window for summary cards and chart data. |
+
+Same period semantics as API 1 (see table above).
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Instructor dashboard data fetched successfully",
+  "data": {
+    "period": "month",
+    "summary": {
+      "totalRevenue": { "current": 1450000, "previous": 1200000, "changePercent": 20.8 },
+      "totalAdminCommission": { "current": 72500, "previous": 60000, "changePercent": 20.8 },
+      "totalStudents": { "current": 120, "previous": 95, "changePercent": 26.3 },
+      "totalCourses": { "live": 10, "pending": 2 },
+      "averageRating": 4.7
+    },
+    "revenueByCourseTrend": [
+      { "courseId": "66d1...", "courseTitle": "Mastering React 18", "instructorRevenue": 950000 },
+      { "courseId": "66d2...", "courseTitle": "Advanced Node.js Patterns", "instructorRevenue": 500000 }
+    ],
+    "enrollmentTrend": [
+      { "label": "2026-35", "newEnrollments": 28 },
+      { "label": "2026-36", "newEnrollments": 45 },
+      { "label": "2026-37", "newEnrollments": 31 },
+      { "label": "2026-38", "newEnrollments": 16 },
+      { "label": "2026-39", "newEnrollments": 0 }
+    ],
+    "coursePerformance": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "title": "Mastering React 18",
+        "isVerified": true,
+        "totalStudentsEnrolled": 1200,
+        "averageRating": 4.8,
+        "avgCompletionPercent": 65.0,
+        "totalRevenueInstructor": 1200000
+      },
+      {
+        "_id": "66d2a1b2c3d4e5f678901235",
+        "title": "GraphQL for Beginners",
+        "isVerified": false,
+        "totalStudentsEnrolled": 0,
+        "averageRating": 0,
+        "avgCompletionPercent": 0,
+        "totalRevenueInstructor": 0
+      }
+    ],
+    "recentReviews": [
+      {
+        "_id": "66e1a1b2c3d4e5f678901999",
+        "rating": 5,
+        "feedback": "Amazing course! Very detailed and practical.",
+        "courseTitle": "Mastering React 18",
+        "studentName": "Alice J.",
+        "createdAt": "2026-09-25T08:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### Field notes
+
+#### `summary.totalRevenue` / `totalAdminCommission`
+
+All revenue values are **instructor's share** (not total transaction amount). In **USD cents**.
+
+#### `summary.totalStudents`
+
+Counts **distinct** students who enrolled in any of the instructor's courses during the period (a student enrolled in 2 courses counts as 1).
+
+#### `summary.totalCourses`
+
+- `live`: Verified and published courses (`isVerified: true`, no rejection reason).
+- `pending`: Submitted for review but not yet verified/rejected (`isVerified: false`, no rejection reason).
+
+#### `revenueByCourseTrend`
+
+Up to 8 courses sorted by `instructorRevenue` descending, scoped to the selected period. Zero-revenue courses are excluded (not shown in the donut).
+
+#### `enrollmentTrend`
+
+Every bucket in the selected period is always present, even if value is `0`.
+
+#### `coursePerformance`
+
+- All instructor courses (verified + pending), sorted by `totalStudentsEnrolled` descending.
+- `avgCompletionPercent` is the average `watchPercentage` across all enrollments for the course, multiplied by 100 and rounded to 1 decimal. `0` for courses with no enrollments.
+- `totalRevenueInstructor` is cumulative all-time, not scoped to the selected period.
+
+#### `recentReviews`
+
+5 most recent reviews across all instructor's courses, not scoped to the selected period.
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                            |
+| ----------- | --------------------------------------------------- | ----------------------------------------------- |
+| 400         | `Validation failed`                                 | `period` is not one of `week`, `month`, `year`. |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.    |
+| 403         | `You do not have permission to perform this action` | Caller is not an instructor.                    |
+
+---
+
 ## Frontend types
 
-Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dashboardResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse` and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetAdminDashboardResponse`, `AdminDashboardData`, `SummaryCard`, `RevenueChartPoint`, `UserGrowthPoint`, `TopCourse`, and `RecentUser`.
+Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dashboardResponseTypes.ts) into the frontend project. It exports `GetAdminDashboardResponse`, `AdminDashboardData`, `SummaryCard`, `RevenueChartPoint`, `UserGrowthPoint`, `TopCourse`, `RecentUser`, `GetInstructorDashboardResponse`, `InstructorDashboardData`, `InstructorSummaryCard`, `CourseRevenueSlice`, `EnrollmentTrendPoint`, `InstructorCoursePerformance`, and `InstructorRecentReview`.
