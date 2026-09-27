@@ -16,6 +16,7 @@ Base path: `/api/v1/dashboard`
 | ----------------- | -------------- |
 | `GET /admin`      | Admin only     |
 | `GET /instructor` | Instructor only |
+| `GET /student`    | Student only   |
 
 ---
 
@@ -276,6 +277,101 @@ Every bucket in the selected period is always present, even if value is `0`.
 
 ---
 
+## API 3 — Get student dashboard
+
+`GET /api/v1/dashboard/student`
+
+Student only. Returns all data required to render the student dashboard in a single request:
+- **Summary cards** — Total Enrolled Courses, Completed Courses, Active Courses, Overall Progress (average %), and Total Watch Time. (No comparison periods).
+- **Continue Watching** — Up to 3 most recently updated, incomplete courses with their thumbnails, instructors, and progress %.
+- **Recent Activity** — Up to 10 most recent events derived from enrollments, course completions, and certificate issuances across the platform.
+
+### Query parameters
+
+(None)
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Student dashboard data fetched successfully",
+  "data": {
+    "summary": {
+      "totalEnrolledCourses": 8,
+      "completedCourses": 5,
+      "activeCourses": 3,
+      "overallProgressPercent": 65.0,
+      "totalWatchTimeInMinutes": 7440
+    },
+    "continueWatching": [
+      {
+        "enrollmentId": "66d1a1...",
+        "courseId": "66c1b2...",
+        "courseTitle": "Advanced System Design Patterns",
+        "courseSlug": "advanced-system-design",
+        "courseLevel": "advanced",
+        "courseThumbnailUrl": "https://s3.amazonaws.com/...",
+        "instructorName": "Alex Chen",
+        "totalDurationInMinutes": 800,
+        "totalDurationWatchedInMinutes": 450,
+        "watchPercentage": 0.5625
+      }
+    ],
+    "recentActivity": [
+      {
+        "type": "completed",
+        "courseTitle": "Advanced System Design Patterns",
+        "courseId": "66c1b2...",
+        "occurredAt": "2026-09-27T21:30:00.000Z"
+      },
+      {
+        "type": "enrolled",
+        "courseTitle": "UI/UX Design Masterclass",
+        "courseId": "66c1b3...",
+        "occurredAt": "2026-09-26T10:15:00.000Z"
+      },
+      {
+        "type": "certificate_earned",
+        "courseTitle": "JavaScript Fundamentals",
+        "courseId": "66c1b4...",
+        "occurredAt": "2026-09-24T14:20:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### Field notes
+
+#### `summary`
+- `activeCourses` are those where `watchedCompletely` is `false`.
+- `overallProgressPercent` is the average `watchPercentage` across all **active** (non-completed) enrollments, multiplied by 100 and rounded to 1 decimal.
+- `totalWatchTimeInMinutes` is the sum of `totalDurationWatchedInMinutes` across **all** enrollments (active and completed).
+
+#### `continueWatching`
+- Contains up to 3 courses where the student is enrolled but hasn't completed them (`watchedCompletely: false`).
+- Sorted by `updatedAt` descending (most recently watched/accessed first).
+- `watchPercentage` is a fraction (0-1). Multiply by 100 to display as a percentage.
+- `courseThumbnailUrl` will be a presigned public S3 URL (valid for 1 hour), or `null` if no thumbnail exists.
+
+#### `recentActivity`
+- Merges three types of events into a single timeline, sorted by `occurredAt` descending, taking the top 10:
+  - `"enrolled"`: Sourced from `EnrollmentModel.createdAt`
+  - `"completed"`: Sourced from `EnrollmentModel.watchedCompletelyAt`
+  - `"certificate_earned"`: Sourced from `EnrollmentModel.certificateIssuedAt`
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                            |
+| ----------- | --------------------------------------------------- | ----------------------------------------------- |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.    |
+| 403         | `You do not have permission to perform this action` | Caller is not a student.                        |
+
+---
+
 ## Frontend types
 
-Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dashboardResponseTypes.ts) into the frontend project. It exports `GetAdminDashboardResponse`, `AdminDashboardData`, `SummaryCard`, `RevenueChartPoint`, `UserGrowthPoint`, `TopCourse`, `RecentUser`, `GetInstructorDashboardResponse`, `InstructorDashboardData`, `InstructorSummaryCard`, `CourseRevenueSlice`, `EnrollmentTrendPoint`, `InstructorCoursePerformance`, and `InstructorRecentReview`.
+Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dashboardResponseTypes.ts) into the frontend project. It exports `GetAdminDashboardResponse`, `AdminDashboardData`, `SummaryCard`, `RevenueChartPoint`, `UserGrowthPoint`, `TopCourse`, `RecentUser`, `GetInstructorDashboardResponse`, `InstructorDashboardData`, `InstructorSummaryCard`, `CourseRevenueSlice`, `EnrollmentTrendPoint`, `InstructorCoursePerformance`, `InstructorRecentReview`, `GetStudentDashboardResponse`, `StudentDashboardData`, `StudentSummaryCards`, `ContinueWatchingItem`, `StudentActivityEvent`, and `ActivityEventType`.

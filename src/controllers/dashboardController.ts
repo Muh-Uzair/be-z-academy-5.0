@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
-import { getAdminDashboardService, getInstructorDashboardService } from "../services/dashboardService";
+import { getAdminDashboardService, getInstructorDashboardService, getStudentDashboardService } from "../services/dashboardService";
 import { AdminDashboardQuery, InstructorDashboardQuery } from "../types/dashboardType";
 import sendResponse from "../utils/sendResponse";
 
@@ -28,6 +28,20 @@ export const getInstructorDashboard = catchAsync(
     sendResponse(res, 200, {
       status: "success",
       message: "Instructor dashboard data fetched successfully",
+      data,
+    });
+  },
+);
+
+export const getStudentDashboard = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const studentId = req.user!.id;
+
+    const data = await getStudentDashboardService({} as never, studentId);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Student dashboard data fetched successfully",
       data,
     });
   },

@@ -4,8 +4,11 @@ import CourseModel from "../models/courseModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import ReviewModel from "../models/reviewModel";
 import { Types } from "mongoose";
-import { AdminDashboardQuery } from "../types/dashboardType";
-import { InstructorDashboardQuery } from "../types/dashboardType";
+import {
+  AdminDashboardQuery,
+  InstructorDashboardQuery,
+  StudentDashboardQuery,
+} from "../types/dashboardType";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -760,5 +763,275 @@ export const getInstructorDashboardService = async (
     enrollmentTrend,
     coursePerformance: coursePerformanceRaw,
     recentReviews,
+  };
+};
+
+// ─── Student Dashboard Types ───────────────────────────────────────────────
+
+/** Summary card for the student dashboard (no comparison period needed). */
+export interface StudentSummaryCards {
+  /** Total number of courses the student is enrolled in (all-time). */
+  totalEnrolledCourses: number;
+  /** Courses where watchedCompletely is true. */
+  completedCourses: number;
+  /** Courses where watchedCompletely is false (i.e. still in progress). */
+  activeCourses: number;
+  /** Average watchPercentage across all active (non-completed) enrollments, 0-100. */
+  overallProgressPercent: number;
+  /** Sum of totalDurationWatchedInMinutes across all enrollments. */
+  totalWatchTimeInMinutes: number;
+}
+
+/** One card in the "Continue Watching" section. */
+export interface ContinueWatchingItem {
+  enrollmentId: unknown;
+  courseId: unknown;
+  courseTitle: string;
+  courseSlug: string;
+  courseLevel: string;
+  courseThumbnailUrl: string | null;
+  instructorName: string;
+  totalDurationInMinutes: number;
+  totalDurationWatchedInMinutes: number;
+  watchPercentage: number;
+}
+
+export type ActivityEventType = "enrolled" | "completed" | "certificate_earned";
+
+/** One row in the "Recent Activity" table. */
+export interface StudentActivityEvent {
+  type: ActivityEventType;
+  courseTitle: string;
+  courseId: unknown;
+  /** ISO-8601 timestamp of the event. */
+  occurredAt: Date;
+}
+
+export interface StudentDashboardData {
+  summary: StudentSummaryCards;
+  /** Up to 3 most-recently-accessed in-progress courses (sorted by updatedAt desc). */
+  continueWatching: ContinueWatchingItem[];
+  /** Up to 10 most recent activity events merged from enrolled, completed, certificate events. */
+  recentActivity: StudentActivityEvent[];
+}
+
+// ─── Student Dashboard Service ───────────────────────────────────────────
+
+export const getStudentDashboardService = async (
+  _query: StudentDashboardQuery,
+  studentId: string,
+): Promise<StudentDashboardData> => {
+  const studentOid = new Types.ObjectId(studentId);
+
+  const [
+    summaryRaw,
+    continueWatchingRaw,
+    enrolledEventsRaw,
+    completedEventsRaw,
+    certificateEventsRaw,
+  ] = await Promise.all([
+    // 1. Summary aggregation — one pass over all enrollments
+    EnrollmentModel.aggregate<{
+      totalEnrolledCourses: number;
+      completedCourses: number;
+      activeCourses: number;
+      overallProgressPercent: number;
+      totalWatchTimeInMinutes: number;
+    }>([
+      { $match: { student: studentOid } },
+      {
+        $group: {
+          _id: null,
+          totalEnrolledCourses: { $sum: 1 },
+          completedCourses: {
+            $sum: { $cond: ["$watchedCompletely", 1, 0] },
+          },
+          activeCourses: {
+            $sum: { $cond: ["$watchedCompletely", 0, 1] },
+          },
+          totalWatchTimeInMinutes: { $sum: "$totalDurationWatchedInMinutes" },
+          // Average progress of active-only courses
+          activeWatchPercentages: {
+            $push: {
+              $cond: [
+                { $eq: ["$watchedCompletely", false] },
+                "$watchPercentage",
+                "$$REMOVE",
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          totalEnrolledCourses: 1,
+          completedCourses: 1,
+          activeCourses: 1,
+          totalWatchTimeInMinutes: 1,
+          overallProgressPercent: {
+            $cond: [
+              { $gt: [{ $size: "$activeWatchPercentages" }, 0] },
+              {
+                $round: [
+                  { $multiply: [{ $avg: "$activeWatchPercentages" }, 100] },
+                  1,
+                ],
+              },
+              0,
+            ],
+          },
+        },
+      },
+    ]),
+
+    // 2. Continue watching — top 3 non-completed, most recently updated
+    EnrollmentModel.aggregate<ContinueWatchingItem>([
+      {
+        $match: {
+          student: studentOid,
+          watchedCompletely: false,
+        },
+      },
+      { $sort: { updatedAt: -1 } },
+      { $limit: 3 },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "course",
+          foreignField: "_id",
+          as: "courseDoc",
+        },
+      },
+      { $unwind: { path: "$courseDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "courseDoc.instructor",
+          foreignField: "_id",
+          as: "instructorDoc",
+        },
+      },
+      { $unwind: { path: "$instructorDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          enrollmentId: "$_id",
+          courseId: "$courseDoc._id",
+          courseTitle: { $ifNull: ["$courseDoc.title", "Unknown"] },
+          courseSlug: { $ifNull: ["$courseDoc.slug", ""] },
+          courseLevel: { $ifNull: ["$courseDoc.level", "beginner"] },
+          courseThumbnailKey: { $ifNull: ["$courseDoc.thumbnailKey", null] },
+          instructorName: { $ifNull: ["$instructorDoc.fullName", "Unknown"] },
+          totalDurationInMinutes: { $ifNull: ["$courseDoc.totalDurationInMinutes", 0] },
+          totalDurationWatchedInMinutes: 1,
+          watchPercentage: 1,
+        },
+      },
+    ]),
+
+    // 3. Recent enrolled events
+    EnrollmentModel.find({ student: studentOid })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("course createdAt")
+      .populate<{ course: { _id: unknown; title: string } | null }>({
+        path: "course",
+        select: "title",
+      })
+      .lean(),
+
+    // 4. Recent completed events
+    EnrollmentModel.find({
+      student: studentOid,
+      watchedCompletely: true,
+      watchedCompletelyAt: { $ne: null },
+    })
+      .sort({ watchedCompletelyAt: -1 })
+      .limit(10)
+      .select("course watchedCompletelyAt")
+      .populate<{ course: { _id: unknown; title: string } | null }>({
+        path: "course",
+        select: "title",
+      })
+      .lean(),
+
+    // 5. Recent certificate events
+    EnrollmentModel.find({
+      student: studentOid,
+      certificateIssued: true,
+      certificateIssuedAt: { $ne: null },
+    })
+      .sort({ certificateIssuedAt: -1 })
+      .limit(10)
+      .select("course certificateIssuedAt")
+      .populate<{ course: { _id: unknown; title: string } | null }>({
+        path: "course",
+        select: "title",
+      })
+      .lean(),
+  ]);
+
+  // ── Summary ────────────────────────────────────────────────────────────
+
+  const summary: StudentSummaryCards = summaryRaw[0] ?? {
+    totalEnrolledCourses: 0,
+    completedCourses: 0,
+    activeCourses: 0,
+    overallProgressPercent: 0,
+    totalWatchTimeInMinutes: 0,
+  };
+
+  // ── Continue Watching ─────────────────────────────────────────────────
+
+  // Replace thumbnailKey with a public S3 URL (CourseModel aggregate hook
+  // does not run here because we do a manual aggregation on EnrollmentModel)
+  const { getPublicS3Url } = await import("./s3Service");
+  const continueWatching: ContinueWatchingItem[] = continueWatchingRaw.map(
+    (item: any) => ({
+      ...item,
+      courseThumbnailUrl: item.courseThumbnailKey
+        ? getPublicS3Url(item.courseThumbnailKey)
+        : null,
+      courseThumbnailKey: undefined,
+    }),
+  );
+
+  // ── Recent Activity ─────────────────────────────────────────────────
+  // Merge the three event streams, sort by occurredAt desc, take top 10.
+
+  const enrolledEvents: StudentActivityEvent[] = enrolledEventsRaw.map(
+    (e: any) => ({
+      type: "enrolled" as ActivityEventType,
+      courseTitle: e.course?.title ?? "Unknown",
+      courseId: e.course?._id ?? null,
+      occurredAt: e.createdAt,
+    }),
+  );
+
+  const completedEvents: StudentActivityEvent[] = completedEventsRaw.map(
+    (e: any) => ({
+      type: "completed" as ActivityEventType,
+      courseTitle: e.course?.title ?? "Unknown",
+      courseId: e.course?._id ?? null,
+      occurredAt: e.watchedCompletelyAt,
+    }),
+  );
+
+  const certificateEvents: StudentActivityEvent[] = certificateEventsRaw.map(
+    (e: any) => ({
+      type: "certificate_earned" as ActivityEventType,
+      courseTitle: e.course?.title ?? "Unknown",
+      courseId: e.course?._id ?? null,
+      occurredAt: e.certificateIssuedAt,
+    }),
+  );
+
+  const recentActivity = [...enrolledEvents, ...completedEvents, ...certificateEvents]
+    .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+    .slice(0, 10);
+
+  return {
+    summary,
+    continueWatching,
+    recentActivity,
   };
 };

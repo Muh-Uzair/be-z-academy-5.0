@@ -161,3 +161,52 @@ export type GetInstructorDashboardResponse =
   | SuccessApiResponse<InstructorDashboardData, "Instructor dashboard data fetched successfully">
   | ApiErrorResponse;
 
+// ─── Student Dashboard ────────────────────────────────────────────────────────
+
+export interface StudentSummaryCards {
+  totalEnrolledCourses: number;
+  completedCourses: number;
+  activeCourses: number;
+  /** Average watchPercentage across active (non-completed) enrollments (0–100, 1 decimal). */
+  overallProgressPercent: number;
+  /** Sum of all watched minutes across all enrollments. */
+  totalWatchTimeInMinutes: number;
+}
+
+export interface ContinueWatchingItem {
+  enrollmentId: string;
+  courseId: string;
+  courseTitle: string;
+  courseSlug: string;
+  courseLevel: "beginner" | "intermediate" | "advanced";
+  /** Presigned public S3 URL, or null if no thumbnail. */
+  courseThumbnailUrl: string | null;
+  instructorName: string;
+  totalDurationInMinutes: number;
+  totalDurationWatchedInMinutes: number;
+  /** Raw fraction (0–1). Multiply by 100 to display as %. */
+  watchPercentage: number;
+}
+
+export type ActivityEventType = "enrolled" | "completed" | "certificate_earned";
+
+export interface StudentActivityEvent {
+  type: ActivityEventType;
+  courseTitle: string;
+  courseId: string;
+  /** ISO-8601 timestamp when the event occurred. */
+  occurredAt: string;
+}
+
+// API 3: GET /api/v1/dashboard/student
+export interface StudentDashboardData {
+  summary: StudentSummaryCards;
+  /** Up to 3 most-recently-updated in-progress courses. */
+  continueWatching: ContinueWatchingItem[];
+  /** Up to 10 most recent events across enrolled, completed, certificate_earned. */
+  recentActivity: StudentActivityEvent[];
+}
+
+export type GetStudentDashboardResponse =
+  | SuccessApiResponse<StudentDashboardData, "Student dashboard data fetched successfully">
+  | ApiErrorResponse;
