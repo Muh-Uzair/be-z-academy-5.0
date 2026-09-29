@@ -6,6 +6,7 @@ Base path: `/api/v1/dashboard`
 
 ## Integration rules
 
+- Every dashboard route requires the `period` query param (`week`, `month` or `year`), e.g. `GET /api/v1/dashboard/admin?period=month`. Calling a route without it returns `400`. Use `month` as the frontend's default.
 - Every route requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
 - Success, validation, and application-error responses use `{ status, message, data }`.
 - Strict validation is used: do not send fields that are not documented for that request.
@@ -33,9 +34,9 @@ Admin only. Returns all data required to render the admin dashboard in a single 
 
 ### Query parameters
 
-| Param    | Type                             | Default   | Notes                                                       |
+| Param    | Type                             | Required  | Notes                                                       |
 | -------- | -------------------------------- | --------- | ----------------------------------------------------------- |
-| `period` | `"week" \| "month" \| "year"`   | `"month"` | Controls the time window for summary cards and chart data.  |
+| `period` | `"week" \| "month" \| "year"`   | **Yes**   | Controls the time window for summary cards and chart data. The backend has no default: omitting it returns `400`. The frontend should send `month` by default. |
 
 #### Period semantics
 
@@ -149,7 +150,7 @@ All **revenue/commission** values are in **USD cents** (e.g. `5423000` = $54,230
 
 | HTTP status | Message                                             | When                                            |
 | ----------- | --------------------------------------------------- | ----------------------------------------------- |
-| 400         | `Validation failed`                                 | `period` is not one of `week`, `month`, `year`. |
+| 400         | `Validation failed`                                 | `period` is missing or not one of `week`, `month`, `year`. |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.    |
 | 403         | `You do not have permission to perform this action` | Caller is not an admin.                         |
 
@@ -168,9 +169,9 @@ Instructor only. Returns all data required to render the instructor dashboard in
 
 ### Query parameters
 
-| Param    | Type                            | Default   | Notes                                                      |
+| Param    | Type                            | Required  | Notes                                                      |
 | -------- | ------------------------------- | --------- | ---------------------------------------------------------- |
-| `period` | `"week" \| "month" \| "year"` | `"month"` | Controls the time window for summary cards and chart data. |
+| `period` | `"week" \| "month" \| "year"` | **Yes**   | Controls the time window for summary cards and chart data. No backend default; send `month` by default from the frontend. |
 
 Same period semantics as API 1 (see table above).
 
@@ -273,7 +274,7 @@ Every bucket in the selected period is always present, even if value is `0`.
 
 | HTTP status | Message                                             | When                                            |
 | ----------- | --------------------------------------------------- | ----------------------------------------------- |
-| 400         | `Validation failed`                                 | `period` is not one of `week`, `month`, `year`. |
+| 400         | `Validation failed`                                 | `period` is missing or not one of `week`, `month`, `year`. |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.    |
 | 403         | `You do not have permission to perform this action` | Caller is not an instructor.                    |
 
@@ -290,9 +291,9 @@ Student only. Returns all data required to render the student dashboard in a sin
 
 ### Query parameters
 
-| Param    | Type                                      | Default   | Notes                                                              |
+| Param    | Type                                      | Required  | Notes                                                              |
 | -------- | ----------------------------------------- | --------- | ------------------------------------------------------------------ |
-| `period` | `"week" \| "month" \| "year" \| "all"`   | `"month"` | Controls the date window for summary cards and recent activity. `week`/`month`/`year` use the same windows as API 1; `all` removes the date filter. **Does not affect `continueWatching`.** |
+| `period` | `"week" \| "month" \| "year"`             | **Yes**   | Controls the date window for summary cards and recent activity, using the same windows as API 1. No backend default; send `month` by default from the frontend. **Does not affect `continueWatching`.** |
 
 ### Success response
 
@@ -352,7 +353,7 @@ HTTP `200`
 ### Field notes
 
 #### `summary`
-- Scoped to the selected `period` (or all-time if `period=all`).
+- Scoped to the selected `period`.
 - `activeCourses` are those where `watchedCompletely` is `false`.
 - `overallProgressPercent` is the average `watchPercentage` across all **active** (non-completed) enrollments, rounded to 1 decimal (100% if all enrolled courses are completed).
 - `totalWatchTimeInMinutes` is the sum of `totalDurationWatchedInMinutes` across enrollments in the period.
@@ -375,7 +376,7 @@ HTTP `200`
 
 | HTTP status | Message                                             | When                                            |
 | ----------- | --------------------------------------------------- | ----------------------------------------------- |
-| 400         | `Validation failed`                                 | `period` is not one of `week`, `month`, `year`, `all`. |
+| 400         | `Validation failed`                                 | `period` is missing or not one of `week`, `month`, `year`. |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.    |
 | 403         | `You do not have permission to perform this action` | Caller is not a student.                        |
 

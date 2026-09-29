@@ -824,16 +824,8 @@ export const getStudentDashboardService = async (
   studentId: string,
 ): Promise<StudentDashboardData> => {
   const studentOid = new Types.ObjectId(studentId);
-  const period = query.period ?? "month";
-
-  let currentStart: Date | null = null;
-  let currentEnd: Date | null = null;
-
-  if (period !== "all") {
-    const bounds = getPeriodBounds(period as "week" | "month" | "year");
-    currentStart = bounds.currentStart;
-    currentEnd = bounds.currentEnd;
-  }
+  const { period } = query;
+  const { currentStart, currentEnd } = getPeriodBounds(period);
 
   // Summary and Recent Activity filters:
   // - continueWatching is NOT affected by the period filter (always shows current in-progress courses)
@@ -851,12 +843,10 @@ export const getStudentDashboardService = async (
     certificateIssuedAt: { $ne: null },
   };
 
-  if (currentStart && currentEnd) {
-    summaryMatch.createdAt = { $gte: currentStart, $lte: currentEnd };
-    enrolledMatch.createdAt = { $gte: currentStart, $lte: currentEnd };
-    completedMatch.watchedCompletelyAt = { $gte: currentStart, $lte: currentEnd };
-    certMatch.certificateIssuedAt = { $gte: currentStart, $lte: currentEnd };
-  }
+  summaryMatch.createdAt = { $gte: currentStart, $lte: currentEnd };
+  enrolledMatch.createdAt = { $gte: currentStart, $lte: currentEnd };
+  completedMatch.watchedCompletelyAt = { $gte: currentStart, $lte: currentEnd };
+  certMatch.certificateIssuedAt = { $gte: currentStart, $lte: currentEnd };
 
   const [
     summaryRaw,

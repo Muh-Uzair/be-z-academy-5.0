@@ -202,7 +202,7 @@ export interface StudentActivityEvent {
 // API 3: GET /api/v1/dashboard/student
 export interface StudentDashboardData {
   /** The period filter that was applied. Filters `summary` and `recentActivity` only. */
-  period: "week" | "month" | "year" | "all";
+  period: "week" | "month" | "year";
   summary: StudentSummaryCards;
   /** Up to 3 most-recently-watched in-progress courses. Not affected by `period`. */
   continueWatching: ContinueWatchingItem[];
