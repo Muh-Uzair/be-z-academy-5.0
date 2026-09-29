@@ -42,8 +42,10 @@ Admin only. Returns all data required to render the admin dashboard in a single 
 | `period` | Summary window    | Chart buckets         | Bucket label format | # of buckets |
 | -------- | ----------------- | --------------------- | ------------------- | ------------ |
 | `week`   | Last 7 days       | One per day           | `"YYYY-MM-DD"`      | 7            |
-| `month`  | Last 30 days      | One per ISO week      | `"YYYY-WW"`         | 5            |
+| `month`  | Last 30 days      | One per ISO week      | `"YYYY-WW"`         | 5 or 6       |
 | `year`   | Last 12 months    | One per calendar month| `"YYYY-MM"`         | 12           |
+
+All windows and bucket labels are calculated in **UTC**. The `month` window is 30 days, which can touch 5 or 6 ISO weeks (`YYYY` is the ISO week-year), so do not hard-code the bucket count — render whatever labels the API returns. The first and last weekly buckets can cover only part of a week.
 
 **Summary comparison**: Each card shows `current` (selected window) vs `previous` (the preceding window of the same length). `changePercent` is `null` when `previous === 0`.
 
@@ -260,7 +262,7 @@ Every bucket in the selected period is always present, even if value is `0`.
 #### `coursePerformance`
 
 - Up to 5 instructor courses (verified + pending), sorted by `totalStudentsEnrolled` descending.
-- `avgCompletionPercent` is the average `watchPercentage` across all enrollments for the course, multiplied by 100 and rounded to 1 decimal. `0` for courses with no enrollments.
+- `avgCompletionPercent` is the average `watchPercentage` (already 0–100) across all enrollments for the course, rounded to 1 decimal. `0` for courses with no enrollments.
 - `totalRevenueInstructor` is cumulative all-time, not scoped to the selected period.
 
 #### `recentReviews`
@@ -290,7 +292,7 @@ Student only. Returns all data required to render the student dashboard in a sin
 
 | Param    | Type                                      | Default   | Notes                                                              |
 | -------- | ----------------------------------------- | --------- | ------------------------------------------------------------------ |
-| `period` | `"week" \| "month" \| "year" \| "all"`   | `"month"` | Controls the date window for summary cards and recent activity.     |
+| `period` | `"week" \| "month" \| "year" \| "all"`   | `"month"` | Controls the date window for summary cards and recent activity. `week`/`month`/`year` use the same windows as API 1; `all` removes the date filter. **Does not affect `continueWatching`.** |
 
 ### Success response
 
@@ -373,6 +375,7 @@ HTTP `200`
 
 | HTTP status | Message                                             | When                                            |
 | ----------- | --------------------------------------------------- | ----------------------------------------------- |
+| 400         | `Validation failed`                                 | `period` is not one of `week`, `month`, `year`, `all`. |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.    |
 | 403         | `You do not have permission to perform this action` | Caller is not a student.                        |
 

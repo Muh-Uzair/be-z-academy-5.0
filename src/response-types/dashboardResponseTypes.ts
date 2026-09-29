@@ -9,8 +9,9 @@ import { SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 export interface RevenueChartPoint {
   /** Bucket label — format depends on the requested period:
    *  - week:  "YYYY-MM-DD"   (one entry per day)
-   *  - month: "YYYY-WW"      (one entry per ISO week, 5 buckets)
+   *  - month: "YYYY-WW"      (one entry per ISO week, 5 or 6 buckets)
    *  - year:  "YYYY-MM"      (one entry per month)
+   *  All windows/labels are UTC.
    */
   label: string;
   /** Total amount paid by students in this bucket (in USD cents). */
@@ -71,7 +72,7 @@ export interface AdminDashboardData {
     totalInstructors: SummaryCard;
     totalCourses: SummaryCard;
   };
-  /** Array of chart points ordered oldest → newest. Length: 7 (week) | 5 (month) | 12 (year). */
+  /** Array of chart points ordered oldest → newest. Length: 7 (week) | 5 or 6 (month) | 12 (year). */
   revenueTrend: RevenueChartPoint[];
   /** Same length and labels as revenueTrend. */
   userGrowth: UserGrowthPoint[];
@@ -184,7 +185,7 @@ export interface ContinueWatchingItem {
   instructorName: string;
   totalDurationInMinutes: number;
   totalDurationWatchedInMinutes: number;
-  /** Raw fraction (0–1). Multiply by 100 to display as %. */
+  /** Percentage (0–100). */
   watchPercentage: number;
 }
 
@@ -200,9 +201,10 @@ export interface StudentActivityEvent {
 
 // API 3: GET /api/v1/dashboard/student
 export interface StudentDashboardData {
-  period?: "week" | "month" | "year" | "all";
+  /** The period filter that was applied. Filters `summary` and `recentActivity` only. */
+  period: "week" | "month" | "year" | "all";
   summary: StudentSummaryCards;
-  /** Up to 3 most-recently-updated in-progress courses. */
+  /** Up to 3 most-recently-watched in-progress courses. Not affected by `period`. */
   continueWatching: ContinueWatchingItem[];
   /** Up to 5 most recent events across enrolled, completed, certificate_earned. */
   recentActivity: StudentActivityEvent[];

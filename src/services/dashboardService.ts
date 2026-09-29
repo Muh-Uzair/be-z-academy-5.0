@@ -21,7 +21,12 @@ import {
  *  - buckets: ordered label strings for the chart x-axis
  */
 function getPeriodBounds(period: AdminDashboardQuery["period"]) {
+  // All date math is UTC so it matches MongoDB's $dateToString (UTC) and does
+  // not depend on the server's local timezone.
   const now = new Date();
+  const todayUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
   let currentStart: Date;
   let previousStart: Date;
   let previousEnd: Date;
@@ -30,51 +35,39 @@ function getPeriodBounds(period: AdminDashboardQuery["period"]) {
 
   if (period === "week") {
     // Current week: last 7 days (today included)
-    currentStart = new Date(now);
-    currentStart.setHours(0, 0, 0, 0);
-    currentStart.setDate(currentStart.getDate() - 6);
-
-    previousStart = new Date(currentStart);
-    previousStart.setDate(previousStart.getDate() - 7);
+    currentStart = addUtcDays(todayUtc, -6);
+    previousStart = addUtcDays(currentStart, -7);
     previousEnd = new Date(currentStart);
 
     bucketFormat = "%Y-%m-%d";
 
     // Build 7 day labels: oldest → newest
-    buckets = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(currentStart);
-      d.setDate(d.getDate() + i);
-      return d.toISOString().slice(0, 10);
-    });
+    buckets = Array.from({ length: 7 }, (_, i) =>
+      addUtcDays(currentStart, i).toISOString().slice(0, 10),
+    );
   } else if (period === "month") {
     // Current month: last 30 days
-    currentStart = new Date(now);
-    currentStart.setHours(0, 0, 0, 0);
-    currentStart.setDate(currentStart.getDate() - 29);
-
-    previousStart = new Date(currentStart);
-    previousStart.setDate(previousStart.getDate() - 30);
+    currentStart = addUtcDays(todayUtc, -29);
+    previousStart = addUtcDays(currentStart, -30);
     previousEnd = new Date(currentStart);
 
-    // Group by week number within the 30-day window (5 weekly buckets, labelled Week 1…5)
-    bucketFormat = "%Y-%U"; // ISO year + week number
+    // Group by ISO week (matches getISOWeekLabel). A 30-day window can touch
+    // 5 or 6 distinct ISO weeks, so derive the labels from the actual days.
+    bucketFormat = "%G-%V";
 
-    buckets = Array.from({ length: 5 }, (_, i) => {
-      const d = new Date(currentStart);
-      d.setDate(d.getDate() + i * 7);
-      // Format: "2026-35"
-      const year = d.getFullYear();
-      const week = getISOWeek(d);
-      return `${year}-${String(week).padStart(2, "0")}`;
-    });
+    const labels: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const label = getISOWeekLabel(addUtcDays(currentStart, i));
+      if (labels[labels.length - 1] !== label) labels.push(label);
+    }
+    buckets = labels;
   } else {
     // year: last 12 calendar months
-    currentStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-
+    currentStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1),
+    );
     previousStart = new Date(
-      currentStart.getFullYear() - 1,
-      currentStart.getMonth(),
-      1,
+      Date.UTC(currentStart.getUTCFullYear() - 1, currentStart.getUTCMonth(), 1),
     );
     previousEnd = new Date(currentStart);
 
@@ -82,14 +75,15 @@ function getPeriodBounds(period: AdminDashboardQuery["period"]) {
 
     // Build 12 month labels: oldest → newest
     buckets = Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(currentStart);
-      d.setMonth(d.getMonth() + i);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const d = new Date(
+        Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth() + i, 1),
+      );
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
     });
   }
 
-  const currentEnd = new Date(now);
-  currentEnd.setHours(23, 59, 59, 999);
+  const currentEnd = new Date(todayUtc);
+  currentEnd.setUTCHours(23, 59, 59, 999);
 
   return {
     currentStart,
@@ -101,13 +95,21 @@ function getPeriodBounds(period: AdminDashboardQuery["period"]) {
   };
 }
 
-/** Returns ISO week number for a given date (1–53). */
-function getISOWeek(date: Date): number {
+function addUtcDays(date: Date, days: number): Date {
   const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+/** Returns "<ISO year>-<ISO week, 2 digits>" (same as Mongo "%G-%V"). */
+function getISOWeekLabel(date: Date): string {
+  const d = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); // nearest Thursday
+  const yearStart = Date.UTC(d.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((d.getTime() - yearStart) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-${String(week).padStart(2, "0")}`;
 }
 
 /** Calculates percentage change: ((current - previous) / previous) * 100 */
