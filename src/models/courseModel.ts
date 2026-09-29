@@ -171,7 +171,7 @@ courseSchema.index({ createdAt: -1 });
 // service layer (async), which mongoose virtuals/aggregate hooks cannot do.
 
 courseSchema.virtual("thumbnailUrl").get(function () {
-  return getPublicS3Url(this.thumbnailKey);
+  return this.thumbnailKey ? getPublicS3Url(this.thumbnailKey) : null;
 });
 
 courseSchema.set("toJSON", {
@@ -188,14 +188,19 @@ courseSchema.set("toJSON", {
 // instead of returning them directly, so each doc must be unwrapped first.
 courseSchema.post("aggregate", function (docs) {
   const applyThumbnailUrl = (doc: Record<string, unknown>) => {
-    doc.thumbnailUrl = getPublicS3Url(doc.thumbnailKey as string);
-    delete doc.thumbnailKey;
+    if (!doc || typeof doc !== "object") return;
+    if (typeof doc.thumbnailKey === "string" && doc.thumbnailKey) {
+      doc.thumbnailUrl = getPublicS3Url(doc.thumbnailKey);
+      delete doc.thumbnailKey;
+    }
   };
+
+  if (!Array.isArray(docs)) return;
 
   docs.forEach((doc) => {
     if (Array.isArray(doc?.data)) {
       doc.data.forEach(applyThumbnailUrl);
-    } else {
+    } else if (doc && typeof doc === "object") {
       applyThumbnailUrl(doc);
     }
   });

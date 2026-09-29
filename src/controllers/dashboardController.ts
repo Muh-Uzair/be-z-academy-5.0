@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import { getAdminDashboardService, getInstructorDashboardService, getStudentDashboardService } from "../services/dashboardService";
-import { AdminDashboardQuery, InstructorDashboardQuery } from "../types/dashboardType";
+import {
+  AdminDashboardQuery,
+  InstructorDashboardQuery,
+  StudentDashboardQuery,
+} from "../types/dashboardType";
 import sendResponse from "../utils/sendResponse";
 
 export const getAdminDashboard = catchAsync(
@@ -35,9 +39,10 @@ export const getInstructorDashboard = catchAsync(
 
 export const getStudentDashboard = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
+    const query = req.validatedQuery as StudentDashboardQuery;
     const studentId = req.user!.id;
 
-    const data = await getStudentDashboardService({} as never, studentId);
+    const data = await getStudentDashboardService(query, studentId);
 
     sendResponse(res, 200, {
       status: "success",

@@ -77,7 +77,7 @@ export interface AdminDashboardData {
   userGrowth: UserGrowthPoint[];
   /** Up to 5 courses, sorted by totalStudentsEnrolled descending. */
   topCourses: TopCourse[];
-  /** Up to 10 most-recently-joined users, any role, sorted by createdAt descending. */
+  /** Up to 5 most-recently-joined users, any role, sorted by createdAt descending. */
   recentUsers: RecentUser[];
 }
 
@@ -151,7 +151,7 @@ export interface InstructorDashboardData {
   revenueByCourseTrend: CourseRevenueSlice[];
   /** Enrollment count per bucket, same length/labels as admin revenueTrend. */
   enrollmentTrend: EnrollmentTrendPoint[];
-  /** All instructor courses sorted by totalStudentsEnrolled descending. */
+  /** Up to 5 courses by this instructor, sorted by totalStudentsEnrolled descending. */
   coursePerformance: InstructorCoursePerformance[];
   /** 5 most recent reviews across all instructor's courses. */
   recentReviews: InstructorRecentReview[];
@@ -200,10 +200,11 @@ export interface StudentActivityEvent {
 
 // API 3: GET /api/v1/dashboard/student
 export interface StudentDashboardData {
+  period?: "week" | "month" | "year" | "all";
   summary: StudentSummaryCards;
   /** Up to 3 most-recently-updated in-progress courses. */
   continueWatching: ContinueWatchingItem[];
-  /** Up to 10 most recent events across enrolled, completed, certificate_earned. */
+  /** Up to 5 most recent events across enrolled, completed, certificate_earned. */
   recentActivity: StudentActivityEvent[];
 }
 

@@ -51,7 +51,7 @@ const categorySchema = new Schema(
 );
 
 categorySchema.virtual("imageUrl").get(function () {
-  return getPublicS3Url(this.imageKey);
+  return this.imageKey ? getPublicS3Url(this.imageKey) : null;
 });
 
 categorySchema.set("toJSON", {

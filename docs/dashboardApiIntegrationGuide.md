@@ -29,7 +29,7 @@ Admin only. Returns all data required to render the admin dashboard in a single 
 - **Revenue trend chart** — time-bucketed `totalRevenue` and `adminCommission` over the selected period.
 - **User growth chart** — time-bucketed new students and new instructors over the selected period.
 - **Top 5 performing courses** — sorted by total students enrolled.
-- **Recent 10 users** — most recently joined, any role.
+- **Recent 5 users** — most recently joined, any role.
 
 ### Query parameters
 
@@ -139,9 +139,9 @@ All **revenue/commission** values are in **USD cents** (e.g. `5423000` = $54,230
 - `totalRevenueAdmin` is cumulative (all-time), not scoped to the selected period.
 
 #### `recentUsers`
-
-- Up to 10 users, any role, sorted by `createdAt` descending.
-- Not scoped to the selected period — always the 10 most recently joined.
+ 
+- Up to 5 users, any role, sorted by `createdAt` descending.
+- Not scoped to the selected period — always the 5 most recently joined.
 
 ### Possible errors
 
@@ -161,7 +161,7 @@ Instructor only. Returns all data required to render the instructor dashboard in
 - **Summary cards** — Total Revenue (instructor share), Admin Commission, Total Students, Total Courses (live/pending), Average Rating.
 - **Revenue by course (donut chart)** — up to 8 slices, each showing the instructor's revenue for one course in the selected period.
 - **Enrollment trend (line chart)** — new enrollments per time bucket over the selected period.
-- **Course performance table** — all instructor courses with enrollments, avg completion %, and revenue.
+- **Course performance table** — top 5 instructor courses with enrollments, avg completion %, and revenue.
 - **Recent 5 reviews** — across all instructor's courses.
 
 ### Query parameters
@@ -259,7 +259,7 @@ Every bucket in the selected period is always present, even if value is `0`.
 
 #### `coursePerformance`
 
-- All instructor courses (verified + pending), sorted by `totalStudentsEnrolled` descending.
+- Up to 5 instructor courses (verified + pending), sorted by `totalStudentsEnrolled` descending.
 - `avgCompletionPercent` is the average `watchPercentage` across all enrollments for the course, multiplied by 100 and rounded to 1 decimal. `0` for courses with no enrollments.
 - `totalRevenueInstructor` is cumulative all-time, not scoped to the selected period.
 
@@ -282,13 +282,15 @@ Every bucket in the selected period is always present, even if value is `0`.
 `GET /api/v1/dashboard/student`
 
 Student only. Returns all data required to render the student dashboard in a single request:
-- **Summary cards** — Total Enrolled Courses, Completed Courses, Active Courses, Overall Progress (average %), and Total Watch Time. (No comparison periods).
-- **Continue Watching** — Up to 3 most recently updated, incomplete courses with their thumbnails, instructors, and progress %.
-- **Recent Activity** — Up to 10 most recent events derived from enrollments, course completions, and certificate issuances across the platform.
+- **Summary cards** — Total Enrolled Courses, Completed Courses, Active Courses, Overall Progress (average %), and Total Watch Time. Filtered by selected period.
+- **Continue Watching** — Up to 3 most recently updated, incomplete courses with their thumbnails, instructors, and progress %. Not filtered by period (always active in-progress courses).
+- **Recent Activity** — Up to 5 most recent events derived from enrollments, course completions, and certificate issuances. Filtered by selected period.
 
 ### Query parameters
 
-(None)
+| Param    | Type                                      | Default   | Notes                                                              |
+| -------- | ----------------------------------------- | --------- | ------------------------------------------------------------------ |
+| `period` | `"week" \| "month" \| "year" \| "all"`   | `"month"` | Controls the date window for summary cards and recent activity.     |
 
 ### Success response
 
@@ -299,6 +301,7 @@ HTTP `200`
   "status": "success",
   "message": "Student dashboard data fetched successfully",
   "data": {
+    "period": "month",
     "summary": {
       "totalEnrolledCourses": 8,
       "completedCourses": 5,
@@ -317,7 +320,7 @@ HTTP `200`
         "instructorName": "Alex Chen",
         "totalDurationInMinutes": 800,
         "totalDurationWatchedInMinutes": 450,
-        "watchPercentage": 0.5625
+        "watchPercentage": 56.25
       }
     ],
     "recentActivity": [
@@ -347,18 +350,21 @@ HTTP `200`
 ### Field notes
 
 #### `summary`
+- Scoped to the selected `period` (or all-time if `period=all`).
 - `activeCourses` are those where `watchedCompletely` is `false`.
-- `overallProgressPercent` is the average `watchPercentage` across all **active** (non-completed) enrollments, multiplied by 100 and rounded to 1 decimal.
-- `totalWatchTimeInMinutes` is the sum of `totalDurationWatchedInMinutes` across **all** enrollments (active and completed).
+- `overallProgressPercent` is the average `watchPercentage` across all **active** (non-completed) enrollments, rounded to 1 decimal (100% if all enrolled courses are completed).
+- `totalWatchTimeInMinutes` is the sum of `totalDurationWatchedInMinutes` across enrollments in the period.
 
 #### `continueWatching`
-- Contains up to 3 courses where the student is enrolled but hasn't completed them (`watchedCompletely: false`).
-- Sorted by `updatedAt` descending (most recently watched/accessed first).
-- `watchPercentage` is a fraction (0-1). Multiply by 100 to display as a percentage.
-- `courseThumbnailUrl` will be a presigned public S3 URL (valid for 1 hour), or `null` if no thumbnail exists.
+
+- Contains up to 3 courses where the student has started watching (`watchPercentage > 0`) and hasn't completed them (`watchedCompletely: false`).
+- Sorted by `mostRecentlySeen` descending, then `updatedAt` descending.
+- **Not affected by the `period` filter** (always displays current in-progress courses).
+- `watchPercentage` is a percentage (`0` to `100`).
+- `courseThumbnailUrl` will be a public S3 URL, or `null` if no thumbnail exists.
 
 #### `recentActivity`
-- Merges three types of events into a single timeline, sorted by `occurredAt` descending, taking the top 10:
+- Merges three types of events into a single timeline, sorted by `occurredAt` descending, taking the top 5:
   - `"enrolled"`: Sourced from `EnrollmentModel.createdAt`
   - `"completed"`: Sourced from `EnrollmentModel.watchedCompletelyAt`
   - `"certificate_earned"`: Sourced from `EnrollmentModel.certificateIssuedAt`

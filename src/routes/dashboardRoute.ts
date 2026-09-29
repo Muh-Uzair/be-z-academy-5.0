@@ -4,7 +4,10 @@ import protect from "../middlewares/protect";
 import restrictTo from "../middlewares/restrictTo";
 import validation from "../middlewares/validation";
 import { Role } from "../models/userModel";
-import { adminDashboardQuerySchema } from "../validations/dashboardValidation";
+import {
+  adminDashboardQuerySchema,
+  studentDashboardQuerySchema,
+} from "../validations/dashboardValidation";
 
 const dashboardRouter = Router();
 
@@ -28,6 +31,7 @@ dashboardRouter.get(
   "/student",
   protect,
   restrictTo(Role.Student),
+  validation(studentDashboardQuerySchema, "query"),
   getStudentDashboard,
 );
 

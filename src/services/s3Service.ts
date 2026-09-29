@@ -82,6 +82,10 @@ export const deleteS3ObjectService = async (key: string): Promise<void> => {
 
 // FUNCTION
 export const getPublicS3Url = (key: string): string => {
+  if (!key || typeof key !== "string") {
+    return "";
+  }
+
   // Path-style URL: a bucket name containing dots (e.g. "z-academy-5.0-3")
   // breaks the virtual-hosted-style cert (`*.s3.<region>.amazonaws.com` only
   // covers one subdomain level), causing NET::ERR_CERT_COMMON_NAME_INVALID.

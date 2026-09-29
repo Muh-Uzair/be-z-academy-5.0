@@ -4,6 +4,7 @@ import CourseModel from "../models/courseModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import ReviewModel from "../models/reviewModel";
 import { Types } from "mongoose";
+import { getPublicS3Url } from "./s3Service";
 import {
   AdminDashboardQuery,
   InstructorDashboardQuery,
@@ -338,10 +339,10 @@ export const getAdminDashboardService = async (
       },
     ]),
 
-    // 12. 10 most recently joined users (any role)
+    // 12. 5 most recently joined users (any role)
     UserModel.find()
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(5)
       .select("fullName email role isVerified createdAt")
       .lean<RecentUser[]>(),
   ]);
@@ -641,10 +642,11 @@ export const getInstructorDashboardService = async (
       { $sort: { _id: 1 } },
     ]),
 
-    // 10. Course performance table — all instructor courses
+    // 10. Course performance table — top 5 instructor courses
     CourseModel.aggregate<InstructorCoursePerformance>([
       { $match: { instructor: instructorOid } },
       { $sort: { totalStudentsEnrolled: -1 } },
+      { $limit: 5 },
       {
         $lookup: {
           from: "enrollments",
@@ -664,10 +666,7 @@ export const getInstructorDashboardService = async (
             $cond: [
               { $gt: [{ $size: "$enrollments" }, 0] },
               {
-                $round: [
-                  { $multiply: [{ $avg: "$enrollments.watchPercentage" }, 100] },
-                  1,
-                ],
+                $round: [{ $avg: "$enrollments.watchPercentage" }, 1],
               },
               0,
             ],
@@ -808,20 +807,54 @@ export interface StudentActivityEvent {
 }
 
 export interface StudentDashboardData {
+  period?: string;
   summary: StudentSummaryCards;
   /** Up to 3 most-recently-accessed in-progress courses (sorted by updatedAt desc). */
   continueWatching: ContinueWatchingItem[];
-  /** Up to 10 most recent activity events merged from enrolled, completed, certificate events. */
+  /** Up to 5 most recent activity events merged from enrolled, completed, certificate events. */
   recentActivity: StudentActivityEvent[];
 }
 
 // ─── Student Dashboard Service ───────────────────────────────────────────
 
 export const getStudentDashboardService = async (
-  _query: StudentDashboardQuery,
+  query: StudentDashboardQuery,
   studentId: string,
 ): Promise<StudentDashboardData> => {
   const studentOid = new Types.ObjectId(studentId);
+  const period = query.period ?? "month";
+
+  let currentStart: Date | null = null;
+  let currentEnd: Date | null = null;
+
+  if (period !== "all") {
+    const bounds = getPeriodBounds(period as "week" | "month" | "year");
+    currentStart = bounds.currentStart;
+    currentEnd = bounds.currentEnd;
+  }
+
+  // Summary and Recent Activity filters:
+  // - continueWatching is NOT affected by the period filter (always shows current in-progress courses)
+  // - summary and recentActivity ARE filtered by period
+  const summaryMatch: Record<string, any> = { student: studentOid };
+  const enrolledMatch: Record<string, any> = { student: studentOid };
+  const completedMatch: Record<string, any> = {
+    student: studentOid,
+    watchedCompletely: true,
+    watchedCompletelyAt: { $ne: null },
+  };
+  const certMatch: Record<string, any> = {
+    student: studentOid,
+    certificateIssued: true,
+    certificateIssuedAt: { $ne: null },
+  };
+
+  if (currentStart && currentEnd) {
+    summaryMatch.createdAt = { $gte: currentStart, $lte: currentEnd };
+    enrolledMatch.createdAt = { $gte: currentStart, $lte: currentEnd };
+    completedMatch.watchedCompletelyAt = { $gte: currentStart, $lte: currentEnd };
+    certMatch.certificateIssuedAt = { $gte: currentStart, $lte: currentEnd };
+  }
 
   const [
     summaryRaw,
@@ -830,7 +863,7 @@ export const getStudentDashboardService = async (
     completedEventsRaw,
     certificateEventsRaw,
   ] = await Promise.all([
-    // 1. Summary aggregation — one pass over all enrollments
+    // 1. Summary aggregation — filtered by period
     EnrollmentModel.aggregate<{
       totalEnrolledCourses: number;
       completedCourses: number;
@@ -838,7 +871,7 @@ export const getStudentDashboardService = async (
       overallProgressPercent: number;
       totalWatchTimeInMinutes: number;
     }>([
-      { $match: { student: studentOid } },
+      { $match: summaryMatch },
       {
         $group: {
           _id: null,
@@ -850,7 +883,7 @@ export const getStudentDashboardService = async (
             $sum: { $cond: ["$watchedCompletely", 0, 1] },
           },
           totalWatchTimeInMinutes: { $sum: "$totalDurationWatchedInMinutes" },
-          // Average progress of active-only courses
+          // Watch percentages of active-only courses
           activeWatchPercentages: {
             $push: {
               $cond: [
@@ -867,32 +900,34 @@ export const getStudentDashboardService = async (
           totalEnrolledCourses: 1,
           completedCourses: 1,
           activeCourses: 1,
-          totalWatchTimeInMinutes: 1,
+          totalWatchTimeInMinutes: {
+            $round: ["$totalWatchTimeInMinutes", 1],
+          },
           overallProgressPercent: {
             $cond: [
               { $gt: [{ $size: "$activeWatchPercentages" }, 0] },
               {
-                $round: [
-                  { $multiply: [{ $avg: "$activeWatchPercentages" }, 100] },
-                  1,
-                ],
+                $round: [{ $avg: "$activeWatchPercentages" }, 1],
               },
-              0,
+              {
+                $cond: [{ $gt: ["$completedCourses", 0] }, 100, 0],
+              },
             ],
           },
         },
       },
     ]),
 
-    // 2. Continue watching — top 3 non-completed, most recently updated
+    // 2. Continue watching — top 3 in-progress courses with watchPercentage > 0 (NOT affected by period)
     EnrollmentModel.aggregate<ContinueWatchingItem>([
       {
         $match: {
           student: studentOid,
           watchedCompletely: false,
+          watchPercentage: { $gt: 0 },
         },
       },
-      { $sort: { updatedAt: -1 } },
+      { $sort: { mostRecentlySeen: -1, updatedAt: -1 } },
       { $limit: 3 },
       {
         $lookup: {
@@ -928,10 +963,10 @@ export const getStudentDashboardService = async (
       },
     ]),
 
-    // 3. Recent enrolled events
-    EnrollmentModel.find({ student: studentOid })
+    // 3. Recent enrolled events (filtered by period)
+    EnrollmentModel.find(enrolledMatch)
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(5)
       .select("course createdAt")
       .populate<{ course: { _id: unknown; title: string } | null }>({
         path: "course",
@@ -939,14 +974,10 @@ export const getStudentDashboardService = async (
       })
       .lean(),
 
-    // 4. Recent completed events
-    EnrollmentModel.find({
-      student: studentOid,
-      watchedCompletely: true,
-      watchedCompletelyAt: { $ne: null },
-    })
+    // 4. Recent completed events (filtered by period)
+    EnrollmentModel.find(completedMatch)
       .sort({ watchedCompletelyAt: -1 })
-      .limit(10)
+      .limit(5)
       .select("course watchedCompletelyAt")
       .populate<{ course: { _id: unknown; title: string } | null }>({
         path: "course",
@@ -954,14 +985,10 @@ export const getStudentDashboardService = async (
       })
       .lean(),
 
-    // 5. Recent certificate events
-    EnrollmentModel.find({
-      student: studentOid,
-      certificateIssued: true,
-      certificateIssuedAt: { $ne: null },
-    })
+    // 5. Recent certificate events (filtered by period)
+    EnrollmentModel.find(certMatch)
       .sort({ certificateIssuedAt: -1 })
-      .limit(10)
+      .limit(5)
       .select("course certificateIssuedAt")
       .populate<{ course: { _id: unknown; title: string } | null }>({
         path: "course",
@@ -982,9 +1009,6 @@ export const getStudentDashboardService = async (
 
   // ── Continue Watching ─────────────────────────────────────────────────
 
-  // Replace thumbnailKey with a public S3 URL (CourseModel aggregate hook
-  // does not run here because we do a manual aggregation on EnrollmentModel)
-  const { getPublicS3Url } = await import("./s3Service");
   const continueWatching: ContinueWatchingItem[] = continueWatchingRaw.map(
     (item: any) => ({
       ...item,
@@ -996,7 +1020,7 @@ export const getStudentDashboardService = async (
   );
 
   // ── Recent Activity ─────────────────────────────────────────────────
-  // Merge the three event streams, sort by occurredAt desc, take top 10.
+  // Merge the three event streams, sort by occurredAt desc, take top 5.
 
   const enrolledEvents: StudentActivityEvent[] = enrolledEventsRaw.map(
     (e: any) => ({
@@ -1027,9 +1051,10 @@ export const getStudentDashboardService = async (
 
   const recentActivity = [...enrolledEvents, ...completedEvents, ...certificateEvents]
     .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-    .slice(0, 10);
+    .slice(0, 5);
 
   return {
+    period,
     summary,
     continueWatching,
     recentActivity,
