@@ -30,6 +30,7 @@ Base path: `/api/v1/courses`
 | `POST /:id/refund` | Student only |
 | `GET /:id/refund-eligibility` | Student only |
 | `GET /:id/completion-status` | Student only |
+| `GET /:id/issue-certificate` | Student only |
 | `GET /` | Any authenticated user (role changes visibility, see below) |
 | `GET /featured` | No authentication required |
 | `GET /trending` | No authentication required |
@@ -1098,6 +1099,93 @@ Includes **all** of the courses the student is enrolled in.
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to perform this action` | Caller is not an admin or instructor. |
 
+---
+
+## API 16 — Issue Course Certificate
+
+Generate and issue a course completion certificate for the enrolled student. Can be called repeatedly by the student to view/regenerate their certificate data.
+
+```http
+GET /api/v1/courses/:id/issue-certificate
+```
+
+### Access
+
+- **Allowed caller:** Student only.
+- Requires `accessToken` cookie.
+- Caller must be enrolled in the course and must have completed the course (`watchedCompletely: true` or `watchPercentage >= 95%`).
+
+### URL params
+
+| Param | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | string (ObjectId) | Yes | MongoDB `_id` of the course. |
+
+### Request body
+
+None.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Certificate issued successfully",
+  "data": {
+    "certificateId": "CERT-66F1234567890ABCDEF12345",
+    "enrollmentId": "66f1234567890abcdef12345",
+    "title": "Certificate of Completion",
+    "subtitle": "This is proudly presented to",
+    "studentName": "John Doe",
+    "studentEmail": "john.doe@example.com",
+    "courseTitle": "Complete Web Development Bootcamp",
+    "courseLevel": "beginner",
+    "courseDurationInMinutes": 480,
+    "instructorName": "Jane Doe",
+    "categoryName": "Web Development",
+    "watchPercentage": 100,
+    "issuedAt": "2026-09-30T17:15:00.000Z",
+    "completedAt": "2026-09-30T17:10:00.000Z",
+    "platformName": "zAcademy",
+    "issuer": "Z-Academy Online Learning Platform",
+    "student": {
+      "id": "66f111111111111111111111",
+      "fullName": "John Doe",
+      "email": "john.doe@example.com",
+      "avatarUrl": "https://s3.us-east-1.amazonaws.com/bucket/avatars/user.jpg"
+    },
+    "course": {
+      "id": "66f222222222222222222222",
+      "title": "Complete Web Development Bootcamp",
+      "slug": "complete-web-development-bootcamp",
+      "level": "beginner",
+      "totalDurationInMinutes": 480,
+      "categoryName": "Web Development",
+      "thumbnailUrl": "https://s3.us-east-1.amazonaws.com/bucket/courses/thumbnails/thumb.jpg"
+    },
+    "instructor": {
+      "id": "66f333333333333333333333",
+      "fullName": "Jane Doe",
+      "bio": "Senior Full-Stack Engineer and Educator",
+      "avatarUrl": "https://s3.us-east-1.amazonaws.com/bucket/avatars/instructor.jpg"
+    }
+  }
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | `id` is not a valid 24-character hexadecimal MongoDB ObjectId. |
+| 400 | `You must complete the course before a certificate can be issued...` | Student has not completed at least 95% of the course video. |
+| 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 403 | `You do not have permission to perform this action` | Caller is not a student. |
+| 404 | `You are not enrolled in this course` | Student has no active enrollment in this course. |
+
 ## Frontend types
 
-Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, `GetInstructorCoursesResponse`, and `GetStudentCoursesResponse`.
+Copy [`src/response-types/courseResponseTypes.ts`](../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Course`, `CourseListItem` (the list-endpoint shape with joined `instructorDetails`/`categoryDetails`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `IssueCourseCertificateResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, `GetInstructorCoursesResponse`, and `GetStudentCoursesResponse`.
+

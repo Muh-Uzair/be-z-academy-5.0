@@ -14,7 +14,10 @@ import {
   getPresignedGetUrlService,
   deleteS3ObjectService,
   buildS3ObjectKey,
+  getPublicS3Url,
 } from "./s3Service";
+import { ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE } from "../constants/enrollmentConstant";
+import { IssueCourseCertificateResponseData } from "../response-types/courseResponseTypes";
 import {
   excludeUserFields,
   excludeCategoryInternalFields,
@@ -1125,5 +1128,129 @@ export const getCourseCompletionStatusService = async (
   return {
     completionPercentage: enrollment.watchPercentage,
     completed: enrollment.watchedCompletely,
+  };
+};
+
+// FUNCTION
+export const issueCourseCertificateService = async (
+  studentId: string,
+  courseId: string,
+): Promise<IssueCourseCertificateResponseData> => {
+  // Step 1: Find the enrollment for the student in this course
+  const enrollment = await EnrollmentModel.findOne({
+    student: studentId,
+    course: courseId,
+  });
+
+  if (!enrollment) {
+    throw new AppError(404, "You are not enrolled in this course");
+  }
+
+  // Step 2: Verify that the course is completed
+  if (
+    !enrollment.watchedCompletely &&
+    enrollment.watchPercentage < ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE
+  ) {
+    throw new AppError(
+      400,
+      `You must complete the course before a certificate can be issued (current progress: ${enrollment.watchPercentage}%)`,
+    );
+  }
+
+  // Step 3: Ensure completion flags are set if watch threshold was met
+  if (!enrollment.watchedCompletely) {
+    enrollment.watchedCompletely = true;
+    enrollment.watchedCompletelyAt = new Date();
+  }
+
+  // Step 4: Issue the certificate (idempotent: student can generate certificate anytime)
+  enrollment.certificateIssued = true;
+  if (!enrollment.certificateIssuedAt) {
+    enrollment.certificateIssuedAt = new Date();
+  }
+
+  await enrollment.save();
+
+  // Step 5: Populate course, student, and instructor details for certificate data
+  await enrollment.populate([
+    {
+      path: "student",
+      select: "fullName email avatarKey",
+    },
+    {
+      path: "course",
+      select: "title slug level totalDurationInMinutes thumbnailKey category",
+      populate: { path: "category", select: "name" },
+    },
+    {
+      path: "instructor",
+      select: "fullName email bio avatarKey",
+    },
+  ]);
+
+  const student = enrollment.student as any;
+  const course = enrollment.course as any;
+  const instructor = enrollment.instructor as any;
+  const category = course?.category as any;
+
+  if (!course) {
+    throw new AppError(404, "Course details not found");
+  }
+  if (!student) {
+    throw new AppError(404, "Student details not found");
+  }
+  if (!instructor) {
+    throw new AppError(404, "Instructor details not found");
+  }
+
+  const studentAvatarUrl = student.avatarKey
+    ? getPublicS3Url(student.avatarKey)
+    : null;
+  const instructorAvatarUrl = instructor.avatarKey
+    ? getPublicS3Url(instructor.avatarKey)
+    : null;
+  const courseThumbnailUrl = course.thumbnailKey
+    ? getPublicS3Url(course.thumbnailKey)
+    : null;
+
+  // Step 6: Return comprehensive certificate payload for front-end rendering
+  return {
+    certificateId: `CERT-${enrollment._id.toString().toUpperCase()}`,
+    enrollmentId: enrollment._id.toString(),
+    title: "Certificate of Completion",
+    subtitle: "This is proudly presented to",
+    studentName: student.fullName,
+    studentEmail: student.email,
+    courseTitle: course.title,
+    courseLevel: course.level,
+    courseDurationInMinutes: course.totalDurationInMinutes,
+    instructorName: instructor.fullName,
+    categoryName: category?.name ?? null,
+    watchPercentage: enrollment.watchPercentage,
+    issuedAt: enrollment.certificateIssuedAt,
+    completedAt: enrollment.watchedCompletelyAt ?? enrollment.certificateIssuedAt,
+    platformName: env.APP_NAME || "zAcademy",
+    issuer: "Z-Academy Online Learning Platform",
+    student: {
+      id: student._id.toString(),
+      fullName: student.fullName,
+      email: student.email,
+      avatarUrl: studentAvatarUrl,
+    },
+    course: {
+      id: course._id.toString(),
+      title: course.title,
+      slug: course.slug,
+      level: course.level,
+      totalDurationInMinutes: course.totalDurationInMinutes,
+      categoryName: category?.name ?? null,
+      thumbnailUrl: courseThumbnailUrl,
+    },
+    instructor: {
+      id: instructor._id.toString(),
+      fullName: instructor.fullName,
+      bio: instructor.bio,
+      avatarUrl: instructorAvatarUrl,
+    },
   };
 };

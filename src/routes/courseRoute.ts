@@ -18,6 +18,7 @@ import {
   requestCourseRefund,
   getCourseRefundEligibility,
   getCourseCompletionStatus,
+  issueCourseCertificate,
 } from "../controllers/courseController";
 import validation from "../middlewares/validation";
 import protect from "../middlewares/protect";
@@ -142,6 +143,15 @@ courseRouter.get(
   validation(courseIdParamsSchema, "params"),
   getCourseCompletionStatus,
 );
+
+courseRouter.get(
+  "/:id/issue-certificate",
+  protect,
+  restrictTo(Role.Student),
+  validation(courseIdParamsSchema, "params"),
+  issueCourseCertificate,
+);
+
 
 // DIVIDER Shared authenticated routes
 courseRouter.get(

@@ -190,6 +190,55 @@ export type GetCourseCompletionStatusResponse =
     >
   | ApiErrorResponse;
 
+// API 16: GET /api/v1/courses/:id/issue-certificate
+// Response: { status, message, data: IssueCourseCertificateResponseData }
+export interface IssueCourseCertificateResponseData {
+  certificateId: string;
+  enrollmentId: string;
+  title: string;
+  subtitle: string;
+  studentName: string;
+  studentEmail: string;
+  courseTitle: string;
+  courseLevel: CourseLevel;
+  courseDurationInMinutes: number;
+  instructorName: string;
+  categoryName: string | null;
+  watchPercentage: number;
+  issuedAt: string | Date;
+  completedAt: string | Date;
+  platformName: string;
+  issuer: string;
+  student: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+  course: {
+    id: string;
+    title: string;
+    slug: string;
+    level: CourseLevel;
+    totalDurationInMinutes: number;
+    categoryName: string | null;
+    thumbnailUrl: string | null;
+  };
+  instructor: {
+    id: string;
+    fullName: string;
+    bio: string;
+    avatarUrl: string | null;
+  };
+}
+
+export type IssueCourseCertificateResponse =
+  | SuccessApiResponse<
+      IssueCourseCertificateResponseData,
+      "Certificate issued successfully"
+    >
+  | ApiErrorResponse;
+
 // API 7: GET /api/v1/courses
 // Response: { status, message, data: { courses, pagination } }
 export interface GetCoursesResponseData {

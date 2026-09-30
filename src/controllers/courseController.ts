@@ -19,6 +19,7 @@ import {
   requestCourseRefundService,
   getCourseRefundEligibilityService,
   getCourseCompletionStatusService,
+  issueCourseCertificateService,
 } from "../services/courseService";
 import {
   CourseIdParams,
@@ -312,3 +313,19 @@ export const getCourseCompletionStatus = catchAsync(
     });
   },
 );
+
+export const issueCourseCertificate = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.validatedParams as CourseIdParams;
+    const studentId = req.user!.id;
+
+    const certificate = await issueCourseCertificateService(studentId, id);
+
+    sendResponse(res, 200, {
+      status: "success",
+      message: "Certificate issued successfully",
+      data: certificate,
+    });
+  },
+);
+
