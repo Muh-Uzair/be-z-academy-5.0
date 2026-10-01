@@ -23,18 +23,37 @@ export const handleStripeWebhook = catchAsync(
     let event: Stripe.Event;
 
     try {
-      // req.body must be the raw Buffer
+      // First try verifying with the primary account secret (handles payments)
       event = stripe.webhooks.constructEvent(
         req.body,
         signature,
         env.STRIPE_WEBHOOK_SECRET,
       );
     } catch (err: any) {
-      console.error(
-        "Stripe webhook signature verification failed:",
-        err.message,
-      );
-      throw new AppError(400, "Invalid Stripe webhook signature");
+      // If that fails, try verifying with the connected account secret (handles instructor onboarding)
+      if (env.STRIPE_CONNECT_WEBHOOK_SECRET) {
+        try {
+          event = stripe.webhooks.constructEvent(
+            req.body,
+            signature,
+            env.STRIPE_CONNECT_WEBHOOK_SECRET,
+          );
+        } catch (connectErr: any) {
+          console.error(
+            "Stripe webhook signature verification failed for both secrets:",
+            err.message,
+            "|",
+            connectErr.message,
+          );
+          throw new AppError(400, "Invalid Stripe webhook signature");
+        }
+      } else {
+        console.error(
+          "Stripe webhook signature verification failed (no connect secret configured):",
+          err.message,
+        );
+        throw new AppError(400, "Invalid Stripe webhook signature");
+      }
     }
 
     console.log("Stripe webhook event received:", event.type);
