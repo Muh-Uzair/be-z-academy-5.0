@@ -11,6 +11,7 @@ import transactionRouter from "./routes/transactionRoute";
 import reviewRouter from "./routes/reviewRoute";
 import statRouter from "./routes/statRoute";
 import dashboardRouter from "./routes/dashboardRoute";
+import cardRouter from "./routes/cardRoute";
 import AppError from "./utils/appError";
 import globalErrorHandler from "./controllers/errorController";
 import sendResponse from "./utils/sendResponse";
@@ -132,6 +133,7 @@ app.use("/api/v1/transactions", transactionRouter);
 app.use("/api/v1/reviews", reviewRouter);
 app.use("/api/v1/stats", statRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+app.use("/api/v1/cards", cardRouter);
 
 // ─── Unhandled Routes ─────────────────────────────────────────────────────────
 
