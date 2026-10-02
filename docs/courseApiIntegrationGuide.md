@@ -801,7 +801,7 @@ No request body.
 - Refund window is 7 days from the payment date.
 - Refund is blocked once the student has watched more than 30% of the course.
 - On success, Stripe reverses the transfer to the instructor and refunds the platform's application fee — the student gets a full 100% refund.
-- **The database is not updated synchronously.** Enrollment removal and transaction status happen asynchronously via the `charge.refunded` Stripe webhook. Don't assume the enrollment disappears immediately after this call returns — re-fetch or poll if you need to confirm.
+- **The database is not updated synchronously.** Enrollment removal, student review cleanup (along with course rating recalculation), and transaction status happen asynchronously via the `charge.refunded` Stripe webhook. Don't assume the enrollment disappears immediately after this call returns — re-fetch or poll if you need to confirm.
 - A duplicate/double-click refund request for the same course is rejected outright with `400 A refund for this course is already being processed` — the first request atomically claims the transaction before calling Stripe, so a second concurrent call never reaches Stripe.
 
 ### Success response

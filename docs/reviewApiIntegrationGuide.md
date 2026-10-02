@@ -12,6 +12,7 @@ Base path: `/api/v1/reviews`
 - Requests under `/api` are limited to 100 per IP per hour.
 - A student may leave exactly one review per course, and only for a course they are enrolled in.
 - Creating, updating (rating change), or deleting a review recalculates that course's `averageRating`/`totalReviews` (see the [course guide](./courseApiIntegrationGuide.md)) — re-fetch the course if you're displaying those fields alongside a review action.
+- If a student's course purchase is refunded, any review submitted by that student for the refunded course is automatically deleted and the course's `averageRating`/`totalReviews` are recalculated.
 
 ## Roles and access
 

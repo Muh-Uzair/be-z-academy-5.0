@@ -6,6 +6,9 @@ import AppError from "../utils/appError";
 import { STRIPE_ONBOARDING_URL } from "../constants/stripeConstant";
 import TransactionModel from "../models/transactionModel";
 import EnrollmentModel from "../models/enrollmentModel";
+import ReviewModel from "../models/reviewModel";
+import { recalculateCourseRatingStats } from "../utils/courseUtil";
+
 // FUNCTION
 export const getInstructorOnboardingLinkService = async (
   instructorId: string,
@@ -240,7 +243,17 @@ export const handleChargeRefundedService = async (
     },
   );
 
+  // Step 6: Delete any review the student left on this course, and keep rating stats in sync
+  const deletedReview = await ReviewModel.findOneAndDelete({
+    reviewBy: transaction.student,
+    course: transaction.course,
+  });
+
+  if (deletedReview) {
+    await recalculateCourseRatingStats(transaction.course.toString());
+  }
+
   console.log(
-    `Refund processed successfully. Transaction ${transaction.transactionId} marked as refunded and enrollment removed.`,
+    `Refund processed successfully. Transaction ${transaction.transactionId} marked as refunded, enrollment removed, and review cleaned up.`,
   );
 };
