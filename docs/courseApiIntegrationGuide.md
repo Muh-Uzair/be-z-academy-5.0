@@ -331,6 +331,7 @@ HTTP `200`
 | HTTP status | Message | When |
 | --- | --- | --- |
 | 400 | `Invalid value "<value>" for field "_id"` | `id` is not a valid Mongo ObjectId. |
+| 400 | `Cannot delete course because students are enrolled in it` | One or more students are currently enrolled in the course. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to access this course` | Caller is not the course's owning instructor. |
 | 404 | `Course not found` | No course exists with that `id`. |

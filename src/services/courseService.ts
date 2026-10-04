@@ -886,10 +886,20 @@ export const deleteCourseService = async (
   // Step 1: Fetch the course, enforcing ownership
   const course = await getOwnedCourseOrThrow(id, instructorId);
 
-  // Step 2: Delete the course document
+  // Step 2: Ensure no student is currently enrolled in this course
+  const hasEnrollments = await EnrollmentModel.exists({ course: id });
+
+  if (hasEnrollments) {
+    throw new AppError(
+      400,
+      "Cannot delete course because students are enrolled in it",
+    );
+  }
+
+  // Step 3: Delete the course document
   await course.deleteOne();
 
-  // Step 3: Delete the now-orphaned thumbnail and video from S3
+  // Step 4: Delete the now-orphaned thumbnail and video from S3
   await Promise.all([
     deleteS3ObjectService(course.thumbnailKey),
     deleteS3ObjectService(course.videoKey),
