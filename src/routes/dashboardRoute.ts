@@ -32,7 +32,6 @@ dashboardRouter.get(
   "/student",
   protect,
   restrictTo(Role.Student),
-  validation(dashboardQuerySchema, "query"),
   getStudentDashboard,
 );
 

@@ -5,6 +5,7 @@ import {
   DashboardQuery,
   AdminDashboardData,
   InstructorDashboardData,
+  StudentDashboardData,
 } from "../types/dashboardType";
 import {
   getAdminDashboardService,
@@ -49,9 +50,8 @@ export const getInstructorDashboard = catchAsync(
 export const getStudentDashboard = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const user = req.user;
-    const { period } = req.validatedQuery as DashboardQuery;
 
-    const data = await getStudentDashboardService(user, period);
+    const data: StudentDashboardData = await getStudentDashboardService(user);
 
     sendResponse(res, 200, {
       status: "success",

@@ -296,21 +296,106 @@ Follows the exact same period structure as `revenueTrend`:
 
 ## API 3 — Student Dashboard
 
-`GET /api/v1/dashboard/student?period=week|month|year`
+`GET /api/v1/dashboard/student`
 
-> 🚧 Business logic coming soon.
+The student dashboard does not depend on any period filter — all metrics reflect the student's current enrollments, watch progress, recent purchases, and reviews.
 
 ### Query parameters
 
-| Param | Type | Required |
+None. Do not pass `period` or any query parameters.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Student dashboard fetched successfully",
+  "data": {
+    "stats": {
+      "enrolledCourses": 3,
+      "completedCourses": 1,
+      "averageCompletionPercentage": 45.5,
+      "totalWatchTime": 240
+    },
+    "continueWatching": [
+      {
+        "enrollmentId": "66e1a1b2c3d4e5f678901234",
+        "courseId": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Full-Stack Web Development Bootcamp",
+        "thumbnailUrl": "https://...",
+        "instructorName": "Dr John Smith",
+        "instructorAvatarUrl": "https://...",
+        "watchPercentage": 50,
+        "totalDurationWatchedInMinutes": 120,
+        "totalDurationInMinutes": 240,
+        "mostRecentlySeen": true,
+        "updatedAt": "2026-10-06T15:30:00.000Z"
+      }
+    ],
+    "recentTransactions": [
+      {
+        "id": "66f1a1b2c3d4e5f678901555",
+        "transactionId": "pi_3PXXXXXXXXXXXXXX",
+        "courseId": "66d1a1b2c3d4e5f678901234",
+        "courseTitle": "Complete Full-Stack Web Development Bootcamp",
+        "courseThumbnailUrl": "https://...",
+        "instructorName": "Dr John Smith",
+        "instructorAvatarUrl": "https://...",
+        "amountPaid": 49.99,
+        "paymentStatus": "paid",
+        "currency": "usd",
+        "amountPaidAt": "2026-10-01T12:00:00.000Z",
+        "createdAt": "2026-10-01T12:00:00.000Z"
+      }
+    ],
+    "recentReviews": [
+      {
+        "reviewId": "66d1b2c3d4e5f67890123456",
+        "courseId": "66d1a1b2c3d4e5f678901234",
+        "courseTitle": "Complete Full-Stack Web Development Bootcamp",
+        "courseThumbnailUrl": "https://...",
+        "instructorName": "Dr John Smith",
+        "instructorAvatarUrl": "https://...",
+        "rating": 5,
+        "review": "Clear explanations and great real-world examples!",
+        "feedback": "Clear explanations and great real-world examples!",
+        "createdAt": "2026-10-05T12:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### `stats` field details
+
+| Field | Description | Source |
 | --- | --- | --- |
-| `period` | `"week" \| "month" \| "year"` | ✅ Yes |
+| `enrolledCourses` | Total courses enrolled by this student | Count of `Enrollment` documents |
+| `completedCourses` | Courses where `watchedCompletely: true` | Count of completed `Enrollment` documents |
+| `averageCompletionPercentage` | Average `watchPercentage` across all enrolled courses | Calculated from `Enrollment.watchPercentage` |
+| `totalWatchTime` | Total watch time across all enrolled courses (in minutes) | Sum of `Enrollment.totalDurationWatchedInMinutes` |
+
+### `continueWatching` details
+
+- Returns up to **3 courses** to resume watching.
+- Prioritizes active/uncompleted courses sorted by `mostRecentlySeen` and latest activity (`updatedAt` descending).
+
+### `recentTransactions` details
+
+- Returns the **5 most recent transactions** made by the student.
+- Sorted by `createdAt` descending.
+
+### `recentReviews` details
+
+- Returns the **5 most recent reviews** submitted by the student.
+- Sorted by `createdAt` descending.
 
 ### Possible errors
 
 | HTTP status | Message | When |
 | --- | --- | --- |
-| `400` | `Validation failed` | `period` is missing or invalid. |
 | `401` | *(see auth guide)* | Access-token cookie missing/invalid/expired. |
 | `403` | `You do not have permission to perform this action` | Non-student role calling this endpoint. |
 
@@ -335,4 +420,11 @@ Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dash
 | `InstructorRecentReview` | Single review row in recent reviews table |
 | `InstructorDashboardData` | Full `data` payload of instructor dashboard |
 | `GetInstructorDashboardResponse` | Complete typed response union for instructor dashboard |
+| `StudentDashboardStats` | Student stats card data |
+| `StudentContinueWatchingItem` | Single course in continue watching list |
+| `StudentRecentTransaction` | Single transaction in student recent transactions |
+| `StudentRecentReview` | Single review in student recent reviews |
+| `StudentDashboardData` | Full `data` payload of student dashboard |
+| `GetStudentDashboardResponse` | Complete typed response union for student dashboard |
+
 

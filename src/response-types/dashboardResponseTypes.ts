@@ -136,3 +136,78 @@ export type GetInstructorDashboardResponse =
     >
   | ApiErrorResponse;
 
+// ─── Student Dashboard ────────────────────────────────────────────────────────
+
+export interface StudentDashboardStats {
+  // Total courses currently enrolled by the student
+  enrolledCourses: number;
+  // Total courses completed (watched completely) by the student
+  completedCourses: number;
+  // Average completion / watch percentage across all enrolled courses
+  averageCompletionPercentage: number;
+  // Total watch time in minutes across all enrolled courses
+  totalWatchTime: number;
+}
+
+export interface StudentContinueWatchingItem {
+  enrollmentId: string;
+  courseId: string;
+  title: string;
+  thumbnailUrl: string | null;
+  instructorName: string;
+  instructorAvatarUrl: string | null;
+  watchPercentage: number;
+  totalDurationWatchedInMinutes: number;
+  totalDurationInMinutes: number;
+  mostRecentlySeen: boolean;
+  updatedAt: string;
+}
+
+export interface StudentRecentTransaction {
+  id: string;
+  transactionId: string;
+  courseId: string;
+  courseTitle: string;
+  courseThumbnailUrl: string | null;
+  instructorName: string;
+  instructorAvatarUrl: string | null;
+  amountPaid: number;
+  paymentStatus: string;
+  currency: string;
+  amountPaidAt: string | null;
+  createdAt: string;
+}
+
+export interface StudentRecentReview {
+  reviewId: string;
+  courseId: string;
+  courseTitle: string;
+  courseThumbnailUrl: string | null;
+  instructorName: string;
+  instructorAvatarUrl: string | null;
+  rating: number;
+  review: string;
+  feedback: string;
+  createdAt: string;
+}
+
+export interface StudentDashboardData {
+  stats: StudentDashboardStats;
+  // Up to 3 in-progress / recent courses to continue watching
+  continueWatching: StudentContinueWatchingItem[];
+  // 5 most recent transactions made by the student
+  recentTransactions: StudentRecentTransaction[];
+  // 5 most recent reviews submitted by the student
+  recentReviews: StudentRecentReview[];
+}
+
+// API: GET /api/v1/dashboard/student
+// Response: { status, message, data: StudentDashboardData }
+export type GetStudentDashboardResponse =
+  | SuccessApiResponse<
+      StudentDashboardData,
+      "Student dashboard fetched successfully"
+    >
+  | ApiErrorResponse;
+
+

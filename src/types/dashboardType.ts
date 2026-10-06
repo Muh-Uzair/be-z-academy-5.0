@@ -93,3 +93,62 @@ export interface InstructorDashboardData {
   recentReviews: InstructorRecentReview[];
 }
 
+// ─── Student Dashboard Types ──────────────────────────────────────────────────
+
+export interface StudentDashboardStats {
+  enrolledCourses: number;
+  completedCourses: number;
+  averageCompletionPercentage: number;
+  totalWatchTime: number;
+}
+
+export interface StudentContinueWatchingItem {
+  enrollmentId: string;
+  courseId: string;
+  title: string;
+  thumbnailUrl: string | null;
+  instructorName: string;
+  instructorAvatarUrl: string | null;
+  watchPercentage: number;
+  totalDurationWatchedInMinutes: number;
+  totalDurationInMinutes: number;
+  mostRecentlySeen: boolean;
+  updatedAt: Date;
+}
+
+export interface StudentRecentTransaction {
+  id: string;
+  transactionId: string;
+  courseId: string;
+  courseTitle: string;
+  courseThumbnailUrl: string | null;
+  instructorName: string;
+  instructorAvatarUrl: string | null;
+  amountPaid: number;
+  paymentStatus: string;
+  currency: string;
+  amountPaidAt: Date | null;
+  createdAt: Date;
+}
+
+export interface StudentRecentReview {
+  reviewId: string;
+  courseId: string;
+  courseTitle: string;
+  courseThumbnailUrl: string | null;
+  instructorName: string;
+  instructorAvatarUrl: string | null;
+  rating: number;
+  review: string;
+  feedback: string;
+  createdAt: Date;
+}
+
+export interface StudentDashboardData {
+  stats: StudentDashboardStats;
+  continueWatching: StudentContinueWatchingItem[];
+  recentTransactions: StudentRecentTransaction[];
+  recentReviews: StudentRecentReview[];
+}
+
+

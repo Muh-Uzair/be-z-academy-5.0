@@ -6,6 +6,7 @@ import CourseModel from "../models/courseModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import ReviewModel from "../models/reviewModel";
 import { formatUserAvatarUrl } from "./userService";
+import { getPublicS3Url } from "./s3Service";
 import {
   DashboardPeriod,
   DashboardAuthUser,
@@ -18,6 +19,11 @@ import {
   InstructorRevenueByCourse,
   InstructorCoursePerformance,
   InstructorRecentReview,
+  StudentDashboardData,
+  StudentDashboardStats,
+  StudentContinueWatchingItem,
+  StudentRecentTransaction,
+  StudentRecentReview,
 } from "../types/dashboardType";
 
 
@@ -850,13 +856,239 @@ export const getInstructorDashboardService = async (
   };
 };
 
+// ─── Student Dashboard Helpers ────────────────────────────────────────────────
+
+const getStudentEnrolledCourses = async (
+  studentId: Types.ObjectId,
+): Promise<number> => {
+  return EnrollmentModel.countDocuments({ student: studentId });
+};
+
+const getStudentCompletedCourses = async (
+  studentId: Types.ObjectId,
+): Promise<number> => {
+  return EnrollmentModel.countDocuments({
+    student: studentId,
+    watchedCompletely: true,
+  });
+};
+
+const getStudentAverageCompletionPercentage = async (
+  studentId: Types.ObjectId,
+): Promise<number> => {
+  const result = await EnrollmentModel.aggregate([
+    { $match: { student: studentId } },
+    { $group: { _id: null, avgCompletion: { $avg: "$watchPercentage" } } },
+  ]);
+  return result[0]?.avgCompletion
+    ? Math.round(result[0].avgCompletion * 10) / 10
+    : 0;
+};
+
+const getStudentTotalWatchTime = async (
+  studentId: Types.ObjectId,
+): Promise<number> => {
+  const result = await EnrollmentModel.aggregate([
+    { $match: { student: studentId } },
+    {
+      $group: {
+        _id: null,
+        totalWatchTime: { $sum: "$totalDurationWatchedInMinutes" },
+      },
+    },
+  ]);
+  return result[0]?.totalWatchTime
+    ? Math.round(result[0].totalWatchTime * 10) / 10
+    : 0;
+};
+
+const getStudentContinueWatching = async (
+  studentId: Types.ObjectId,
+): Promise<StudentContinueWatchingItem[]> => {
+  const enrollments = await EnrollmentModel.find({
+    student: studentId,
+    watchedCompletely: false,
+  })
+    .populate({
+      path: "course",
+      select: "title thumbnailKey totalDurationInMinutes",
+    })
+    .populate({
+      path: "instructor",
+      select: "fullName avatarKey",
+    })
+    .sort({ mostRecentlySeen: -1, updatedAt: -1 })
+    .limit(3)
+    .lean();
+
+  let allEnrollments = enrollments;
+  if (allEnrollments.length < 3) {
+    const existingIds = allEnrollments.map((e) => e._id);
+    const additional = await EnrollmentModel.find({
+      student: studentId,
+      _id: { $nin: existingIds },
+    })
+      .populate({
+        path: "course",
+        select: "title thumbnailKey totalDurationInMinutes",
+      })
+      .populate({
+        path: "instructor",
+        select: "fullName avatarKey",
+      })
+      .sort({ updatedAt: -1 })
+      .limit(3 - allEnrollments.length)
+      .lean();
+
+    allEnrollments = [...allEnrollments, ...additional];
+  }
+
+  return allEnrollments.map((e: any) => {
+    const course = e.course;
+    const instructor = e.instructor
+      ? formatUserAvatarUrl(e.instructor)
+      : null;
+    const thumbnailUrl = course?.thumbnailKey
+      ? getPublicS3Url(course.thumbnailKey)
+      : null;
+
+    return {
+      enrollmentId: e._id.toString(),
+      courseId: course?._id?.toString() ?? "",
+      title: course?.title ?? "Unknown Course",
+      thumbnailUrl,
+      instructorName: instructor?.fullName ?? "Unknown Instructor",
+      instructorAvatarUrl: instructor?.avatarUrl ?? null,
+      watchPercentage: e.watchPercentage ?? 0,
+      totalDurationWatchedInMinutes: e.totalDurationWatchedInMinutes ?? 0,
+      totalDurationInMinutes: course?.totalDurationInMinutes ?? 0,
+      mostRecentlySeen: Boolean(e.mostRecentlySeen),
+      updatedAt: e.updatedAt,
+    };
+  });
+};
+
+const getStudentRecentTransactions = async (
+  studentId: Types.ObjectId,
+): Promise<StudentRecentTransaction[]> => {
+  const transactions = await TransactionModel.find({ student: studentId })
+    .populate({
+      path: "course",
+      select: "title thumbnailKey",
+    })
+    .populate({
+      path: "instructor",
+      select: "fullName avatarKey",
+    })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+  return transactions.map((t: any) => {
+    const course = t.course;
+    const instructor = t.instructor
+      ? formatUserAvatarUrl(t.instructor)
+      : null;
+    const courseThumbnailUrl = course?.thumbnailKey
+      ? getPublicS3Url(course.thumbnailKey)
+      : null;
+
+    return {
+      id: t._id.toString(),
+      transactionId: t.transactionId,
+      courseId: course?._id?.toString() ?? "",
+      courseTitle: course?.title ?? "Unknown Course",
+      courseThumbnailUrl,
+      instructorName: instructor?.fullName ?? "Unknown Instructor",
+      instructorAvatarUrl: instructor?.avatarUrl ?? null,
+      amountPaid: t.amountPaid,
+      paymentStatus: t.paymentStatus,
+      currency: t.currency ?? "usd",
+      amountPaidAt: t.amountPaidAt ?? null,
+      createdAt: t.createdAt,
+    };
+  });
+};
+
+const getStudentRecentReviews = async (
+  studentId: Types.ObjectId,
+): Promise<StudentRecentReview[]> => {
+  const reviews = await ReviewModel.find({ reviewBy: studentId })
+    .populate({
+      path: "course",
+      select: "title thumbnailKey",
+    })
+    .populate({
+      path: "instructor",
+      select: "fullName avatarKey",
+    })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+  return reviews.map((r: any) => {
+    const course = r.course;
+    const instructor = r.instructor
+      ? formatUserAvatarUrl(r.instructor)
+      : null;
+    const courseThumbnailUrl = course?.thumbnailKey
+      ? getPublicS3Url(course.thumbnailKey)
+      : null;
+
+    return {
+      reviewId: r._id.toString(),
+      courseId: course?._id?.toString() ?? "",
+      courseTitle: course?.title ?? "Unknown Course",
+      courseThumbnailUrl,
+      instructorName: instructor?.fullName ?? "Unknown Instructor",
+      instructorAvatarUrl: instructor?.avatarUrl ?? null,
+      rating: r.rating,
+      review: r.feedback,
+      feedback: r.feedback,
+      createdAt: r.createdAt,
+    };
+  });
+};
+
 // FUNCTION
 export const getStudentDashboardService = async (
   user: DashboardAuthUser | undefined,
-  period: DashboardPeriod,
-): Promise<null> => {
-  console.log("user -----------------", user);
-  console.log("period ---------------------", period);
+): Promise<StudentDashboardData> => {
+  if (!user?.id) {
+    throw new AppError(401, "You are not logged in. Please sign in to continue");
+  }
 
-  return null;
+  const studentId = new Types.ObjectId(user.id);
+
+  const [
+    enrolledCourses,
+    completedCourses,
+    averageCompletionPercentage,
+    totalWatchTime,
+    continueWatching,
+    recentTransactions,
+    recentReviews,
+  ] = await Promise.all([
+    getStudentEnrolledCourses(studentId),
+    getStudentCompletedCourses(studentId),
+    getStudentAverageCompletionPercentage(studentId),
+    getStudentTotalWatchTime(studentId),
+    getStudentContinueWatching(studentId),
+    getStudentRecentTransactions(studentId),
+    getStudentRecentReviews(studentId),
+  ]);
+
+  const stats: StudentDashboardStats = {
+    enrolledCourses,
+    completedCourses,
+    averageCompletionPercentage,
+    totalWatchTime,
+  };
+
+  return {
+    stats,
+    continueWatching,
+    recentTransactions,
+    recentReviews,
+  };
 };
