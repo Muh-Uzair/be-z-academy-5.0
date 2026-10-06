@@ -149,7 +149,9 @@ By default (no `projection` sent), each instructor object contains only public f
 
 `GET /api/v1/users/students`
 
-Admin or Instructor. Returns a paginated, searchable list of student accounts, scoped by the caller's role: an admin sees every student; an instructor sees only students enrolled in at least one of their own courses (distinct — a student enrolled in several of the instructor's courses appears once).
+Admin or Instructor. Returns a paginated, searchable list of student accounts, scoped by the caller's role:
+- **Admin**: Sees all registered student accounts on the platform (`role: "student"`), regardless of whether they have enrolled in any courses.
+- **Instructor**: Sees only students enrolled in at least one course taught by the requesting instructor (distinct — a student enrolled in several courses of this instructor appears once).
 
 ### Query parameters
 

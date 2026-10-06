@@ -46,8 +46,11 @@ export type GetPublicInstructorsResponse =
     >
   | ApiErrorResponse;
 
-// API 2: GET /api/v1/users/students
+// API 3: GET /api/v1/users/students
 // Response: { status, message, data: { students, pagination } }
+// Allowed callers: Admin or Instructor.
+// - Admin: Returns all registered users with role: "student" (even if not enrolled in any course).
+// - Instructor: Returns only students enrolled in at least one of their own courses.
 export interface GetStudentsResponseData {
   students: UserDetails[];
   pagination: Pagination;
