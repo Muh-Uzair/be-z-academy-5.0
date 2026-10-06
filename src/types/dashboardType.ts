@@ -44,3 +44,52 @@ export interface AdminDashboardData {
   topPerformingCourses: TopPerformingCourse[];
   recentUsers: AdminRecentUser[];
 }
+
+// ─── Instructor Dashboard Types ───────────────────────────────────────────────
+
+export interface InstructorDashboardStats {
+  totalRevenue: number;
+  adminCommission: number;
+  totalStudents: number;
+  totalCourses: number;
+  averageRating: number;
+}
+
+export interface InstructorRevenueByCourse {
+  courseId: string;
+  title: string;
+  courseTitle: string;
+  revenue: number;
+}
+
+export interface InstructorCoursePerformance {
+  courseId: string;
+  title: string;
+  courseTitle: string;
+  isVerified: boolean;
+  enrollments: number;
+  rating: number;
+  avgCompletion: number;
+  revenue: number;
+}
+
+export interface InstructorRecentReview {
+  reviewId: string;
+  courseId: string;
+  courseTitle: string;
+  studentName: string;
+  studentAvatarUrl: string | null;
+  rating: number;
+  review: string;
+  feedback: string;
+  createdAt: Date;
+}
+
+export interface InstructorDashboardData {
+  stats: InstructorDashboardStats;
+  revenueByCourse: InstructorRevenueByCourse[];
+  enrollmentsTrend: Record<string, number>;
+  coursePerformance: InstructorCoursePerformance[];
+  recentReviews: InstructorRecentReview[];
+}
+

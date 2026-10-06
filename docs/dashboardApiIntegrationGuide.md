@@ -182,13 +182,107 @@ All keys are always present even if the value is `0`.
 
 `GET /api/v1/dashboard/instructor?period=week|month|year`
 
-> 🚧 Business logic coming soon.
-
 ### Query parameters
 
-| Param | Type | Required |
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `period` | `"week" \| "month" \| "year"` | ✅ Yes | The time window for period-filtered metrics. |
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Instructor dashboard fetched successfully",
+  "data": {
+    "stats": {
+      "totalRevenue": 1,
+      "adminCommission": 0,
+      "totalStudents": 1,
+      "totalCourses": 1,
+      "averageRating": 0.0
+    },
+    "revenueByCourse": [
+      {
+        "courseId": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Full-Stack Web Development Bootcamp",
+        "courseTitle": "Complete Full-Stack Web Development Bootcamp",
+        "revenue": 1
+      }
+    ],
+    "enrollmentsTrend": {
+      "Sunday": 0,
+      "Monday": 0,
+      "Tuesday": 0,
+      "Wednesday": 0,
+      "Thursday": 0,
+      "Friday": 1,
+      "Saturday": 0
+    },
+    "coursePerformance": [
+      {
+        "courseId": "66d1a1b2c3d4e5f678901234",
+        "title": "Complete Full-Stack Web Development Bootcamp",
+        "courseTitle": "Complete Full-Stack Web Development Bootcamp",
+        "isVerified": true,
+        "enrollments": 2,
+        "rating": 0,
+        "avgCompletion": 0.0,
+        "revenue": 2
+      }
+    ],
+    "recentReviews": [
+      {
+        "reviewId": "66d1b2c3d4e5f67890123456",
+        "courseId": "66d1a1b2c3d4e5f678901234",
+        "courseTitle": "Complete Full-Stack Web Development Bootcamp",
+        "studentName": "John Doe",
+        "studentAvatarUrl": "https://...",
+        "rating": 5,
+        "review": "Excellent course, highly recommend!",
+        "feedback": "Excellent course, highly recommend!",
+        "createdAt": "2026-10-05T12:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### `stats` field details
+
+| Field | Source | Period-filtered? |
 | --- | --- | --- |
-| `period` | `"week" \| "month" \| "year"` | ✅ Yes |
+| `totalRevenue` | Sum of `instructorRevenue` on `paid` transactions for this instructor | ✅ Yes |
+| `adminCommission` | Sum of `adminCommission` on `paid` transactions for this instructor | ✅ Yes |
+| `totalStudents` | Distinct count of students enrolled in this instructor's courses | ✅ Yes |
+| `totalCourses` | Total count of courses owned by this instructor | ❌ No (All-time) |
+| `averageRating` | Combined average rating across all reviews of this instructor | ❌ No (All-time) |
+
+### `revenueByCourse` details
+
+- Returns revenue earned by the instructor for each course in the selected period.
+- Ranked by `revenue` descending.
+- Used to render the circular / doughnut chart.
+
+### `enrollmentsTrend` details
+
+Follows the exact same period structure as `revenueTrend`:
+- **`period=week`**: `{ Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }`
+- **`period=month`**: `{ "Week 1", "Week 2", "Week 3", "Week 4" }`
+- **`period=year`**: `{ January, February, ..., December }`
+
+### `coursePerformance` details
+
+- Returns **top 5 courses** of this instructor ranked by enrollments (`totalStudentsEnrolled` descending).
+- `enrollments`, `revenue`, `rating`, and `avgCompletion` are **all-time** (not period-filtered).
+- `avgCompletion` represents the average watch percentage across enrolled students.
+
+### `recentReviews` details
+
+- Returns the **5 most recent reviews** across all courses of this instructor.
+- **Not period-filtered** — always all-time latest reviews.
 
 ### Possible errors
 
@@ -229,9 +323,16 @@ Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dash
 | Export | Description |
 | --- | --- |
 | `DashboardPeriod` | `"week" \| "month" \| "year"` |
-| `TrendRecord` | `Record<string, number>` — shape for `revenueTrend` and `userGrowth` |
-| `AdminDashboardStats` | Stats card data |
-| `TopPerformingCourse` | Single course in the top-5 list |
-| `AdminRecentUser` | Single user in the recent-users list |
-| `AdminDashboardData` | Full `data` payload of the admin dashboard response |
-| `GetAdminDashboardResponse` | Complete typed response union (`SuccessApiResponse \| ApiErrorResponse`) |
+| `TrendRecord` | `Record<string, number>` — shape for trend breakdowns |
+| `AdminDashboardStats` | Admin stats card data |
+| `TopPerformingCourse` | Admin single course in top-5 list |
+| `AdminRecentUser` | Admin single user in recent-users list |
+| `AdminDashboardData` | Full `data` payload of admin dashboard |
+| `GetAdminDashboardResponse` | Complete typed response union for admin dashboard |
+| `InstructorDashboardStats` | Instructor stats card data |
+| `InstructorRevenueByCourse` | Course revenue slice for circular chart |
+| `InstructorCoursePerformance` | Single course row in course performance table |
+| `InstructorRecentReview` | Single review row in recent reviews table |
+| `InstructorDashboardData` | Full `data` payload of instructor dashboard |
+| `GetInstructorDashboardResponse` | Complete typed response union for instructor dashboard |
+

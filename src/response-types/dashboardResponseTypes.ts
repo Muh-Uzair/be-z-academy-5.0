@@ -64,3 +64,75 @@ export interface AdminDashboardData {
 export type GetAdminDashboardResponse =
   | SuccessApiResponse<AdminDashboardData, "Admin dashboard fetched successfully">
   | ApiErrorResponse;
+
+// ─── Instructor Dashboard ─────────────────────────────────────────────────────
+
+export interface InstructorDashboardStats {
+  // Total instructor revenue earned in the period
+  totalRevenue: number;
+  // Commission earned by platform/admin from this instructor in the period
+  adminCommission: number;
+  // Count of distinct students enrolled in this instructor's courses in the period
+  totalStudents: number;
+  // Total courses of this instructor (all-time)
+  totalCourses: number;
+  // Average rating across all reviews of this instructor (all-time)
+  averageRating: number;
+}
+
+export interface InstructorRevenueByCourse {
+  courseId: string;
+  title: string;
+  courseTitle: string;
+  // Revenue earned by the instructor for this course in the period
+  revenue: number;
+}
+
+export interface InstructorCoursePerformance {
+  courseId: string;
+  title: string;
+  courseTitle: string;
+  isVerified: boolean;
+  // Total students enrolled in this course (all-time)
+  enrollments: number;
+  // Average rating for this course (all-time)
+  rating: number;
+  // Average watch percentage across all enrolled students (all-time)
+  avgCompletion: number;
+  // Total revenue earned by the instructor for this course (all-time)
+  revenue: number;
+}
+
+export interface InstructorRecentReview {
+  reviewId: string;
+  courseId: string;
+  courseTitle: string;
+  studentName: string;
+  studentAvatarUrl: string | null;
+  rating: number;
+  review: string;
+  feedback: string;
+  createdAt: string;
+}
+
+export interface InstructorDashboardData {
+  stats: InstructorDashboardStats;
+  // Revenue breakdown by course in the selected period (data for circular/doughnut chart)
+  revenueByCourse: InstructorRevenueByCourse[];
+  // Enrollments breakdown by time window in the selected period (week/month/year)
+  enrollmentsTrend: TrendRecord;
+  // Top 5 best performing courses ranked by enrollments (all-time)
+  coursePerformance: InstructorCoursePerformance[];
+  // 5 most recent reviews across all courses (all-time)
+  recentReviews: InstructorRecentReview[];
+}
+
+// API: GET /api/v1/dashboard/instructor?period=week|month|year
+// Response: { status, message, data: InstructorDashboardData }
+export type GetInstructorDashboardResponse =
+  | SuccessApiResponse<
+      InstructorDashboardData,
+      "Instructor dashboard fetched successfully"
+    >
+  | ApiErrorResponse;
+

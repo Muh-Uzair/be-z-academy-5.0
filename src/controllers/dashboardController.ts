@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import sendResponse from "../utils/sendResponse";
-import { DashboardQuery, AdminDashboardData } from "../types/dashboardType";
+import {
+  DashboardQuery,
+  AdminDashboardData,
+  InstructorDashboardData,
+} from "../types/dashboardType";
 import {
   getAdminDashboardService,
   getInstructorDashboardService,
@@ -28,7 +32,11 @@ export const getInstructorDashboard = catchAsync(
     const user = req.user;
     const { period } = req.validatedQuery as DashboardQuery;
 
-    const data = await getInstructorDashboardService(user, period);
+    const data: InstructorDashboardData = await getInstructorDashboardService(
+      user,
+      period,
+    );
+
 
     sendResponse(res, 200, {
       status: "success",
