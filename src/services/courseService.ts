@@ -140,10 +140,13 @@ export const createCoursePaymentIntentService = async (
   }
 
   // Step 2a: If the student already has a pending PaymentIntent for this
-  // course (an abandoned checkout), cancel it on Stripe and mark its
-  // Transaction as failed before issuing a fresh one. This avoids two valid
-  // PaymentIntents existing for the same course, which could lead to the
-  // student being charged twice, and keeps the price in sync if it changed.
+  // course, check whether the course price has changed since it was created.
+  // - Price unchanged → retrieve the existing PaymentIntent from Stripe and
+  //   return its clientSecret immediately (reuse). This prevents the
+  //   "1 failed + 1 paid" duplicate-transaction pattern that occurs when the
+  //   frontend calls this endpoint more than once for the same checkout session.
+  // - Price changed → cancel the old intent on Stripe, mark its Transaction
+  //   as failed, and fall through to create a fresh one with the new price.
   const existingPendingTransaction = await TransactionModel.findOne({
     student: studentId,
     course: courseId,
@@ -151,6 +154,20 @@ export const createCoursePaymentIntentService = async (
   });
 
   if (existingPendingTransaction) {
+    const currentAmountInCents = Math.round(course.price * 100);
+    const existingAmountInCents = Math.round(
+      existingPendingTransaction.totalPrice * 100,
+    );
+
+    if (currentAmountInCents === existingAmountInCents) {
+      // Price is unchanged — reuse the existing PaymentIntent
+      const existingPaymentIntent = await stripe.paymentIntents.retrieve(
+        existingPendingTransaction.transactionId,
+      );
+      return { clientSecret: existingPaymentIntent.client_secret };
+    }
+
+    // Price changed — cancel the stale intent and create a fresh one below
     try {
       await stripe.paymentIntents.cancel(
         existingPendingTransaction.transactionId,
