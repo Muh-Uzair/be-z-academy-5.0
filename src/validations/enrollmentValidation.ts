@@ -27,7 +27,7 @@ export const getEnrollmentsQuerySchema = z
     projection: z.string().trim().min(1).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).default(10),
-    sortBy: z.string().trim().min(1).default("createdAt"),
+    sortBy: z.string().trim().min(1).optional(),
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
   })
   .strict();

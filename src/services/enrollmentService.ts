@@ -164,9 +164,10 @@ export const getEnrollmentsService = async (
     }
   }
 
-  // Step 3: Layer the query-driven filter, sort, lookup, projection, and pagination stages.
-  // By calling .addStages() AFTER .filter(), MongoDB's optimizer can use
-  // indexes to dramatically reduce the dataset before performing expensive joins.
+  const defaultSort = query.continueWatching
+    ? { mostRecentlySeen: -1 as const, updatedAt: -1 as const }
+    : "createdAt";
+
   const { data, pagination } = await new APIFeatures(
     EnrollmentModel,
     filterQuery,
@@ -180,7 +181,7 @@ export const getEnrollmentsService = async (
       "watchedCompletely",
       "certificateIssued",
     ])
-    .sort()
+    .sort(defaultSort)
     .addStages(ENROLLMENT_LOOKUP_STAGES)
     .projection()
     .paginate()

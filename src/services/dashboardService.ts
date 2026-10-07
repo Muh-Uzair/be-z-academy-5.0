@@ -907,6 +907,7 @@ const getStudentContinueWatching = async (
 ): Promise<StudentContinueWatchingItem[]> => {
   const enrollments = await EnrollmentModel.find({
     student: studentId,
+    watchPercentage: { $gt: 0 },
     watchedCompletely: false,
   })
     .populate({
@@ -926,6 +927,7 @@ const getStudentContinueWatching = async (
     const existingIds = allEnrollments.map((e) => e._id);
     const additional = await EnrollmentModel.find({
       student: studentId,
+      watchedCompletely: true,
       _id: { $nin: existingIds },
     })
       .populate({

@@ -87,14 +87,20 @@ class APIFeatures<T> {
   // the given defaults when the caller's query doesn't carry them (e.g. a
   // public endpoint that doesn't expose sortBy/sortOrder to the client).
   sort(
-    defaultSortBy = "createdAt",
+    defaultSortBy: string | Record<string, 1 | -1> = "createdAt",
     defaultSortOrder: "asc" | "desc" = "desc",
   ): this {
-    const sortBy = this.query.sortBy ?? defaultSortBy;
-    const sortOrder = this.query.sortOrder ?? defaultSortOrder;
-
-    if (sortBy) {
-      this.pipeline.push({ $sort: { [sortBy]: sortOrder === "asc" ? 1 : -1 } });
+    if (this.query.sortBy) {
+      const sortOrder = this.query.sortOrder ?? defaultSortOrder;
+      this.pipeline.push({
+        $sort: { [this.query.sortBy]: sortOrder === "asc" ? 1 : -1 },
+      });
+    } else if (typeof defaultSortBy === "object" && defaultSortBy !== null) {
+      this.pipeline.push({ $sort: defaultSortBy });
+    } else if (typeof defaultSortBy === "string") {
+      this.pipeline.push({
+        $sort: { [defaultSortBy]: defaultSortOrder === "asc" ? 1 : -1 },
+      });
     }
 
     return this;
