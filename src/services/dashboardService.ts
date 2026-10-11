@@ -110,8 +110,6 @@ const getTotalInstructors = async (startDate: Date): Promise<number> => {
 
 const getTotalCourses = async (startDate: Date): Promise<number> => {
   return CourseModel.countDocuments({
-    isVerified: true,
-    verificationRejectionReason: null,
     createdAt: { $gte: startDate },
   });
 };

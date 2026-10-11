@@ -154,7 +154,7 @@ All keys are always present even if the value is `0`.
 | `adminCommission` | Sum of `adminCommission` on `paid` transactions | ✅ Yes |
 | `totalStudents` | Count of users with `role=student` registered in period | ✅ Yes |
 | `totalInstructors` | Count of users with `role=instructor` registered in period | ✅ Yes |
-| `totalCourses` | Count of verified courses created in period | ✅ Yes |
+| `totalCourses` | Count of courses created in period, regardless of verification status | ✅ Yes |
 
 ### `topPerformingCourses` details
 
@@ -426,5 +426,4 @@ Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dash
 | `StudentRecentReview` | Single review in student recent reviews |
 | `StudentDashboardData` | Full `data` payload of student dashboard |
 | `GetStudentDashboardResponse` | Complete typed response union for student dashboard |
-
 
