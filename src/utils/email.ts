@@ -54,12 +54,12 @@ export const sendOtpEmail = async (options: {
                 <tr>
                   <td align="center">
                     <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#2fbfad;letter-spacing:3px;text-transform:uppercase;">Your One-Time Password</p>
-                    <table cellpadding="0" cellspacing="8" border="0">
+                    <table cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin: 0 auto;">
                       <tr>
                         ${digits.map(d => `
-                        <td>
-                          <div style="width:56px;height:64px;background-color:#e8f8f3;border:2px solid #2fbfad;border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                            <span style="font-size:32px;font-weight:800;color:#134d3c;line-height:64px;display:block;text-align:center;">${d}</span>
+                        <td style="padding: 0 6px;" align="center" valign="middle">
+                          <div style="width: 48px; height: 60px; background-color: #e8f8f3; border: 2px solid #2fbfad; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-align: center;">
+                            <span style="font-size: 30px; font-weight: 800; color: #134d3c; line-height: 60px; display: block; text-align: center;">${d}</span>
                           </div>
                         </td>`).join("")}
                       </tr>
