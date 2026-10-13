@@ -823,15 +823,34 @@ export const updateCourseService = async (
   const previousThumbnailKey = existingCourse.thumbnailKey;
   const previousVideoKey = existingCourse.videoKey;
 
-  // Step 2: Apply the update. totalDurationInMinutes is computed
+  // Step 2: If the course was previously rejected, moving it back to
+  // pending review (isVerified: false, rejection reason and date cleared to null).
+  const isPreviouslyRejected =
+    !existingCourse.isVerified &&
+    existingCourse.verificationRejectionReason !== null;
+
+  // Step 3: Apply the update. totalDurationInMinutes is computed
   // client-side from the actual video file — the instructor never types it
   // directly.
-  const updatedCourse = await CourseModel.findByIdAndUpdate(id, body, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedCourse = await CourseModel.findByIdAndUpdate(
+    id,
+    {
+      ...body,
+      ...(isPreviouslyRejected
+        ? {
+            isVerified: false,
+            verificationRejectionReason: null,
+            lastVerificationRejectedAt: null,
+          }
+        : {}),
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
 
-  // Step 3: Collect any S3 keys that were replaced by this update
+  // Step 4: Collect any S3 keys that were replaced by this update
   const staleKeys: string[] = [];
 
   if (body.thumbnailKey && body.thumbnailKey !== previousThumbnailKey) {
@@ -842,10 +861,10 @@ export const updateCourseService = async (
     staleKeys.push(previousVideoKey);
   }
 
-  // Step 4: Delete the now-orphaned S3 objects
+  // Step 5: Delete the now-orphaned S3 objects
   await Promise.all(staleKeys.map((key) => deleteS3ObjectService(key)));
 
-  // Step 5: Attach a signed video URL before returning
+  // Step 6: Attach a signed video URL before returning
   return withSignedVideoUrl(updatedCourse!) as Promise<CourseWithUrls>;
 };
 
