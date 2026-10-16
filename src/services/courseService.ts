@@ -23,6 +23,7 @@ import {
   excludeCategoryInternalFields,
 } from "../utils/lookupProjections";
 import { formatUserAvatarUrl } from "./userService";
+import { processRefundCleanupService } from "./stripeService";
 import {
   CreateCourseBody,
   UpdateCourseBody,
@@ -1150,9 +1151,11 @@ export const requestCourseRefundService = async (
     throw new AppError(500, "Unable to process refund. Please try again later");
   }
 
-  // Note: We do NOT update the DB here.
-  // The DB update (marking transaction as 'refunded' and removing enrollment)
-  // happens in the 'charge.refunded' webhook handler to guarantee consistency.
+  // Step 9: Immediate synchronous cleanup — revoke enrollment, adjust course stats,
+  // remove review, and mark transaction as refunded. This guarantees that the student
+  // loses access immediately even if the Stripe webhook delivery fails or is delayed.
+  // The charge.refunded webhook handler acts as an idempotent backup.
+  await processRefundCleanupService(transaction);
 };
 
 // FUNCTION

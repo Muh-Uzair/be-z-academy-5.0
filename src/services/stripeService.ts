@@ -196,6 +196,65 @@ export const handlePaymentIntentFailedService = async (
 };
 
 // FUNCTION
+export const processRefundCleanupService = async (
+  transaction: {
+    _id: any;
+    transactionId?: string;
+    student: any;
+    course: any;
+    instructorRevenue: number;
+    adminCommission: number;
+    paymentStatus?: string;
+  },
+): Promise<void> => {
+  // Step 1: Guard against processing the same refund twice
+  if (transaction.paymentStatus === "refunded") {
+    console.log(
+      `Transaction ${transaction.transactionId ?? transaction._id} already marked as refunded. Skipping.`,
+    );
+    return;
+  }
+
+  // Step 2: Mark the transaction as refunded
+  await TransactionModel.updateOne(
+    { _id: transaction._id },
+    { $set: { paymentStatus: "refunded" } },
+  );
+
+  // Step 3: Delete the enrollment so the student loses access to the course immediately
+  await EnrollmentModel.deleteOne({
+    student: transaction.student,
+    course: transaction.course,
+  });
+
+  // Step 4: Keep the course's aggregate stats in sync
+  await CourseModel.updateOne(
+    { _id: transaction.course },
+    {
+      $inc: {
+        totalStudentsEnrolled: -1,
+        totalRevenueInstructor: -transaction.instructorRevenue,
+        totalRevenueAdmin: -transaction.adminCommission,
+      },
+    },
+  );
+
+  // Step 5: Delete any review the student left on this course, and keep rating stats in sync
+  const deletedReview = await ReviewModel.findOneAndDelete({
+    reviewBy: transaction.student,
+    course: transaction.course,
+  });
+
+  if (deletedReview) {
+    await recalculateCourseRatingStats(transaction.course.toString());
+  }
+
+  console.log(
+    `Refund processed successfully. Transaction ${transaction.transactionId ?? transaction._id} marked as refunded, enrollment removed, and review cleaned up.`,
+  );
+};
+
+// FUNCTION
 export const handleChargeRefundedService = async (
   charge: Stripe.Charge,
 ): Promise<void> => {
@@ -219,41 +278,5 @@ export const handleChargeRefundedService = async (
     return;
   }
 
-  // Step 3: Mark the transaction as refunded
-  await TransactionModel.updateOne(
-    { _id: transaction._id },
-    { $set: { paymentStatus: "refunded" } },
-  );
-
-  // Step 4: Delete the enrollment so the student loses access to the course
-  await EnrollmentModel.deleteOne({
-    student: transaction.student,
-    course: transaction.course,
-  });
-
-  // Step 5: Keep the course's aggregate stats in sync
-  await CourseModel.updateOne(
-    { _id: transaction.course },
-    {
-      $inc: {
-        totalStudentsEnrolled: -1,
-        totalRevenueInstructor: -transaction.instructorRevenue,
-        totalRevenueAdmin: -transaction.adminCommission,
-      },
-    },
-  );
-
-  // Step 6: Delete any review the student left on this course, and keep rating stats in sync
-  const deletedReview = await ReviewModel.findOneAndDelete({
-    reviewBy: transaction.student,
-    course: transaction.course,
-  });
-
-  if (deletedReview) {
-    await recalculateCourseRatingStats(transaction.course.toString());
-  }
-
-  console.log(
-    `Refund processed successfully. Transaction ${transaction.transactionId} marked as refunded, enrollment removed, and review cleaned up.`,
-  );
+  await processRefundCleanupService(transaction);
 };
