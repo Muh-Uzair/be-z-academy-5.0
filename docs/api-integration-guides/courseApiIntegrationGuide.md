@@ -308,6 +308,8 @@ HTTP `200`
 
 Instructor only, and only the course's own instructor. Deletes the course document and both its S3 objects (thumbnail + video).
 
+Before deletion, the service snapshots the complete course metadata into `courseDetails`, sets `isCourseDeleted: true`, and clears `course: null` on all existing transaction records referencing this course. This guarantees that historical transactions remain intact and readable without broken references or client crashes.
+
 ### URL params
 
 | Param | Rules |

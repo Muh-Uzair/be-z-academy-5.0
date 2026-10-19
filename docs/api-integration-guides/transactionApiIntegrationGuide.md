@@ -66,6 +66,7 @@ Every transaction object returned by these APIs looks like:
     "email": "jane@example.com",
     "avatar": null
   },
+  "isCourseDeleted": false,
   "totalPrice": 49.99,
   "amountPaid": 49.99,
   "amountPaidAt": "2026-09-01T12:00:00.000Z",
@@ -79,6 +80,8 @@ Every transaction object returned by these APIs looks like:
 ```
 
 The raw `student`, `course`, and `instructor` id fields are never returned directly — they are always replaced by the joined `studentDetails`, `courseDetails`, and `instructorDetails` objects. `studentDetails`/`instructorDetails` never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`.
+
+`isCourseDeleted` is a boolean indicating whether the course tied to this transaction was deleted. When `isCourseDeleted: true`, `courseDetails` contains the frozen snapshot of the course metadata at the time of deletion, ensuring the transaction remains fully readable without breaking client rendering.
 
 `courseDetails` does **not** include `thumbnailUrl` or `videoUrl` (those are only computed on the course endpoints themselves) — fetch `GET /api/v1/courses/:id` separately if you need to display the course's thumbnail or video.
 

@@ -933,10 +933,44 @@ export const deleteCourseService = async (
     );
   }
 
-  // Step 3: Delete the course document
+  // Step 3: Snapshot course details and unlink course reference on all related transactions
+  const courseDetails = {
+    _id: course._id,
+    title: course.title,
+    description: course.description,
+    price: course.price,
+    level: course.level,
+    instructor: course.instructor,
+    category: course.category,
+    isVerified: course.isVerified,
+    verificationRejectionReason: course.verificationRejectionReason,
+    lastVerificationRejectedAt: course.lastVerificationRejectedAt,
+    averageRating: course.averageRating,
+    totalReviews: course.totalReviews,
+    totalStudentsEnrolled: course.totalStudentsEnrolled,
+    totalDurationInMinutes: course.totalDurationInMinutes,
+    totalRevenueInstructor: course.totalRevenueInstructor,
+    totalRevenueAdmin: course.totalRevenueAdmin,
+    slug: course.slug,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  };
+
+  await TransactionModel.updateMany(
+    { course: course._id },
+    {
+      $set: {
+        isCourseDeleted: true,
+        courseDetails,
+        course: null,
+      },
+    },
+  );
+
+  // Step 4: Delete the course document
   await course.deleteOne();
 
-  // Step 4: Delete the now-orphaned thumbnail and video from S3
+  // Step 5: Delete the now-orphaned thumbnail and video from S3
   await Promise.all([
     deleteS3ObjectService(course.thumbnailKey),
     deleteS3ObjectService(course.videoKey),

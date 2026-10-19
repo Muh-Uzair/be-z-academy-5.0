@@ -985,7 +985,7 @@ const getStudentRecentTransactions = async (
     .lean();
 
   return transactions.map((t: any) => {
-    const course = t.course;
+    const course = t.course || t.courseDetails;
     const instructor = t.instructor
       ? formatUserAvatarUrl(t.instructor)
       : null;
@@ -999,6 +999,7 @@ const getStudentRecentTransactions = async (
       courseId: course?._id?.toString() ?? "",
       courseTitle: course?.title ?? "Unknown Course",
       courseThumbnailUrl,
+      isCourseDeleted: t.isCourseDeleted ?? false,
       instructorName: instructor?.fullName ?? "Unknown Instructor",
       instructorAvatarUrl: instructor?.avatarUrl ?? null,
       amountPaid: t.amountPaid,

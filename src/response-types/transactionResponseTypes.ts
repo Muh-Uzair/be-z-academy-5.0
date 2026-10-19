@@ -46,6 +46,7 @@ export interface Transaction {
   studentDetails: TransactionUserSummary;
   courseDetails: TransactionCourseSummary;
   instructorDetails: TransactionUserSummary;
+  isCourseDeleted: boolean;
   totalPrice: number;
   amountPaid: number;
   amountPaidAt: string | null;

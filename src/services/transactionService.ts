@@ -54,10 +54,21 @@ const TRANSACTION_LOOKUP_STAGES: PipelineStage[] = [
       from: "courses",
       localField: "course",
       foreignField: "_id",
-      as: "courseDetails",
+      as: "lookedUpCourse",
     },
   },
-  { $unwind: { path: "$courseDetails", preserveNullAndEmptyArrays: true } },
+  { $unwind: { path: "$lookedUpCourse", preserveNullAndEmptyArrays: true } },
+  {
+    $addFields: {
+      courseDetails: {
+        $cond: {
+          if: { $eq: ["$isCourseDeleted", true] },
+          then: "$courseDetails",
+          else: { $ifNull: ["$lookedUpCourse", "$courseDetails"] },
+        },
+      },
+    },
+  },
   {
     $lookup: {
       from: "users",
@@ -72,6 +83,7 @@ const TRANSACTION_LOOKUP_STAGES: PipelineStage[] = [
       student: 0,
       course: 0,
       instructor: 0,
+      lookedUpCourse: 0,
       ...excludeUserFields("studentDetails"),
       ...excludeUserFields("instructorDetails"),
       ...excludeCourseInternalFields("courseDetails"),

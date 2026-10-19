@@ -386,6 +386,7 @@ HTTP `200`
 
 - Returns the **5 most recent transactions** made by the student.
 - Sorted by `createdAt` descending.
+- Each item includes `isCourseDeleted: boolean`. If the course was deleted, `courseTitle` reflects the preserved snapshot rather than an empty fallback.
 
 ### `recentReviews` details
 

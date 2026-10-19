@@ -169,6 +169,7 @@ export interface StudentRecentTransaction {
   courseId: string;
   courseTitle: string;
   courseThumbnailUrl: string | null;
+  isCourseDeleted: boolean;
   instructorName: string;
   instructorAvatarUrl: string | null;
   amountPaid: number;

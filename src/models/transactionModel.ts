@@ -29,7 +29,17 @@ const transactionSchema = new Schema(
     course: {
       type: Schema.Types.ObjectId,
       ref: "Course",
-      required: true,
+      default: null,
+    },
+
+    isCourseDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    courseDetails: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
 
     instructor: {
