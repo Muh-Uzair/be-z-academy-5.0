@@ -364,7 +364,7 @@ HTTP `200`
 
 `DELETE /api/v1/reviews/:id`
 
-Open to any authenticated role — the review's own author, or an Admin. There is no `restrictTo(...)` gate on this route; ownership/admin permission is enforced in the service layer.
+Restricted to **Student** and **Admin** callers. An authenticated student may only delete their own review (`reviewBy === user.id`); an Admin may delete any review. Instructors are blocked at the router level.
 
 ### URL params
 

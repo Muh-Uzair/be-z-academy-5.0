@@ -30,11 +30,7 @@ reviewRouter.post(
   createReview,
 );
 
-reviewRouter.get(
-  "/",
-  validation(getReviewsQuerySchema, "query"),
-  getReviews,
-);
+reviewRouter.get("/", validation(getReviewsQuerySchema, "query"), getReviews);
 
 reviewRouter.get(
   "/course/:courseId",
@@ -60,11 +56,11 @@ reviewRouter.patch(
   updateReview,
 );
 
-// Delete is open to any authenticated user; ownership (author or admin) is
-// enforced in the service layer since either role may delete a review.
+// Only a student (who owns the review) or an admin (for any review) may delete a review.
 reviewRouter.delete(
   "/:id",
   protect,
+  restrictTo(Role.Student, Role.Admin),
   validation(reviewIdParamsSchema, "params"),
   deleteReview,
 );

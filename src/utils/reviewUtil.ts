@@ -26,9 +26,13 @@ export const verifyReviewDeletePermissionOrThrow = (
   review: HydratedDocument<ReviewType>,
   user: { id: string; role: string },
 ): void => {
-  const isOwner = review.reviewBy.toString() === user.id;
-  const isAdmin = user.role === Role.Admin;
-  if (!isOwner && !isAdmin) {
-    throw new AppError(403, "You do not have permission to delete this review");
+  if (user.role === Role.Admin) {
+    return;
   }
+
+  if (user.role === Role.Student && review.reviewBy.toString() === user.id) {
+    return;
+  }
+
+  throw new AppError(403, "You do not have permission to delete this review");
 };
