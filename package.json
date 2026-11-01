@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "eslint . && kill-port 5000 && ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
+    "start": "node dist/src/server.js",
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate:up": "ts-node --transpile-only node_modules/migrate-mongo/bin/migrate-mongo.js up -f migrate-mongo-config.ts",
