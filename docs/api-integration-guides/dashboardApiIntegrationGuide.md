@@ -8,9 +8,10 @@ Base path: `/api/v1/dashboard`
 
 - Every route requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
 - Success, validation, and application-error responses use the standard `{ status, message, data }` envelope. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope reference — it applies here unchanged.
-- **`period` is required** on every dashboard route. Omitting it or sending an invalid value returns `400 Validation failed`.
-- Strict validation is used: do not send any query param other than `period`.
+- **`period` is required** on the admin and instructor routes. Omitting it or sending an invalid value returns `400 Validation failed`.
+- Strict validation is used on those two routes: do not send any query param other than `period`. The student route has no query validation — any query params are ignored.
 - Requests under `/api` are rate-limited to 5000 per IP per hour.
+- Every `*AvatarUrl` field (`studentAvatarUrl`, `instructorAvatarUrl`) is currently **always `null`** because of a backend bug (it reads a property the avatar formatter never sets). Fetch the user through the user APIs if you need the avatar.
 
 ## Period filter
 
@@ -20,7 +21,13 @@ Base path: `/api/v1/dashboard`
 | `month` | Last 30 days |
 | `year` | Last 365 days |
 
-All period-sensitive metrics are computed against this date window. The only exception is `recentUsers` on the admin dashboard — those are the 5 most recently joined users across all time and are not period-filtered.
+The window is rolling, counted back from the moment of the request. Period-filtered metrics use it; the all-time ones are marked below (admin `recentUsers`; instructor `totalCourses`, `averageRating`, `coursePerformance`, `recentReviews`).
+
+Trend buckets (dates are grouped in UTC):
+
+- `week` — by day-of-week name over the last 7 days.
+- `month` — by day-of-month over the last 30 days: days 1–7 → `Week 1`, 8–14 → `Week 2`, 15–21 → `Week 3`, 22–31 → `Week 4`. Because the window spans two calendar months, a bucket can mix days from both.
+- `year` — by calendar month name over the last 365 days, so the current month's bucket can also include the same month of last year.
 
 ## Roles and access
 
@@ -90,6 +97,7 @@ HTTP `200`
     ],
     "recentUsers": [
       {
+        "_id": "66c0a1b2c3d4e5f678901111",
         "fullName": "Muhammad Ali",
         "email": "ali@example.com",
         "role": "student",
@@ -152,8 +160,8 @@ All keys are always present even if the value is `0`.
 | --- | --- | --- |
 | `totalRevenue` | Sum of `amountPaid` on `paid` transactions | ✅ Yes |
 | `adminCommission` | Sum of `adminCommission` on `paid` transactions | ✅ Yes |
-| `totalStudents` | Count of users with `role=student` registered in period | ✅ Yes |
-| `totalInstructors` | Count of users with `role=instructor` registered in period | ✅ Yes |
+| `totalStudents` | Count of users with `role=student` registered in period (verified or not) | ✅ Yes |
+| `totalInstructors` | Count of users with `role=instructor` registered in period (verified or not) | ✅ Yes |
 | `totalCourses` | Count of courses created in period, regardless of verification status | ✅ Yes |
 
 ### `topPerformingCourses` details
@@ -162,10 +170,11 @@ All keys are always present even if the value is `0`.
 - Ranked by `enrollmentsInPeriod` descending.
 - `adminCommissionEarned` = sum of `adminCommission` on `paid` transactions for that course in the period.
 - `averageRating` is the all-time rating from the Course document (not period-filtered).
+- `userGrowth` counts registrations of every role (admins included).
 
 ### `recentUsers` details
 
-- Always returns the **5 most recently joined users** across all roles.
+- Always returns the **5 most recently joined users** across all roles, with only `_id`, `fullName`, `email`, `role`, `isVerified`, `createdAt`.
 - **Not period-filtered** — always all-time latest.
 
 ### Possible errors
@@ -239,7 +248,7 @@ HTTP `200`
         "courseId": "66d1a1b2c3d4e5f678901234",
         "courseTitle": "Complete Full-Stack Web Development Bootcamp",
         "studentName": "John Doe",
-        "studentAvatarUrl": "https://...",
+        "studentAvatarUrl": null,
         "rating": 5,
         "review": "Excellent course, highly recommend!",
         "feedback": "Excellent course, highly recommend!",
@@ -256,13 +265,13 @@ HTTP `200`
 | --- | --- | --- |
 | `totalRevenue` | Sum of `instructorRevenue` on `paid` transactions for this instructor | ✅ Yes |
 | `adminCommission` | Sum of `adminCommission` on `paid` transactions for this instructor | ✅ Yes |
-| `totalStudents` | Distinct count of students enrolled in this instructor's courses | ✅ Yes |
-| `totalCourses` | Total count of courses owned by this instructor | ❌ No (All-time) |
-| `averageRating` | Combined average rating across all reviews of this instructor | ❌ No (All-time) |
+| `totalStudents` | Distinct count of students whose enrollment in this instructor's courses was created in the period | ✅ Yes |
+| `totalCourses` | Total count of courses owned by this instructor (any verification status) | ❌ No (All-time) |
+| `averageRating` | Combined average rating across all reviews of this instructor, rounded to 1 decimal | ❌ No (All-time) |
 
 ### `revenueByCourse` details
 
-- Returns revenue earned by the instructor for each course in the selected period.
+- Returns revenue earned by the instructor for each course in the selected period (only courses with at least one `paid` transaction in the period; deleted courses are left out).
 - Ranked by `revenue` descending.
 - Used to render the circular / doughnut chart.
 
@@ -275,14 +284,16 @@ Follows the exact same period structure as `revenueTrend`:
 
 ### `coursePerformance` details
 
-- Returns **top 5 courses** of this instructor ranked by enrollments (`totalStudentsEnrolled` descending).
+- Returns **top 5 courses** of this instructor (any verification status) ranked by `totalStudentsEnrolled` descending.
 - `enrollments`, `revenue`, `rating`, and `avgCompletion` are **all-time** (not period-filtered).
-- `avgCompletion` represents the average watch percentage across enrolled students.
+- `enrollments` is the course's current enrollment count; `revenue` is the course's `totalRevenueInstructor`.
+- `avgCompletion` represents the average watch percentage across enrolled students, rounded to 1 decimal.
 
 ### `recentReviews` details
 
 - Returns the **5 most recent reviews** across all courses of this instructor.
 - **Not period-filtered** — always all-time latest reviews.
+- `review` and `feedback` carry the same text. Missing references fall back to `courseTitle: "Unknown Course"` / `studentName: "Anonymous"`.
 
 ### Possible errors
 
@@ -302,7 +313,7 @@ The student dashboard does not depend on any period filter — all metrics refle
 
 ### Query parameters
 
-None. Do not pass `period` or any query parameters.
+None. This route does not validate its query string, so any params (including `period`) are simply ignored.
 
 ### Success response
 
@@ -324,9 +335,9 @@ HTTP `200`
         "enrollmentId": "66e1a1b2c3d4e5f678901234",
         "courseId": "66d1a1b2c3d4e5f678901234",
         "title": "Complete Full-Stack Web Development Bootcamp",
-        "thumbnailUrl": "https://...",
+        "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/<uuid>-bootcamp-thumbnail.jpeg",
         "instructorName": "Dr John Smith",
-        "instructorAvatarUrl": "https://...",
+        "instructorAvatarUrl": null,
         "watchPercentage": 50,
         "totalDurationWatchedInMinutes": 120,
         "totalDurationInMinutes": 240,
@@ -340,9 +351,10 @@ HTTP `200`
         "transactionId": "pi_3PXXXXXXXXXXXXXX",
         "courseId": "66d1a1b2c3d4e5f678901234",
         "courseTitle": "Complete Full-Stack Web Development Bootcamp",
-        "courseThumbnailUrl": "https://...",
+        "courseThumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/<uuid>-bootcamp-thumbnail.jpeg",
+        "isCourseDeleted": false,
         "instructorName": "Dr John Smith",
-        "instructorAvatarUrl": "https://...",
+        "instructorAvatarUrl": null,
         "amountPaid": 49.99,
         "paymentStatus": "paid",
         "currency": "usd",
@@ -355,9 +367,9 @@ HTTP `200`
         "reviewId": "66d1b2c3d4e5f67890123456",
         "courseId": "66d1a1b2c3d4e5f678901234",
         "courseTitle": "Complete Full-Stack Web Development Bootcamp",
-        "courseThumbnailUrl": "https://...",
+        "courseThumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/<uuid>-bootcamp-thumbnail.jpeg",
         "instructorName": "Dr John Smith",
-        "instructorAvatarUrl": "https://...",
+        "instructorAvatarUrl": null,
         "rating": 5,
         "review": "Clear explanations and great real-world examples!",
         "feedback": "Clear explanations and great real-world examples!",
@@ -380,13 +392,14 @@ HTTP `200`
 ### `continueWatching` details
 
 - Returns up to **3 courses** to resume watching.
-- Prioritizes active/uncompleted courses sorted by `mostRecentlySeen` and latest activity (`updatedAt` descending).
+- First takes in-progress courses (`watchPercentage > 0` and not completed), `mostRecentlySeen` first, then latest activity (`updatedAt` descending). Courses never started (`watchPercentage: 0`) are not included.
+- If fewer than 3 are in progress, the list is topped up with **completed** courses (most recently updated first).
 
 ### `recentTransactions` details
 
-- Returns the **5 most recent transactions** made by the student.
+- Returns the **5 most recent transactions** made by the student, of any `paymentStatus` (`pending`, `failed` and `refunded` included).
 - Sorted by `createdAt` descending.
-- Each item includes `isCourseDeleted: boolean`. If the course was deleted, `courseTitle` reflects the preserved snapshot rather than an empty fallback.
+- Each item includes `isCourseDeleted: boolean`. If the course was deleted, `courseId`/`courseTitle` come from the preserved snapshot and `courseThumbnailUrl` is `null`.
 
 ### `recentReviews` details
 
@@ -404,7 +417,7 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/dashboardResponseTypes.ts`](../src/response-types/dashboardResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports and exports:
+Copy [`src/response-types/dashboardResponseTypes.ts`](../../src/response-types/dashboardResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts)) and exports:
 
 | Export | Description |
 | --- | --- |

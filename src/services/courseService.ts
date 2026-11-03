@@ -2,6 +2,7 @@ import { HydratedDocument, PipelineStage, Types } from "mongoose";
 import Stripe from "stripe";
 import { randomUUID } from "crypto";
 import CourseModel, { CourseType } from "../models/courseModel";
+import { CategoryType } from "../models/categoryModel";
 import UserModel, { Role } from "../models/userModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import TransactionModel, { TransactionType } from "../models/transactionModel";
@@ -22,7 +23,7 @@ import {
   excludeUserFields,
   excludeCategoryInternalFields,
 } from "../utils/lookupProjections";
-import { formatUserAvatarUrl } from "./userService";
+import { formatUserAvatarUrl, PublicUser } from "./userService";
 import { processRefundCleanupService } from "./stripeService";
 import {
   CreateCourseBody,
@@ -42,36 +43,44 @@ import {
 } from "../constants/courseConstant";
 import { buildSlug, getOwnedCourseOrThrow } from "../utils/courseUtil";
 
-interface CourseInstructorSummary {
+// The category joined by COURSE_LOOKUP_STAGES, minus the excluded imageKey.
+type CourseCategoryDetails = Omit<CategoryType, "imageKey"> & {
   _id: Types.ObjectId;
-  fullName: string;
-  email: string;
-  avatarKey: string | null;
-}
+};
 
-interface CourseCategorySummary {
-  _id: Types.ObjectId;
-  name: string;
-  description: string;
-}
-
-// Shape returned for a single course (create/details/update/verification) —
-// the raw thumbnailKey/videoKey are replaced by their public/signed URLs.
+// Shape returned for a single course document (create/update/verification):
+// the schema's toJSON drops thumbnailKey/videoKey and adds the thumbnailUrl
+// virtual, then withSignedVideoUrl attaches the signed videoUrl.
 type CourseWithUrls = Omit<CourseType, "thumbnailKey" | "videoKey"> & {
+  _id: Types.ObjectId;
   thumbnailUrl: string;
   videoUrl: string;
 };
 
-// Shape returned for each item of the paginated list endpoint, where
-// COURSE_LOOKUP_STAGES has already joined and replaced instructor/category
-// ids with their public-safe *Details sub-documents.
+// Shape of each course joined by COURSE_LOOKUP_STAGES, after the schema's
+// post-aggregate hook swaps thumbnailKey for thumbnailUrl and
+// formatUserAvatarUrl swaps the instructor's avatarKey for avatar.
+// instructorDetails/categoryDetails would only be missing if the referenced
+// user/category no longer existed, which the API never allows (users are
+// never deleted; a category with courses cannot be deleted).
 type CourseAggregateItem = Omit<
   CourseType,
   "thumbnailKey" | "videoKey" | "instructor" | "category"
 > & {
+  _id: Types.ObjectId;
   thumbnailUrl: string;
-  instructorDetails: Omit<CourseInstructorSummary, "avatarKey"> & { avatar: string | null };
-  categoryDetails: CourseCategorySummary;
+  instructorDetails: PublicUser;
+  categoryDetails: CourseCategoryDetails;
+};
+
+// Same as the API's IssueCourseCertificateResponseData, except the dates are
+// still Date objects here (res.json serializes them to ISO strings).
+type CourseCertificate = Omit<
+  IssueCourseCertificateResponseData,
+  "issuedAt" | "completedAt"
+> & {
+  issuedAt: Date;
+  completedAt: Date;
 };
 
 const COURSE_LOOKUP_STAGES: PipelineStage[] = [
@@ -382,7 +391,7 @@ export const getCoursesService = async (
   additionalBasePipeline: PipelineStage[] = [],
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   // Step 1: Build the base pipeline
   const basePipeline: PipelineStage[] = [{ $match: {} }, ...additionalBasePipeline];
@@ -499,7 +508,7 @@ export const getStudentCoursesService = async (
   requester: { id: string; role: string },
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   const basePipeline: PipelineStage[] = [{ $match: {} }];
   const enrollmentMatch: { student: Types.ObjectId; instructor?: Types.ObjectId } = {
@@ -534,7 +543,7 @@ export const getInstructorCoursesService = async (
   requester: { id: string; role: string },
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey"> & { videoUrl: string }>;
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   const additionalBasePipeline: PipelineStage[] = [];
 
@@ -560,7 +569,7 @@ export const getPublicCoursesService = async (
   query: GetPublicCoursesQuery,
 ): Promise<{
   courses: Array<Omit<CourseAggregateItem, "videoKey">>;
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   const matchStage: Record<string, unknown> = {
     isVerified: true,
@@ -1218,7 +1227,7 @@ export const getCourseCompletionStatusService = async (
 export const issueCourseCertificateService = async (
   studentId: string,
   courseId: string,
-): Promise<IssueCourseCertificateResponseData> => {
+): Promise<CourseCertificate> => {
   // Step 1: Find the enrollment for the student in this course
   const enrollment = await EnrollmentModel.findOne({
     student: studentId,

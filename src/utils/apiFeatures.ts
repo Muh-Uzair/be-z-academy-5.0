@@ -23,7 +23,9 @@ const escapeRegex = (value: string) =>
 // query-driven stages on top. Each chained method inspects the query
 // itself and no-ops when its corresponding field wasn't submitted, so
 // callers can always chain the full set without guarding each call.
-class APIFeatures<T> {
+// TPagination tracks whether .paginate() was chained, so exec() is typed
+// to return `Pagination` (never null) for paginated pipelines.
+class APIFeatures<T, TPagination extends Pagination | null = null> {
   private model: Model<T>;
   private query: BaseListQuery;
   private pipeline: PipelineStage[];
@@ -138,7 +140,7 @@ class APIFeatures<T> {
   }
 
   // Adds the $facet stage that pages the results and counts the total in one round trip.
-  paginate(): this {
+  paginate(): APIFeatures<T, Pagination> {
     const { page, limit } = this.query;
     const skip = (page - 1) * limit;
 
@@ -150,13 +152,13 @@ class APIFeatures<T> {
     });
 
     this.isPaginated = true;
-    return this;
+    return this as unknown as APIFeatures<T, Pagination>;
   }
 
   // Runs the assembled pipeline. If .paginate() was chained, unwraps the
   // $facet result and returns pagination metadata; otherwise returns every
   // matching document as-is, with pagination set to null.
-  async exec(): Promise<{ data: T[]; pagination: Pagination | null }> {
+  async exec(): Promise<{ data: T[]; pagination: TPagination }> {
     // console.log(
     //   "pipeline --------------------------------------- \n",
     //   this.pipeline,
@@ -165,7 +167,7 @@ class APIFeatures<T> {
     const results = await this.model.aggregate(this.pipeline);
 
     if (!this.isPaginated) {
-      return { data: results as T[], pagination: null };
+      return { data: results as T[], pagination: null as TPagination };
     }
 
     const { page, limit } = this.query;
@@ -183,7 +185,7 @@ class APIFeatures<T> {
       hasPrevPage: page > 1,
     };
 
-    return { data, pagination };
+    return { data, pagination: pagination as TPagination };
   }
 }
 

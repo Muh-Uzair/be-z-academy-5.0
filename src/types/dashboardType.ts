@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { Types } from "mongoose";
 import { Role } from "../models/userModel";
+import { TransactionType } from "../models/transactionModel";
 import { dashboardQuerySchema } from "../validations/dashboardValidation";
 
 export type DashboardQuery = z.infer<typeof dashboardQuerySchema>;
@@ -21,7 +23,8 @@ export interface AdminDashboardStats {
 }
 
 export interface TopPerformingCourse {
-  courseId: string;
+  // The $group _id of the aggregation, still an ObjectId here.
+  courseId: Types.ObjectId;
   title: string;
   instructorName: string;
   enrollmentsInPeriod: number;
@@ -30,9 +33,10 @@ export interface TopPerformingCourse {
 }
 
 export interface AdminRecentUser {
+  _id: Types.ObjectId;
   fullName: string;
   email: string;
-  role: string;
+  role: Role;
   isVerified: boolean;
   createdAt: Date;
 }
@@ -122,10 +126,11 @@ export interface StudentRecentTransaction {
   courseId: string;
   courseTitle: string;
   courseThumbnailUrl: string | null;
+  isCourseDeleted: boolean;
   instructorName: string;
   instructorAvatarUrl: string | null;
   amountPaid: number;
-  paymentStatus: string;
+  paymentStatus: TransactionType["paymentStatus"];
   currency: string;
   amountPaidAt: Date | null;
   createdAt: Date;

@@ -1,15 +1,12 @@
 // This file is intentionally framework-independent. Copy it directly into a
 // frontend project; it has no backend imports and represents JSON values only.
 
-import { SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
+import { AuthUser, SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 import { Pagination } from "./userResponseTypes";
 
-export interface TransactionUserSummary {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar: string | null;
-}
+// The joined student/instructor: the same public user fields as AuthUser
+// (stripeOnboardingComplete is never included here).
+export type TransactionUserSummary = Omit<AuthUser, "stripeOnboardingComplete">;
 
 // Every transaction endpoint joins the raw course document as courseDetails
 // without computing thumbnailUrl/videoUrl (that only happens on the course

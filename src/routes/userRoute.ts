@@ -29,6 +29,7 @@ const userRouter = Router();
 // DIVIDER Admin Routes ---------------------------------------------------------
 
 // (root)/api/v1/users/user/:id/verification
+// Api # 1
 userRouter.patch(
   "/user/:id/verification",
   protect,
@@ -42,6 +43,7 @@ userRouter.patch(
 // DIVIDER Instructor Routes ---------------------------------------------------------
 
 // (root)/api/v1/users/get-instructor-onboarding-link
+// Api # 2
 userRouter.get(
   "/get-instructor-onboarding-link",
   protect,
@@ -54,6 +56,7 @@ userRouter.get(
 // DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/users/user/:id
+// Api # 3
 userRouter.get(
   "/user/:id",
   protect,
@@ -64,6 +67,7 @@ userRouter.get(
 );
 
 // (root)/api/v1/users/profile
+// Api # 4
 userRouter.get(
   "/profile",
   protect,
@@ -71,6 +75,7 @@ userRouter.get(
 );
 
 // (root)/api/v1/users/profile
+// Api # 5
 userRouter.patch(
   "/profile",
   protect,
@@ -79,6 +84,7 @@ userRouter.patch(
 );
 
 // (root)/api/v1/users/profile/upload-avatar
+// Api # 6
 userRouter.post(
   "/profile/upload-avatar",
   protect,
@@ -89,6 +95,7 @@ userRouter.post(
 // DIVIDER Admin + Instructor Routes ---------------------------------------------------------
 
 // (root)/api/v1/users/students
+// Api # 7
 userRouter.get(
   "/students",
   protect,
@@ -100,6 +107,7 @@ userRouter.get(
 // DIVIDER Admin + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/users/instructors
+// Api # 8
 userRouter.get(
   "/instructors",
   protect,
@@ -113,6 +121,7 @@ userRouter.get(
 // DIVIDER Public Routes ---------------------------------------------------------
 
 // (root)/api/v1/users/instructors/public
+// Api # 9
 userRouter.get(
   "/instructors/public",
   validation(getInstructorsQuerySchema, "query"),

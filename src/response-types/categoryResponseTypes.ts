@@ -45,7 +45,7 @@ export type CreateCategoryResponse =
     >
   | ApiErrorResponse;
 
-// API 3: GET /api/v1/categories
+// API 5: GET /api/v1/categories
 // Response: { status, message, data: { categories, pagination } }
 export interface GetCategoriesResponseData {
   categories: Category[];
@@ -59,7 +59,7 @@ export type GetCategoriesResponse =
     >
   | ApiErrorResponse;
 
-// API 4: GET /api/v1/categories/top
+// API 6: GET /api/v1/categories/top
 // Response: { status, message, data: { categories } }
 export interface GetTopCategoriesResponseData {
   categories: TopCategory[];
@@ -72,7 +72,7 @@ export type GetTopCategoriesResponse =
     >
   | ApiErrorResponse;
 
-// API 5: GET /api/v1/categories/:id
+// API 7: GET /api/v1/categories/:id
 // Response: { status, message, data: { category } }
 export interface GetCategoryDetailsResponseData {
   category: Category;
@@ -85,7 +85,7 @@ export type GetCategoryDetailsResponse =
     >
   | ApiErrorResponse;
 
-// API 6: PATCH /api/v1/categories/:id
+// API 3: PATCH /api/v1/categories/:id
 // Response: { status, message, data: { category } }
 export interface UpdateCategoryResponseData {
   category: Category;
@@ -98,7 +98,7 @@ export type UpdateCategoryResponse =
     >
   | ApiErrorResponse;
 
-// API 7: DELETE /api/v1/categories/:id
+// API 4: DELETE /api/v1/categories/:id
 // Response: { status, message, data: null }
 export type DeleteCategoryResponse =
   | SuccessApiResponse<null, "Category deleted successfully">

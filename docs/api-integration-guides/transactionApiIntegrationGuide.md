@@ -9,8 +9,8 @@ Base path: `/api/v1/transactions`
 - Every route in this guide requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. An undocumented query param causes `400 Validation failed`.
-- Requests under `/api` are limited to 100 per IP per hour.
-- Transactions are created automatically by the backend (via the Stripe `payment_intent.succeeded` webhook) when a student completes a course payment, and updated automatically (via the `charge.refunded` webhook) when a refund is processed — there is no create/update/delete endpoint here. This router is read-only.
+- Requests under `/api` are limited to 5000 per IP per hour.
+- Transactions are written only by the payment flow — there is no create/update/delete endpoint here. This router is read-only. A `pending` transaction is created by the course payment-intent API (`POST /api/v1/courses/:id/payment-intent`); the Stripe `payment_intent.succeeded` / `payment_intent.payment_failed` webhooks mark it `paid` / `failed`; a student refund request (`POST /api/v1/courses/:id/refund`) marks it `refunded`, with the `charge.refunded` webhook as a backup (and for refunds made from the Stripe Dashboard).
 
 ## Roles and access
 
@@ -37,6 +37,13 @@ Every transaction object returned by these APIs looks like:
     "_id": "66c0a1b2c3d4e5f678901111",
     "fullName": "John Doe",
     "email": "john@example.com",
+    "bio": "Computer science student",
+    "highestEducation": "Bachelor's degree",
+    "yearsOfExperience": 0,
+    "isVerified": true,
+    "role": "student",
+    "createdAt": "2026-08-20T10:00:00.000Z",
+    "updatedAt": "2026-08-20T10:00:00.000Z",
     "avatar": null
   },
   "courseDetails": {
@@ -64,6 +71,13 @@ Every transaction object returned by these APIs looks like:
     "_id": "66c0a1b2c3d4e5f678901222",
     "fullName": "Jane Smith",
     "email": "jane@example.com",
+    "bio": "Backend engineering instructor",
+    "highestEducation": "Master's degree",
+    "yearsOfExperience": 6,
+    "isVerified": true,
+    "role": "instructor",
+    "createdAt": "2026-08-01T10:00:00.000Z",
+    "updatedAt": "2026-08-01T10:00:00.000Z",
     "avatar": null
   },
   "isCourseDeleted": false,
@@ -79,13 +93,13 @@ Every transaction object returned by these APIs looks like:
 }
 ```
 
-The raw `student`, `course`, and `instructor` id fields are never returned directly — they are always replaced by the joined `studentDetails`, `courseDetails`, and `instructorDetails` objects. `studentDetails`/`instructorDetails` never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`.
+The raw `student`, `course`, and `instructor` id fields are never returned directly — they are always replaced by the joined `studentDetails`, `courseDetails`, and `instructorDetails` objects. `studentDetails`/`instructorDetails` hold the same public user fields as the auth guide's `AuthUser` and never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`. `courseDetails` is the full course record (its own `instructor`/`category` stay raw ids).
 
 `isCourseDeleted` is a boolean indicating whether the course tied to this transaction was deleted. When `isCourseDeleted: true`, `courseDetails` contains the frozen snapshot of the course metadata at the time of deletion, ensuring the transaction remains fully readable without breaking client rendering.
 
 `courseDetails` does **not** include `thumbnailUrl` or `videoUrl` (those are only computed on the course endpoints themselves) — fetch `GET /api/v1/courses/:id` separately if you need to display the course's thumbnail or video.
 
-`paymentStatus` is one of `"pending"`, `"paid"`, `"failed"`, `"refund_processing"`, `"refunded"`. `"refund_processing"` is a brief transient state set the moment a refund request is claimed, just before Stripe is called — it flips to `"refunded"` once the `charge.refunded` webhook lands (or back to `"paid"` if the Stripe call itself failed).
+`paymentStatus` is one of `"pending"`, `"paid"`, `"failed"`, `"refund_processing"`, `"refunded"`. `"refund_processing"` is a brief transient state set the moment a refund request is claimed, just before Stripe is called — the same request flips it to `"refunded"` as soon as Stripe accepts the refund (or back to `"paid"` if the Stripe call itself failed). A `"pending"` transaction is set to `"failed"` when the payment fails, or when the student starts a new checkout after the course price changed.
 
 ## API 1 — List transactions
 
@@ -108,7 +122,7 @@ Returns a paginated, sortable, searchable, filterable list of transactions, scop
 | `sortBy` | string | `createdAt` | |
 | `sortOrder` | `"asc" \| "desc"` | `desc` | |
 
-All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
+All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side. `student`, `course` and `instructor` must be valid ObjectIds — a malformed value returns `500`. `projection` is applied after the joins (`_id` is always included).
 
 ### Success response
 
@@ -138,6 +152,7 @@ HTTP `200`
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 500 | `Something went wrong. Please try again later.` | An id filter is not a valid ObjectId. |
 
 ## API 2 — Get transaction details
 
@@ -170,7 +185,8 @@ HTTP `200`
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to access this transaction` | Caller is an Instructor/Student who is not a party to this transaction. |
 | 404 | `Transaction not found` | No transaction exists with that `id`. |
+| 500 | `Something went wrong. Please try again later.` | `id` is not a valid ObjectId. |
 
 ## Frontend types
 
-Copy [`src/response-types/transactionResponseTypes.ts`](../src/response-types/transactionResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Transaction`, `TransactionUserSummary`, `TransactionCourseSummary`, `GetTransactionsResponse`, and `GetTransactionDetailsResponse`.
+Copy [`src/response-types/transactionResponseTypes.ts`](../../src/response-types/transactionResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`/`SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts)) and exports `Transaction`, `TransactionUserSummary`, `TransactionCourseSummary`, `GetTransactionsResponse`, and `GetTransactionDetailsResponse`.

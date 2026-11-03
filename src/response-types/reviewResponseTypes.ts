@@ -1,15 +1,12 @@
 // This file is intentionally framework-independent. Copy it directly into a
 // frontend project; it has no backend imports and represents JSON values only.
 
-import { SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
+import { AuthUser, SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 import { Pagination } from "./userResponseTypes";
 
-export interface ReviewUserSummary {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar: string | null;
-}
+// The joined reviewer/instructor: the same public user fields as AuthUser
+// (stripeOnboardingComplete is never included here).
+export type ReviewUserSummary = Omit<AuthUser, "stripeOnboardingComplete">;
 
 // Every review endpoint joins the raw course document as courseDetails
 // without computing thumbnailUrl/videoUrl (that only happens on the course
@@ -73,7 +70,7 @@ export type CreateReviewResponse =
   | SuccessApiResponse<CreateReviewResponseData, "Review created successfully">
   | ApiErrorResponse;
 
-// API 2: GET /api/v1/reviews
+// API 5: GET /api/v1/reviews
 // Response: { status, message, data: { reviews, pagination } }
 export interface GetReviewsResponseData {
   reviews: Review[];
@@ -84,7 +81,7 @@ export type GetReviewsResponse =
   | SuccessApiResponse<GetReviewsResponseData, "Reviews fetched successfully">
   | ApiErrorResponse;
 
-// API 3b: GET /api/v1/reviews/course/:courseId
+// API 3: GET /api/v1/reviews/course/:courseId
 // Student: returns the single review left by the logged-in student for that course.
 // Admin: returns all reviews for that course (paginated).
 // Instructor: returns all reviews for that course if it belongs to them (paginated).
@@ -111,7 +108,7 @@ export type GetReviewsByCourseIdResponse =
     >
   | ApiErrorResponse;
 
-// API 3: GET /api/v1/reviews/:id
+// API 6: GET /api/v1/reviews/:id
 // Response: { status, message, data: { review } }
 export interface GetReviewDetailsResponseData {
   review: Review;
@@ -124,7 +121,7 @@ export type GetReviewDetailsResponse =
     >
   | ApiErrorResponse;
 
-// API 4: PATCH /api/v1/reviews/:id
+// API 2: PATCH /api/v1/reviews/:id
 // Response: { status, message, data: { review } }
 export interface UpdateReviewResponseData {
   review: ReviewDocument;
@@ -134,7 +131,7 @@ export type UpdateReviewResponse =
   | SuccessApiResponse<UpdateReviewResponseData, "Review updated successfully">
   | ApiErrorResponse;
 
-// API 5: DELETE /api/v1/reviews/:id
+// API 4: DELETE /api/v1/reviews/:id
 // Response: { status, message, data: null }
 export type DeleteReviewResponse =
   | SuccessApiResponse<null, "Review deleted successfully">

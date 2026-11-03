@@ -8,30 +8,27 @@ import { GetTransactionsQuery } from "../types/transactionType";
 import { Pagination } from "../utils/sendResponse";
 import { verifyTransactionAccessOrThrow } from "../utils/transactionUtil";
 import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
-import { formatUserAvatarUrl } from "./userService";
+import { formatUserAvatarUrl, PublicUser } from "./userService";
 
-interface TransactionUserSummary {
+// The joined course minus thumbnailKey/videoKey (its instructor/category stay
+// raw ids). For a deleted course this is the snapshot deleteCourseService
+// stored, which has the same fields.
+type TransactionCourseSummary = Omit<CourseType, "thumbnailKey" | "videoKey"> & {
   _id: Types.ObjectId;
-  fullName: string;
-  email: string;
-  avatarKey: string | null;
-}
-
-type TransactionCourseSummary = Omit<
-  CourseType,
-  "thumbnailKey" | "videoKey" | "instructor" | "category"
->;
+};
 
 // Shape of each transaction once TRANSACTION_LOOKUP_STAGES has joined and
 // replaced student/course/instructor ids with public-safe *Details
-// sub-documents.
+// sub-documents (studentDetails/instructorDetails are passed through
+// formatUserAvatarUrl, so they hold the public user fields).
 export type TransactionListItem = Omit<
   TransactionType,
-  "student" | "course" | "instructor"
+  "student" | "course" | "instructor" | "courseDetails"
 > & {
-  studentDetails: Omit<TransactionUserSummary, "avatarKey"> & { avatar: string | null };
+  _id: Types.ObjectId;
+  studentDetails: PublicUser;
   courseDetails: TransactionCourseSummary;
-  instructorDetails: Omit<TransactionUserSummary, "avatarKey"> & { avatar: string | null };
+  instructorDetails: PublicUser;
 };
 
 // Each reference is joined into a *Details field so the response shape is
@@ -95,7 +92,7 @@ const TRANSACTION_LOOKUP_STAGES: PipelineStage[] = [
 export const getTransactionsService = async (
   query: GetTransactionsQuery,
   user: { id: string; role: string },
-): Promise<{ transactions: TransactionListItem[]; pagination: Pagination | null }> => {
+): Promise<{ transactions: TransactionListItem[]; pagination: Pagination }> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {

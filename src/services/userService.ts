@@ -41,18 +41,37 @@ const USER_LIST_PROJECTION: PipelineStage.Project = {
   ),
 };
 
-export type InstructorListItem = Pick<
+// Fields selected by USER_PUBLIC_PROJECTION (_id comes from the document).
+type PublicUserFields = Pick<
   UserType,
   | "fullName"
   | "email"
   | "role"
+  | "avatarKey"
   | "bio"
   | "highestEducation"
   | "yearsOfExperience"
   | "isVerified"
   | "createdAt"
   | "updatedAt"
-> & { _id: unknown; avatar: string | null };
+>;
+
+// Shape of a user read with USER_PUBLIC_PROJECTION and passed through
+// formatUserAvatarUrl: a plain object where avatarKey is replaced by the
+// public avatar URL.
+export type PublicUser = Omit<PublicUserFields, "avatarKey"> & {
+  _id: Types.ObjectId;
+  avatar: string | null;
+};
+
+// getUserDetailsService additionally selects stripeOnboardingComplete,
+// for instructors only.
+export type UserDetails = PublicUser & { stripeOnboardingComplete?: boolean };
+
+// List items use USER_LIST_PROJECTION (same fields as PublicUser). When the
+// client sends `projection`, only the requested fields are present, plus
+// `_id` and `avatar` (null unless `avatarKey` was projected).
+export type InstructorListItem = PublicUser;
 
 export const formatUserAvatarUrl = (user: any) => {
   if (!user) return user;
@@ -75,7 +94,7 @@ export const getInstructorsService = async (
   user: { id: string; role: Role },
 ): Promise<{
   instructors: InstructorListItem[];
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   // Step 1: Scope the base pipeline by role - admins see every instructor,
   // students see only instructors whose course they have bought.
@@ -137,7 +156,7 @@ export const getPublicInstructorsService = async (
   query: GetInstructorsQuery,
 ): Promise<{
   instructors: InstructorListItem[];
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   // Public - scope to the instructor role and verified status, stripping sensitive fields
   const basePipeline: PipelineStage[] = [
@@ -165,7 +184,7 @@ export const getStudentsService = async (
   user: { id: string; role: Role },
 ): Promise<{
   students: StudentListItem[];
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   // Step 1: Scope the base pipeline by role - instructors see only students
   // enrolled in their own courses, admins see all registered students.
@@ -226,7 +245,7 @@ export const getUserDetailsService = async (
   id: string,
   role: Role,
   requester: { id: string; role: Role },
-): Promise<HydratedDocument<UserType>> => {
+): Promise<UserDetails> => {
   if (requester.role === Role.Instructor && role === Role.Student) {
     const enrollment = await EnrollmentModel.exists({
       student: new Types.ObjectId(id),
@@ -262,7 +281,7 @@ export { USER_PUBLIC_PROJECTION };
 export const updateUserService = async (
   id: string,
   updateData: Record<string, unknown>,
-): Promise<HydratedDocument<UserType>> => {
+): Promise<HydratedDocument<PublicUserFields>> => {
   // Step 1: Apply the update, restricted to the same public projection as
   // every other user-facing read, since only `password` has `select: false`
   // and findByIdAndUpdate would otherwise return otp/stripe/internal fields
@@ -282,7 +301,7 @@ export const updateUserService = async (
 // FUNCTION
 export const getOwnProfileService = async (
   id: string,
-): Promise<HydratedDocument<UserType>> => {
+): Promise<PublicUser> => {
   const user = await UserModel.findById(id).select(USER_PUBLIC_PROJECTION);
   if (!user) {
     throw new AppError(404, "User not found");
@@ -295,7 +314,7 @@ export const updateOwnProfileService = async (
   id: string,
   role: Role,
   body: UpdateProfileBody,
-): Promise<HydratedDocument<UserType>> => {
+): Promise<PublicUser> => {
   // Step 1: Keep only the fields this role is permitted to change
   const allowedFields = PROFILE_UPDATABLE_FIELDS[role] as readonly string[];
   const disallowedFields = Object.keys(body).filter(
@@ -328,7 +347,7 @@ export const updateUserVerificationService = async (
   id: string,
   role: Role,
   body: UpdateUserVerificationBody,
-): Promise<HydratedDocument<UserType>> => {
+): Promise<PublicUser> => {
   // Step 1: Ensure the user exists and has the expected role
   const user = await UserModel.findOne({ _id: id, role });
   if (!user) {

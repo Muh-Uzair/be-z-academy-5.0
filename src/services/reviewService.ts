@@ -18,29 +18,26 @@ import {
 } from "../utils/reviewUtil";
 import { recalculateCourseRatingStats } from "../utils/courseUtil";
 import { excludeUserFields, excludeCourseInternalFields } from "../utils/lookupProjections";
-import { formatUserAvatarUrl } from "./userService";
+import { formatUserAvatarUrl, PublicUser } from "./userService";
 
-interface ReviewUserSummary {
+// The joined course minus thumbnailKey/videoKey (its instructor/category
+// stay raw ids).
+type ReviewCourseSummary = Omit<CourseType, "thumbnailKey" | "videoKey"> & {
   _id: Types.ObjectId;
-  fullName: string;
-  email: string;
-  avatarKey: string | null;
-}
-
-type ReviewCourseSummary = Omit<
-  CourseType,
-  "thumbnailKey" | "videoKey" | "instructor" | "category"
->;
+};
 
 // Shape of each review once REVIEW_LOOKUP_STAGES has joined and replaced
-// reviewBy/course/instructor ids with public-safe *Details sub-documents.
+// reviewBy/course/instructor ids with public-safe *Details sub-documents
+// (reviewByDetails/instructorDetails are passed through formatUserAvatarUrl,
+// so they hold the public user fields).
 export type ReviewListItem = Omit<
   ReviewType,
   "reviewBy" | "course" | "instructor"
 > & {
-  reviewByDetails: Omit<ReviewUserSummary, "avatarKey"> & { avatar: string | null };
+  _id: Types.ObjectId;
+  reviewByDetails: PublicUser;
   courseDetails: ReviewCourseSummary;
-  instructorDetails: Omit<ReviewUserSummary, "avatarKey"> & { avatar: string | null };
+  instructorDetails: PublicUser;
 };
 
 // Each reference is joined into a *Details field so the response shape is
@@ -138,7 +135,7 @@ export const createReviewService = async (
 // FUNCTION
 export const getReviewsService = async (
   query: GetReviewsQuery,
-): Promise<{ reviews: ReviewListItem[]; pagination: Pagination | null }> => {
+): Promise<{ reviews: ReviewListItem[]; pagination: Pagination }> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
@@ -233,7 +230,7 @@ export const getCourseReviewsService = async (
   userId: string,
   role: string,
   query: GetReviewsByCourseQuery,
-): Promise<{ reviews: ReviewListItem[]; pagination: Pagination | null }> => {
+): Promise<{ reviews: ReviewListItem[]; pagination: Pagination }> => {
   // Instructor: verify the course belongs to them
   if (role === "instructor") {
     const course = await CourseModel.findById(courseId);

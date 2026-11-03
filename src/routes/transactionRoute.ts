@@ -21,6 +21,7 @@ const transactionRouter = Router();
 // DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/transactions
+// Api # 1
 transactionRouter.get(
   "/",
   protect,
@@ -29,6 +30,7 @@ transactionRouter.get(
 );
 
 // (root)/api/v1/transactions/:id
+// Api # 2
 transactionRouter.get(
   "/:id",
   protect,

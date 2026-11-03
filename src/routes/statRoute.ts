@@ -20,6 +20,7 @@ const statRouter = Router();
 // DIVIDER Public Routes ---------------------------------------------------------
 
 // (root)/api/v1/stats
+// Api # 1
 statRouter.get("/", getPlatformStats);
 
 export default statRouter;

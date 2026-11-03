@@ -1,4 +1,4 @@
-import { PipelineStage } from "mongoose";
+import { HydratedDocument, PipelineStage, Types } from "mongoose";
 import { randomUUID } from "crypto";
 import CategoryModel, { CategoryType } from "../models/categoryModel";
 import CourseModel from "../models/courseModel";
@@ -23,6 +23,20 @@ import {
   CATEGORY_IMAGE_S3_FOLDER,
 } from "../constants/categoryConstant";
 
+// Category documents are returned as-is; res.json applies the schema's
+// toJSON transform, which drops imageKey and adds the imageUrl virtual.
+type CategoryDocument = HydratedDocument<
+  CategoryType,
+  { imageUrl: string | null }
+>;
+
+// Category from an aggregation, with imageKey swapped for its public URL
+// (an empty string when a `projection` query param leaves out imageKey).
+type CategoryWithImageUrl = Omit<CategoryType, "imageKey"> & {
+  _id: Types.ObjectId;
+  imageUrl: string;
+};
+
 // FUNCTION
 export const getCategoryImageUploadUrlService = async (
   body: UploadCategoryImageBody,
@@ -46,7 +60,7 @@ export const getCategoryImageUploadUrlService = async (
 // FUNCTION
 export const createCategoryService = async (
   body: CreateCategoryBody,
-): Promise<CategoryType> => {
+): Promise<CategoryDocument> => {
   // Step 1: Create the category document
   const category = await CategoryModel.create(body);
 
@@ -57,7 +71,7 @@ export const createCategoryService = async (
 export const getCategoriesService = async (
   query: GetCategoriesQuery,
 ): Promise<{
-  categories: Array<Omit<CategoryType, "imageKey"> & { imageUrl: string }>;
+  categories: CategoryWithImageUrl[];
   pagination: Pagination;
 }> => {
   // Step 1: Start with an empty base pipeline (no resource-specific pre-filters needed)
@@ -90,7 +104,7 @@ export const getCategoriesService = async (
 
 // FUNCTION
 export const getTopCategoriesService = async (): Promise<
-  Array<Omit<CategoryType, "imageKey"> & { imageUrl: string; courseCount: number }>
+  Array<CategoryWithImageUrl & { courseCount: number }>
 > => {
   // Step 1: Aggregation pipeline to join courses, count them, sort by count, and limit to 4
   const topCategories = await CategoryModel.aggregate([
@@ -135,7 +149,7 @@ export const getTopCategoriesService = async (): Promise<
 // FUNCTION
 export const getCategoryDetailsService = async (
   id: string,
-): Promise<CategoryType> => {
+): Promise<CategoryDocument> => {
   // Step 1: Find the category by id
   const category = await CategoryModel.findById(id);
 
@@ -151,7 +165,7 @@ export const getCategoryDetailsService = async (
 export const updateCategoryService = async (
   id: string,
   body: UpdateCategoryBody,
-): Promise<CategoryType> => {
+): Promise<CategoryDocument> => {
   // Step 1: Fetch the existing category to capture its current image key
   const existingCategory = await CategoryModel.findById(id);
 

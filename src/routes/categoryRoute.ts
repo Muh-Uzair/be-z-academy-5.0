@@ -25,6 +25,7 @@ const categoryRouter = Router();
 // DIVIDER Admin Routes ---------------------------------------------------------
 
 // (root)/api/v1/categories/upload-image
+// Api # 1
 categoryRouter.post(
   "/upload-image",
   protect,
@@ -34,6 +35,7 @@ categoryRouter.post(
 );
 
 // (root)/api/v1/categories
+// Api # 2
 categoryRouter.post(
   "/",
   protect,
@@ -43,6 +45,7 @@ categoryRouter.post(
 );
 
 // (root)/api/v1/categories/:id
+// Api # 3
 categoryRouter.patch(
   "/:id",
   protect,
@@ -53,6 +56,7 @@ categoryRouter.patch(
 );
 
 // (root)/api/v1/categories/:id
+// Api # 4
 categoryRouter.delete(
   "/:id",
   protect,
@@ -76,6 +80,7 @@ categoryRouter.delete(
 // DIVIDER Public Routes ---------------------------------------------------------
 
 // (root)/api/v1/categories
+// Api # 5
 categoryRouter.get(
   "/",
   validation(getCategoriesQuerySchema, "query"),
@@ -83,9 +88,11 @@ categoryRouter.get(
 );
 
 // (root)/api/v1/categories/top
+// Api # 6
 categoryRouter.get("/top", getTopCategories);
 
 // (root)/api/v1/categories/:id
+// Api # 7
 categoryRouter.get(
   "/:id",
   validation(categoryIdParamsSchema, "params"),

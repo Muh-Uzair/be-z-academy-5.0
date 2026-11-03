@@ -18,7 +18,7 @@ export interface Pagination {
   hasPrevPage: boolean;
 }
 
-// API 1: GET /api/v1/users/instructors
+// API 8: GET /api/v1/users/instructors
 // Response: { status, message, data: { instructors, pagination } }
 export interface GetInstructorsResponseData {
   instructors: UserDetails[];
@@ -32,7 +32,7 @@ export type GetInstructorsResponse =
     >
   | ApiErrorResponse;
 
-// API 1.5: GET /api/v1/users/instructors/public
+// API 9: GET /api/v1/users/instructors/public
 // Response: { status, message, data: { instructors, pagination } }
 export interface GetPublicInstructorsResponseData {
   instructors: UserDetails[];
@@ -46,7 +46,7 @@ export type GetPublicInstructorsResponse =
     >
   | ApiErrorResponse;
 
-// API 3: GET /api/v1/users/students
+// API 7: GET /api/v1/users/students
 // Response: { status, message, data: { students, pagination } }
 // Allowed callers: Admin or Instructor.
 // - Admin: Returns all registered users with role: "student" (even if not enrolled in any course).
@@ -77,7 +77,7 @@ export type GetUserDetailsResponse =
     >
   | ApiErrorResponse;
 
-// API 4: PATCH /api/v1/users/user/:id/verification
+// API 1: PATCH /api/v1/users/user/:id/verification
 // Response: { status, message, data: { user } }
 // `message` is "<Role> approved successfully" or "<Role> rejected successfully".
 export interface UpdateUserVerificationResponseData {
@@ -91,7 +91,7 @@ export type UpdateUserVerificationResponse =
     >
   | ApiErrorResponse;
 
-// API 5: GET /api/v1/users/get-instructor-onboarding-link
+// API 2: GET /api/v1/users/get-instructor-onboarding-link
 // Response: { status, message, data: { url } }
 export interface GetInstructorOnboardingLinkResponseData {
   url: string;
@@ -104,7 +104,7 @@ export type GetInstructorOnboardingLinkResponse =
     >
   | ApiErrorResponse;
 
-// API 6: GET /api/v1/users/profile
+// API 4: GET /api/v1/users/profile
 // Response: { status, message, data: { user } }
 export interface GetProfileResponseData {
   user: UserDetails;
@@ -114,7 +114,7 @@ export type GetProfileResponse =
   | SuccessApiResponse<GetProfileResponseData, "Profile fetched successfully">
   | ApiErrorResponse;
 
-// API 7: PATCH /api/v1/users/profile
+// API 5: PATCH /api/v1/users/profile
 // Response: { status, message, data: { user } }
 export interface UpdateProfileResponseData {
   user: UserDetails;
@@ -124,7 +124,7 @@ export type UpdateProfileResponse =
   | SuccessApiResponse<UpdateProfileResponseData, "Profile updated successfully">
   | ApiErrorResponse;
 
-// API 8: POST /api/v1/users/profile/upload-avatar
+// API 6: POST /api/v1/users/profile/upload-avatar
 // Response: { status, message, data: { uploadUrl, fields, key } }
 export interface UploadAvatarResponseData {
   uploadUrl: string;

@@ -1,4 +1,4 @@
-import { PipelineStage, Types } from "mongoose";
+import { HydratedDocument, PipelineStage, Types } from "mongoose";
 import EnrollmentModel, { EnrollmentType } from "../models/enrollmentModel";
 import { Role } from "../models/userModel";
 import CourseModel, { CourseType } from "../models/courseModel";
@@ -11,40 +11,35 @@ import { verifyEnrollmentAccessOrThrow } from "../utils/enrollmentUtil";
 import { excludeUserFields } from "../utils/lookupProjections";
 import { ENROLLMENT_WATCH_COMPLETION_THRESHOLD_PERCENTAGE } from "../constants/enrollmentConstant";
 import { getPublicS3Url } from "./s3Service";
-import { formatUserAvatarUrl } from "./userService";
+import { formatUserAvatarUrl, PublicUser } from "./userService";
 
-interface EnrollmentUserSummary {
+// The joined course minus videoKey (its instructor/category stay raw ids),
+// with thumbnailKey swapped for its public URL by withCourseThumbnailUrl.
+type EnrollmentCourseSummary = Omit<CourseType, "thumbnailKey" | "videoKey"> & {
   _id: Types.ObjectId;
-  fullName: string;
-  email: string;
-  avatarKey: string | null;
-}
-
-type EnrollmentCourseSummary = Omit<
-  CourseType,
-  "thumbnailKey" | "videoKey" | "instructor" | "category"
-> & {
   thumbnailUrl: string;
 };
 
-type EnrollmentAggregateItem = Omit<
-  EnrollmentListItem,
-  "courseDetails"
-> & {
-  courseDetails: EnrollmentCourseSummary & { thumbnailKey: string };
+// Raw aggregation result, before withCourseThumbnailUrl runs.
+type EnrollmentAggregateItem = Omit<EnrollmentListItem, "courseDetails"> & {
+  courseDetails: Omit<EnrollmentCourseSummary, "thumbnailUrl"> & {
+    thumbnailKey: string;
+  };
 };
 
 // Shape of each enrollment once ENROLLMENT_LOOKUP_STAGES has joined and
 // replaced student/course/instructor/transaction ids with public-safe
-// *Details sub-documents.
+// *Details sub-documents (studentDetails/instructorDetails are passed through
+// formatUserAvatarUrl, so they hold the public user fields).
 export type EnrollmentListItem = Omit<
   EnrollmentType,
   "student" | "course" | "instructor" | "transaction"
 > & {
-  studentDetails: Omit<EnrollmentUserSummary, "avatarKey"> & { avatar: string | null };
+  _id: Types.ObjectId;
+  studentDetails: PublicUser;
   courseDetails: EnrollmentCourseSummary;
-  instructorDetails: Omit<EnrollmentUserSummary, "avatarKey"> & { avatar: string | null };
-  transactionDetails: TransactionType;
+  instructorDetails: PublicUser;
+  transactionDetails: TransactionType & { _id: Types.ObjectId };
 };
 
 // Each reference is joined into a *Details field. The course thumbnail key is
@@ -128,7 +123,7 @@ export const getEnrollmentsService = async (
   user: { userId: string; role: string },
 ): Promise<{
   enrollments: EnrollmentListItem[];
-  pagination: Pagination | null;
+  pagination: Pagination;
 }> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
@@ -227,7 +222,7 @@ export const updateEnrollmentProgressService = async (
   id: string,
   lastPositionInSeconds: number,
   user: { userId: string; role: string },
-): Promise<EnrollmentType> => {
+): Promise<HydratedDocument<EnrollmentType>> => {
   // Step 1: Fetch the raw enrollment (not the joined/read-only shape)
   const enrollment = await EnrollmentModel.findById(id);
 

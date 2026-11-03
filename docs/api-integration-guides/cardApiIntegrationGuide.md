@@ -11,10 +11,11 @@ Base path: `/api/v1/cards`
 - Every route in this guide requires an authenticated **Student** session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`). Non-students receive `403 You do not have permission to perform this action`.
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as all other APIs.
 - Strict validation is used: do not send undocumented parameters. Undocumented params cause `400 Validation failed`.
-- Requests under `/api` are rate-limited per IP.
+- Requests under `/api` are limited to 5000 per IP per hour.
 - Raw credit card details (card number, CVC, expiry date) **never** pass through our backend server. Adding a card uses a Stripe `SetupIntent` with Stripe Elements on the frontend.
-- When a student's card is added and they had no previous cards, it is automatically marked as their default payment method.
-- When a default card is deleted, the backend automatically promotes the first remaining card (if any) as the new default.
+- Adding a card does not set a default by itself. Whenever `GET /` finds cards but no default on the Stripe customer, it promotes the first listed card (the newest) to default before responding — so a student's first card shows `isDefault: true` on the next list call.
+- When a default card is deleted, the backend automatically promotes the first remaining card (the newest, if any) as the new default.
+- Full error envelope and the `401` messages: see [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md).
 
 ---
 
@@ -69,7 +70,7 @@ Each card object returned by `GET /api/v1/cards`:
 
 `GET /api/v1/cards`
 
-Returns all cards saved by the authenticated student. If the student has never saved a card or completed a checkout, an empty list `[]` is returned.
+Returns the cards saved by the authenticated student, newest first, **at most 10** (a single Stripe list page — older cards beyond 10 are not returned). If the student has no Stripe customer yet (never saved a card or started a checkout), or their Stripe customer was deleted, an empty list `[]` is returned.
 
 ### Request
 
@@ -106,8 +107,10 @@ HTTP `200`
 
 | HTTP status | Message | When |
 | :--- | :--- | :--- |
-| `401` | Unauthorized | Missing or expired auth token. |
+| `401` | *(see auth guide `/me` 401 rows)* | Missing or expired auth token. |
 | `403` | `You do not have permission to perform this action` | Caller is not a student. |
+| `404` | `Student not found` | The signed-in student's account no longer exists. |
+| `500` | `Something went wrong. Please try again later.` | A Stripe API call failed. |
 
 ---
 
@@ -115,7 +118,7 @@ HTTP `200`
 
 `POST /api/v1/cards/setup-intent`
 
-Generates a Stripe `SetupIntent` and returns a `clientSecret`. The frontend passes this `clientSecret` to Stripe.js to securely collect and tokenize the card without raw card data touching your server.
+Generates a Stripe `SetupIntent` (card only, `usage: "off_session"`) and returns a `clientSecret`. The frontend passes this `clientSecret` to Stripe.js to securely collect and tokenize the card without raw card data touching your server. If the student has no Stripe customer yet, one is created first.
 
 ### Request
 
@@ -161,6 +164,15 @@ if (result.error) {
 }
 ```
 
+### Possible errors
+
+| HTTP status | Message | When |
+| :--- | :--- | :--- |
+| `401` | *(see auth guide `/me` 401 rows)* | Missing or expired auth token. |
+| `403` | `You do not have permission to perform this action` | Caller is not a student. |
+| `404` | `Student not found` | The signed-in student's account no longer exists. |
+| `500` | `Something went wrong. Please try again later.` | A Stripe API call failed. |
+
 ---
 
 ## API 3 — Set default card
@@ -195,9 +207,12 @@ HTTP `200`
 
 | HTTP status | Message | When |
 | :--- | :--- | :--- |
-| `400` | `Card id is required` | Param missing or empty. |
-| `403` | `You do not have permission to modify this card` | The payment method does not belong to the calling student. |
-| `404` | `Payment card not found` | The card ID does not exist in Stripe. |
+| `400` | `Validation failed` | `id` is blank (`data.errors` holds `Card id is required`). |
+| `401` | *(see auth guide `/me` 401 rows)* | Missing or expired auth token. |
+| `403` | `You do not have permission to perform this action` | Caller is not a student. |
+| `403` | `You do not have permission to modify this card` | The payment method does not belong to the calling student (including a card that is no longer attached to any customer). |
+| `404` | `Student payment profile not found` | The student has no Stripe customer yet (never saved a card or started a checkout). |
+| `404` | `Payment card not found` | Stripe could not retrieve a payment method with this ID. |
 
 ---
 
@@ -233,15 +248,18 @@ HTTP `200`
 
 | HTTP status | Message | When |
 | :--- | :--- | :--- |
-| `400` | `Card id is required` | Param missing or empty. |
-| `403` | `You do not have permission to delete this card` | The payment method does not belong to the calling student. |
-| `404` | `Payment card not found` | The card ID does not exist in Stripe. |
+| `400` | `Validation failed` | `id` is blank (`data.errors` holds `Card id is required`). |
+| `401` | *(see auth guide `/me` 401 rows)* | Missing or expired auth token. |
+| `403` | `You do not have permission to perform this action` | Caller is not a student. |
+| `403` | `You do not have permission to delete this card` | The payment method does not belong to the calling student (including a card that is no longer attached to any customer). |
+| `404` | `Student payment profile not found` | The student has no Stripe customer yet. |
+| `404` | `Payment card not found` | Stripe could not retrieve a payment method with this ID. |
 
 ---
 
 ## Frontend Types
 
-Copy [`src/response-types/cardResponseTypes.ts`](../src/response-types/cardResponseTypes.ts) directly into your frontend project. It exports:
+Copy [`src/response-types/cardResponseTypes.ts`](../../src/response-types/cardResponseTypes.ts) directly into your frontend project (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts)). It exports:
 - `SavedCard`
 - `GetSavedCardsResponseData`
 - `GetSavedCardsResponse`

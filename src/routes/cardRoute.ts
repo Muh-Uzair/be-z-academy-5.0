@@ -23,12 +23,15 @@ cardRouter.use(protect, restrictTo(Role.Student));
 // DIVIDER Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/cards
+// Api # 1
 cardRouter.get("/", getSavedCards);
 
 // (root)/api/v1/cards/setup-intent
+// Api # 2
 cardRouter.post("/setup-intent", createCardSetupIntent);
 
 // (root)/api/v1/cards/:id/default
+// Api # 3
 cardRouter.patch(
   "/:id/default",
   validation(cardIdParamsSchema, "params"),
@@ -36,6 +39,7 @@ cardRouter.patch(
 );
 
 // (root)/api/v1/cards/:id
+// Api # 4
 cardRouter.delete(
   "/:id",
   validation(cardIdParamsSchema, "params"),

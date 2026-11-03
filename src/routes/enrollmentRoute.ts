@@ -23,6 +23,7 @@ const enrollmentRouter = Router();
 // DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/enrollments
+// Api # 1
 enrollmentRouter.get(
   "/",
   protect,
@@ -31,6 +32,7 @@ enrollmentRouter.get(
 );
 
 // (root)/api/v1/enrollments/:id
+// Api # 2
 enrollmentRouter.get(
   "/:id",
   protect,
@@ -39,6 +41,7 @@ enrollmentRouter.get(
 );
 
 // (root)/api/v1/enrollments/:id/progress
+// Api # 3
 enrollmentRouter.patch(
   "/:id/progress",
   protect,

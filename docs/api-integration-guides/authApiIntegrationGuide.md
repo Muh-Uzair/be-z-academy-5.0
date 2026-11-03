@@ -12,11 +12,11 @@ Base path: `/api/v1/auth`
 - Send cookie-based requests with credentials enabled. For example, with `fetch`, use `credentials: "include"`; with Axios, use `withCredentials: true`.
 - Access tokens last 7 days. Refresh tokens last 30 days. Cookies use `SameSite=Strict`; `Secure` is enabled in production.
 - The backend currently has no CORS middleware. If the frontend and backend use different origins, backend CORS support must be configured before browser requests can work.
-- Requests under `/api` are limited to 100 per IP per hour.
+- Requests under `/api` are limited to 5000 per IP per hour.
 - Strict validation is used: do not send fields that are not documented for that request body.
 - JSON request bodies are limited to 10 KB. Send compact, valid JSON only.
 - Request strings are sanitized for XSS before validation. Keys containing MongoDB query characters are also sanitized.
-- Send emails in lowercase and without surrounding spaces. Email values are normalized to lowercase when stored, but auth lookups use the exact submitted value; uppercase email input can therefore fail to find an existing account.
+- Send emails without surrounding spaces; an email with spaces fails validation. Letter case does not matter: emails are lowercased both when stored and when looked up, so `John@Example.com` and `john@example.com` refer to the same account.
 
 ## Shared response format
 
@@ -81,7 +81,7 @@ type ErrorResponse = {
 | 401 | `fail` | Missing, invalid, expired, or deleted-user authentication token. | Clear local authenticated UI state and redirect to sign-in. A token rotation attempt may be made first when appropriate. |
 | 403 | `fail` | User is authenticated/identified but is not allowed to take this action, or has not completed verification. | Show `message`. Do not retry automatically. For pending instructors, show the approval-pending state. |
 | 404 | `fail` | User cannot be found, role cannot be determined, or the requested route does not exist. | Show `message`; for current-user requests, clear authenticated UI state. |
-| 429 | Not guaranteed | More than 100 `/api` requests were made from the same IP in one hour. | Read the response defensively as text or JSON, show `Too many requests from this IP, please try again in an hour!`, and stop automatic retries. |
+| 429 | Not guaranteed | More than 5000 `/api` requests were made from the same IP in one hour. | Read the response defensively as text or JSON, show `Too many requests from this IP, please try again in an hour!`, and stop automatic retries. |
 | 500 | `error` | Unexpected backend error. | Show a generic retry message. The backend returns `Something went wrong. Please try again later.` and does not expose internal details. This can occur for database, cache, token, or email-service failures. |
 
 ### Validation errors
@@ -123,7 +123,154 @@ if (!response.ok) {
 - If `/rotate-token` returns 401, do not retry token rotation; clear the session and sign in again.
 - Do not display server errors using only the HTTP status. Always display the backend's `message`, because it contains the specific cause the user can act on.
 
-## API 1 — Sign up
+## API 1 — Verify student OTP
+
+`POST /api/v1/auth/verify-otp`
+
+This route is available only for an existing student. The backend identifies the role from the submitted email; no login cookie is needed.
+
+### Request body
+
+```json
+{
+  "email": "john@example.com",
+  "otp": "123456"
+}
+```
+
+`otp` may be sent as a six-digit string or number. It is converted to a string by the backend. Use a string on the frontend to preserve leading zeroes.
+
+### Processing
+
+1. Finds the user by email and confirms it is a student.
+2. Rejects an already verified account.
+3. Checks that the OTP matches and has not expired.
+4. Sets `isVerified` to `true` and clears the OTP fields.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Account verified successfully",
+  "data": null
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | Email is invalid or OTP is not exactly six digits. |
+| 400 | `Account is already verified` | The student is already verified. |
+| 400 | `Invalid OTP` | OTP does not match. |
+| 400 | `OTP has expired` | OTP is older than 10 minutes. |
+| 403 | `You do not have permission to perform this action` | The email belongs to a non-student user. |
+| 404 | `Could not determine user role for authorization` | No account exists for the email before authorization runs. |
+| 404 | `User not found` | User cannot be found during OTP processing. |
+
+## API 2 — Resend student OTP
+
+`POST /api/v1/auth/resend-otp`
+
+This route is available only for an existing student. No login cookie is needed.
+
+### Request body
+
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+### Processing
+
+1. Finds the user and confirms it is a student.
+2. Rejects already verified accounts.
+3. Replaces any existing OTP with a new six-digit OTP that expires after 10 minutes.
+4. Sends the new OTP to the user's email.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "OTP resent successfully, please check your email",
+  "data": null
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 400 | `Validation failed` | Email is invalid or an extra field is sent. |
+| 400 | `Account is already verified` | The student is already verified. |
+| 403 | `You do not have permission to perform this action` | The email belongs to a non-student user. |
+| 404 | `Could not determine user role for authorization` | No account exists for the email before authorization runs. |
+| 404 | `User not found` | User cannot be found during OTP processing. |
+
+## API 3 — Get current user
+
+`GET /api/v1/auth/me`
+
+No request body is required; this endpoint ignores it. The request must include the `accessToken` cookie.
+
+### Processing
+
+1. Validates the `accessToken` cookie.
+2. Uses its user ID and role to load the matching user.
+3. Returns the same user shape as the sign-in response. For instructors, the response additionally includes `stripeOnboardingComplete`. Sensitive and internal fields (`password`, `otp`, `otpExpires`, `__v`, `stripeAccountId`, `verificationRejectionReason`, `lastVerificationRejectedAt`) are never included.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Current user fetched successfully",
+  "data": {
+    "user": {
+      "_id": "66d1a1b2c3d4e5f678901234",
+      "fullName": "John Doe",
+      "email": "john@example.com",
+      "role": "student",
+      "avatar": null,
+      "bio": "Computer science student",
+      "highestEducation": "Bachelor's degree",
+      "yearsOfExperience": 0,
+      "isVerified": true,
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "updatedAt": "2026-08-25T10:00:00.000Z"
+    }
+  }
+}
+```
+
+For an instructor, `data.user` additionally includes:
+
+```json
+{
+  "stripeOnboardingComplete": true
+}
+```
+
+`stripeOnboardingComplete` starts `false` and is set to `true` only by the Stripe `account.updated` webhook after the instructor completes onboarding (see the user guide's "Get instructor Stripe onboarding link" API).
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 401 | `You are not logged in. Please sign in to continue` | Access-token cookie is missing. |
+| 401 | `Invalid or expired access token` | Access-token cookie cannot be verified. |
+| 404 | `<role> not found` | The user referenced by the token no longer exists or no longer has that role. |
+
+## API 4 — Sign up
 
 `POST /api/v1/auth/signup`
 
@@ -208,98 +355,7 @@ HTTP `201`
 | 400 | `"<email>" already exists. Please use a different email` | A duplicate-email race reaches the database unique constraint. |
 | 500 | `Something went wrong. Please try again later.` | Unexpected server, database, or email delivery error. |
 
-## API 2 — Verify student OTP
-
-`POST /api/v1/auth/verify-otp`
-
-This route is available only for an existing student. The backend identifies the role from the submitted email; no login cookie is needed.
-
-### Request body
-
-```json
-{
-  "email": "john@example.com",
-  "otp": "123456"
-}
-```
-
-`otp` may be sent as a six-digit string or number. It is converted to a string by the backend. Use a string on the frontend to preserve leading zeroes.
-
-### Processing
-
-1. Finds the user by email and confirms it is a student.
-2. Rejects an already verified account.
-3. Checks that the OTP matches and has not expired.
-4. Sets `isVerified` to `true` and clears the OTP fields.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Account verified successfully",
-  "data": null
-}
-```
-
-### Possible errors
-
-| HTTP status | Message | When |
-| --- | --- | --- |
-| 400 | `Validation failed` | Email is invalid or OTP is not exactly six digits. |
-| 400 | `Account is already verified` | The student is already verified. |
-| 400 | `Invalid OTP` | OTP does not match. |
-| 400 | `OTP has expired` | OTP is older than 10 minutes. |
-| 403 | `You do not have permission to perform this action` | The email belongs to a non-student user. |
-| 404 | `Could not determine user role for authorization` | No account exists for the email before authorization runs. |
-| 404 | `User not found` | User cannot be found during OTP processing. |
-
-## API 3 — Resend student OTP
-
-`POST /api/v1/auth/resend-otp`
-
-This route is available only for an existing student. No login cookie is needed.
-
-### Request body
-
-```json
-{
-  "email": "john@example.com"
-}
-```
-
-### Processing
-
-1. Finds the user and confirms it is a student.
-2. Rejects already verified accounts.
-3. Replaces any existing OTP with a new six-digit OTP that expires after 10 minutes.
-4. Sends the new OTP to the user's email.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "OTP resent successfully, please check your email",
-  "data": null
-}
-```
-
-### Possible errors
-
-| HTTP status | Message | When |
-| --- | --- | --- |
-| 400 | `Validation failed` | Email is invalid or an extra field is sent. |
-| 400 | `Account is already verified` | The student is already verified. |
-| 403 | `You do not have permission to perform this action` | The email belongs to a non-student user. |
-| 404 | `Could not determine user role for authorization` | No account exists for the email before authorization runs. |
-| 404 | `User not found` | User cannot be found during OTP processing. |
-
-## API 4 — Sign in
+## API 5 — Sign in
 
 `POST /api/v1/auth/signin`
 
@@ -359,93 +415,7 @@ HTTP `200`
 | 403 | `Your account is pending Admin approval` | An unverified instructor attempts to sign in. |
 | 403 | `Please verify your account before signing in` | An unverified student attempts to sign in. |
 
-## API 5 — Rotate authentication tokens
-
-`POST /api/v1/auth/rotate-token`
-
-No request body is required; this endpoint ignores it. The request must include the `refreshToken` cookie created during sign-in or a previous rotation.
-
-### Processing
-
-1. Reads and validates the `refreshToken` cookie.
-2. Confirms that the user still exists.
-3. Replaces both HTTP-only authentication cookies with newly signed tokens.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Token rotated successfully",
-  "data": null
-}
-```
-
-### Possible errors
-
-| HTTP status | Message | When |
-| --- | --- | --- |
-| 401 | `Refresh token is missing` | The browser did not send a refresh-token cookie. |
-| 401 | `Invalid or expired refresh token` | The refresh token is invalid or expired. |
-| 401 | `User no longer exists` | Token is valid but the associated user was deleted. |
-
-## API 6 — Get current user
-
-`GET /api/v1/auth/me`
-
-No request body is required; this endpoint ignores it. The request must include the `accessToken` cookie.
-
-### Processing
-
-1. Validates the `accessToken` cookie.
-2. Uses its user ID and role to load the matching user.
-3. Returns the same user shape as the sign-in response. For instructors, the response additionally includes `stripeOnboardingComplete`. Sensitive and internal fields (`password`, `otp`, `otpExpires`, `__v`, `stripeAccountId`, `verificationRejectionReason`, `lastVerificationRejectedAt`) are never included.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Current user fetched successfully",
-  "data": {
-    "user": {
-      "_id": "66d1a1b2c3d4e5f678901234",
-      "fullName": "John Doe",
-      "email": "john@example.com",
-      "role": "student",
-      "avatar": null,
-      "bio": "Computer science student",
-      "highestEducation": "Bachelor's degree",
-      "yearsOfExperience": 0,
-      "isVerified": true,
-      "createdAt": "2026-08-25T10:00:00.000Z",
-      "updatedAt": "2026-08-25T10:00:00.000Z"
-    }
-  }
-}
-```
-
-For an instructor, `data.user` additionally includes:
-
-```json
-{
-  "stripeOnboardingComplete": true
-}
-```
-
-### Possible errors
-
-| HTTP status | Message | When |
-| --- | --- | --- |
-| 401 | `You are not logged in. Please sign in to continue` | Access-token cookie is missing. |
-| 401 | `Invalid or expired access token` | Access-token cookie cannot be verified. |
-| 404 | `<role> not found` | The user referenced by the token no longer exists or no longer has that role. |
-
-## API 7 — Forget password
+## API 6 — Forget password
 
 `POST /api/v1/auth/forget-password`
 
@@ -484,7 +454,7 @@ HTTP `200`
 | 400 | `Validation failed` | Email is invalid or an extra field is sent. |
 | 404 | `User not found` | No account exists for the email. |
 
-## API 8 — Reset password
+## API 7 — Reset password
 
 `POST /api/v1/auth/reset-password`
 
@@ -527,7 +497,7 @@ HTTP `200`
 | 400 | `Invalid OTP` | No user has this OTP set. |
 | 400 | `OTP has expired` | OTP is older than 10 minutes. |
 
-## API 9 — Sign out
+## API 8 — Sign out
 
 `POST /api/v1/auth/signout`
 
@@ -549,6 +519,38 @@ HTTP `200`
 }
 ```
 
+## API 9 — Rotate authentication tokens
+
+`POST /api/v1/auth/rotate-token`
+
+No request body is required; this endpoint ignores it. The request must include the `refreshToken` cookie created during sign-in or a previous rotation.
+
+### Processing
+
+1. Reads and validates the `refreshToken` cookie.
+2. Confirms that the user still exists.
+3. Replaces both HTTP-only authentication cookies with newly signed tokens.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Token rotated successfully",
+  "data": null
+}
+```
+
+### Possible errors
+
+| HTTP status | Message | When |
+| --- | --- | --- |
+| 401 | `Refresh token is missing` | The browser did not send a refresh-token cookie. |
+| 401 | `Invalid or expired refresh token` | The refresh token is invalid or expired. |
+| 401 | `User no longer exists` | Token is valid but the associated user was deleted. |
+
 ## Frontend types
 
-Copy [`src/response-types/authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports and exports `SignupResponse`, `VerifyOtpResponse`, `ResendOtpResponse`, `SigninResponse`, `RotateTokenResponse`, `GetMeResponse`, `SignoutResponse`, `ForgetPasswordResponse`, `ResetPasswordResponse`, and the shared `AuthUser` interface used by both `SigninResponse` and `GetMeResponse`.
+Copy [`src/response-types/authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports and exports `SignupResponse`, `VerifyOtpResponse`, `ResendOtpResponse`, `SigninResponse`, `RotateTokenResponse`, `GetMeResponse`, `ForgetPasswordResponse`, `ResetPasswordResponse`, `SignoutResponse`, and the shared `AuthUser` interface used by both `SigninResponse` and `GetMeResponse`.

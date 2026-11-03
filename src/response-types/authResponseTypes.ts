@@ -49,13 +49,13 @@ export interface AuthUser {
   updatedAt: string;
 }
 
-// API 6: GET /api/v1/auth/me
+// API 3: GET /api/v1/auth/me
 // Response: { status, message, data: { user } }
 export interface GetMeResponseData {
   user: AuthUser;
 }
 
-// API 1: POST /api/v1/auth/signup
+// API 4: POST /api/v1/auth/signup
 // Status: 201
 // Student example response:
 // {
@@ -77,7 +77,7 @@ export type SignupResponse =
     >
   | ApiErrorResponse;
 
-// API 2: POST /api/v1/auth/verify-otp
+// API 1: POST /api/v1/auth/verify-otp
 // Status: 200
 // Example response:
 // {
@@ -92,7 +92,7 @@ export type VerifyOtpResponse =
     >
   | ApiErrorResponse;
 
-// API 3: POST /api/v1/auth/resend-otp
+// API 2: POST /api/v1/auth/resend-otp
 // Status: 200
 // Example response:
 // {
@@ -111,7 +111,7 @@ export interface SigninResponseData {
   user: AuthUser;
 }
 
-// API 4: POST /api/v1/auth/signin
+// API 5: POST /api/v1/auth/signin
 // Status: 200
 // Example response:
 // {
@@ -138,7 +138,7 @@ export type SigninResponse =
   | SuccessApiResponse<SigninResponseData, "Signed in successfully">
   | ApiErrorResponse;
 
-// API 5: POST /api/v1/auth/rotate-token
+// API 9: POST /api/v1/auth/rotate-token
 // Status: 200
 // Example response:
 // {
@@ -151,7 +151,7 @@ export type RotateTokenResponse =
   | SuccessApiResponse<EmptyAuthResponseData, "Token rotated successfully">
   | ApiErrorResponse;
 
-// API 6: GET /api/v1/auth/me
+// API 3: GET /api/v1/auth/me
 // Status: 200
 // Example response:
 // {
@@ -180,20 +180,7 @@ export type GetMeResponse =
     >
   | ApiErrorResponse;
 
-// API 7: POST /api/v1/auth/signout
-// Status: 200
-// Example response:
-// {
-//   "status": "success",
-//   "message": "Signed out successfully",
-//   "data": null
-// }
-// Side effect: clears accessToken and refreshToken HTTP-only cookies.
-export type SignoutResponse =
-  | SuccessApiResponse<EmptyAuthResponseData, "Signed out successfully">
-  | ApiErrorResponse;
-
-// API 8: POST /api/v1/auth/forget-password
+// API 6: POST /api/v1/auth/forget-password
 // Status: 200
 // Example response:
 // {
@@ -208,7 +195,7 @@ export type ForgetPasswordResponse =
     >
   | ApiErrorResponse;
 
-// API 9: POST /api/v1/auth/reset-password
+// API 7: POST /api/v1/auth/reset-password
 // Status: 200
 // Example response:
 // {
@@ -218,4 +205,17 @@ export type ForgetPasswordResponse =
 // }
 export type ResetPasswordResponse =
   | SuccessApiResponse<EmptyAuthResponseData, "Password reset successfully">
+  | ApiErrorResponse;
+
+// API 8: POST /api/v1/auth/signout
+// Status: 200
+// Example response:
+// {
+//   "status": "success",
+//   "message": "Signed out successfully",
+//   "data": null
+// }
+// Side effect: clears accessToken and refreshToken HTTP-only cookies.
+export type SignoutResponse =
+  | SuccessApiResponse<EmptyAuthResponseData, "Signed out successfully">
   | ApiErrorResponse;

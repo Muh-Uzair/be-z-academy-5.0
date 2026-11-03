@@ -9,8 +9,8 @@ Base path: `/api/v1/enrollments`
 - Every route in this guide requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. An undocumented query param causes `400 Validation failed`.
-- Requests under `/api` are limited to 100 per IP per hour.
-- Enrollments are created automatically by the backend (via the Stripe `payment_intent.succeeded` webhook) when a student completes a course payment — there is no create/delete endpoint here. The only mutation this router exposes is the watch-progress update (API 3 below).
+- Requests under `/api` are limited to 5000 per IP per hour.
+- Enrollments are created automatically by the backend (via the Stripe `payment_intent.succeeded` webhook) when a student completes a course payment — there is no create/delete endpoint here. Creation is asynchronous: an enrollment appears a moment after the payment succeeds, not when the payment-intent API returns (see the course guide's payment-intent API). An enrollment is **deleted** when its purchase is refunded (by the student's refund request, or by the `charge.refunded` webhook for refunds made in the Stripe Dashboard), so the course disappears from these lists. The only mutation this router exposes is the watch-progress update (API 3 below).
 
 ## Roles and access
 
@@ -35,6 +35,13 @@ Every enrollment object returned by these APIs looks like:
     "_id": "66c0a1b2c3d4e5f678901111",
     "fullName": "John Doe",
     "email": "john@example.com",
+    "bio": "Computer science student",
+    "highestEducation": "Bachelor's degree",
+    "yearsOfExperience": 0,
+    "isVerified": true,
+    "role": "student",
+    "createdAt": "2026-08-20T10:00:00.000Z",
+    "updatedAt": "2026-08-20T10:00:00.000Z",
     "avatar": null
   },
   "courseDetails": {
@@ -43,7 +50,7 @@ Every enrollment object returned by these APIs looks like:
     "description": "Learn frontend, backend, and full-stack web development from scratch.",
     "price": 49.99,
     "level": "beginner",
-    "thumbnailUrl": "https://s3.us-east-1.amazonaws.com/example-bucket/5.0/courses/thumbnails/course.jpg",
+    "thumbnailUrl": "https://s3.<region>.amazonaws.com/<bucket>/5.0/courses/thumbnails/<uuid>-bootcamp-thumbnail.jpeg",
     "instructor": "66c0a1b2c3d4e5f678901222",
     "category": "66c0a1b2c3d4e5f678901333",
     "isVerified": true,
@@ -63,6 +70,13 @@ Every enrollment object returned by these APIs looks like:
     "_id": "66c0a1b2c3d4e5f678901222",
     "fullName": "Jane Smith",
     "email": "jane@example.com",
+    "bio": "Backend engineering instructor",
+    "highestEducation": "Master's degree",
+    "yearsOfExperience": 6,
+    "isVerified": true,
+    "role": "instructor",
+    "createdAt": "2026-08-01T10:00:00.000Z",
+    "updatedAt": "2026-08-01T10:00:00.000Z",
     "avatar": null
   },
   "transactionDetails": {
@@ -72,6 +86,8 @@ Every enrollment object returned by these APIs looks like:
     "currency": "usd",
     "student": "66c0a1b2c3d4e5f678901111",
     "course": "66d1a1b2c3d4e5f678901234",
+    "isCourseDeleted": false,
+    "courseDetails": null,
     "instructor": "66c0a1b2c3d4e5f678901222",
     "totalPrice": 49.99,
     "amountPaid": 49.99,
@@ -96,7 +112,7 @@ Every enrollment object returned by these APIs looks like:
 }
 ```
 
-The raw `student`, `course`, `instructor`, and `transaction` id fields are never returned directly — they are always replaced by the joined `studentDetails`, `courseDetails`, `instructorDetails`, and `transactionDetails` objects. `studentDetails`/`instructorDetails` never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`.
+The raw `student`, `course`, `instructor`, and `transaction` id fields are not returned at the top level (API 1 and API 2) — they are replaced by the joined `studentDetails`, `courseDetails`, `instructorDetails`, and `transactionDetails` objects. `studentDetails`/`instructorDetails` hold the same public user fields as the auth guide's `AuthUser` and never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`. `courseDetails` and `transactionDetails` are the full course/transaction records (the course's own `instructor`/`category` stay raw ids).
 
 `courseDetails` includes `thumbnailUrl` for displaying the course thumbnail. It does not include `videoUrl`; fetch `GET /api/v1/courses/:id` separately if you need the course video.
 
@@ -115,15 +131,15 @@ Returns a paginated, sortable, filterable list of enrollments, scoped by the cal
 | `instructor` | string | — | Filter by instructor `_id`. |
 | `transaction` | string | — | Filter by transaction `_id`. |
 | `watchedCompletely` | `"true" \| "false"` | — | Filter by completion state. |
-| `continueWatching` | `"true" \| "false"` | — | For students, when `true`, return only courses that have been started (`watchPercentage > 0`) but are not complete. Ignored for Admin and Instructor callers. |
+| `continueWatching` | `"true" \| "false"` | — | For students, when `true`, return only enrollments that have been started (`watchPercentage > 0`) — completed ones are **not** excluded; combine with `watchedCompletely=false` to hide them. Also changes the default sort (see below). Ignored for Admin and Instructor callers. |
 | `certificateIssued` | `"true" \| "false"` | — | Filter by certificate-issued state. |
-| `projection` | string | — | Comma-separated Mongo field projection. |
+| `projection` | string | — | Comma-separated Mongo field projection, applied after the joins. Must include `courseDetails` (or a `courseDetails.*` path), otherwise the request fails with `500`. |
 | `page` | number (≥1) | `1` | |
 | `limit` | number (≥1) | `10` | |
-| `sortBy` | string | `createdAt` | |
-| `sortOrder` | `"asc" \| "desc"` | `desc` | |
+| `sortBy` | string | — | Without `sortBy`, results are sorted newest `createdAt` first — or, with `continueWatching=true`, `mostRecentlySeen` first, then most recently updated. |
+| `sortOrder` | `"asc" \| "desc"` | `desc` | Only applies together with `sortBy`. |
 
-All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side. There is no `search` param on this endpoint.
+All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side. There is no `search` param on this endpoint. `student`, `course`, `instructor` and `transaction` must be valid ObjectIds — a malformed value returns `500`.
 
 For the Continue Watching page, use:
 
@@ -162,6 +178,7 @@ HTTP `200`
 | --- | --- | --- |
 | 400 | `Validation failed` | An invalid or undocumented query param is sent. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
+| 500 | `Something went wrong. Please try again later.` | An id filter is not a valid ObjectId, or `projection` leaves out `courseDetails`. |
 
 ## API 2 — Get enrollment details
 
@@ -194,6 +211,7 @@ HTTP `200`
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to access this enrollment` | Caller is an Instructor/Student who is not a party to this enrollment. |
 | 404 | `Enrollment not found` | No enrollment exists with that `id`. |
+| 500 | `Something went wrong. Please try again later.` | `id` is not a valid ObjectId. |
 
 ## API 3 — Update watch progress
 
@@ -216,7 +234,9 @@ Side effects on every call:
 
 | Field | Type | Rules |
 | --- | --- | --- |
-| `lastPositionInSeconds` | number | Required, `>= 0`. The video's current playback position in seconds. |
+| `lastPositionInSeconds` | number | Required, `>= 0` (a numeric string is also accepted). The video's current playback position in seconds. |
+
+`totalDurationWatchedInMinutes` and `watchPercentage` are rounded to 2 decimals.
 
 ```json
 {
@@ -261,6 +281,7 @@ Note this response's `enrollment` is the **raw** document — `student`/`course`
 | HTTP status | Message | When |
 | --- | --- | --- |
 | 400 | `Validation failed` | `lastPositionInSeconds` is missing, negative, non-numeric, or an undocumented field is sent. |
+| 400 | `Invalid value "<value>" for field "_id"` | `id` is not a valid Mongo ObjectId. |
 | 400 | `This course has no duration set, so progress cannot be tracked` | The enrolled course's `totalDurationInMinutes` is `0`. |
 | 401 | *(see auth guide `/me` 401 rows)* | Access-token cookie missing/invalid/expired. |
 | 403 | `You do not have permission to update this enrollment's progress` | Caller is not the student on this enrollment (includes Admin/Instructor). |
@@ -269,4 +290,4 @@ Note this response's `enrollment` is the **raw** document — `student`/`course`
 
 ## Frontend types
 
-Copy [`src/response-types/enrollmentResponseTypes.ts`](../src/response-types/enrollmentResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../src/response-types/userResponseTypes.ts)) and exports `Enrollment`, `EnrollmentUserSummary`, `EnrollmentCourseSummary`, `EnrollmentTransactionSummary`, `GetEnrollmentsResponse`, `GetEnrollmentDetailsResponse`, `RawEnrollment`, `UpdateEnrollmentProgressRequestBody`, and `UpdateEnrollmentProgressResponse`.
+Copy [`src/response-types/enrollmentResponseTypes.ts`](../../src/response-types/enrollmentResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`/`SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts)) and exports `Enrollment`, `EnrollmentUserSummary`, `EnrollmentCourseSummary`, `EnrollmentTransactionSummary`, `GetEnrollmentsResponse`, `GetEnrollmentDetailsResponse`, `RawEnrollment`, `UpdateEnrollmentProgressRequestBody`, and `UpdateEnrollmentProgressResponse`.

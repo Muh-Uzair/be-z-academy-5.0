@@ -13,6 +13,9 @@ export type DashboardPeriod = "week" | "month" | "year";
 //   year  → { January: 0, February: 0, ..., December: 0 }
 export type TrendRecord = Record<string, number>;
 
+// Note: every *AvatarUrl field in this file is currently always null — the
+// backend reads a property formatUserAvatarUrl never sets (see the guide).
+
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
 export interface AdminDashboardStats {
@@ -40,6 +43,7 @@ export interface TopPerformingCourse {
 }
 
 export interface AdminRecentUser {
+  _id: string;
   fullName: string;
   email: string;
   role: "admin" | "instructor" | "student";
@@ -59,7 +63,7 @@ export interface AdminDashboardData {
   recentUsers: AdminRecentUser[];
 }
 
-// API: GET /api/v1/dashboard/admin?period=week|month|year
+// API 1: GET /api/v1/dashboard/admin?period=week|month|year
 // Response: { status, message, data: AdminDashboardData }
 export type GetAdminDashboardResponse =
   | SuccessApiResponse<AdminDashboardData, "Admin dashboard fetched successfully">
@@ -127,7 +131,7 @@ export interface InstructorDashboardData {
   recentReviews: InstructorRecentReview[];
 }
 
-// API: GET /api/v1/dashboard/instructor?period=week|month|year
+// API 2: GET /api/v1/dashboard/instructor?period=week|month|year
 // Response: { status, message, data: InstructorDashboardData }
 export type GetInstructorDashboardResponse =
   | SuccessApiResponse<
@@ -173,7 +177,7 @@ export interface StudentRecentTransaction {
   instructorName: string;
   instructorAvatarUrl: string | null;
   amountPaid: number;
-  paymentStatus: string;
+  paymentStatus: "pending" | "paid" | "failed" | "refund_processing" | "refunded";
   currency: string;
   amountPaidAt: string | null;
   createdAt: string;
@@ -194,15 +198,15 @@ export interface StudentRecentReview {
 
 export interface StudentDashboardData {
   stats: StudentDashboardStats;
-  // Up to 3 in-progress / recent courses to continue watching
+  // Up to 3: in-progress courses first, topped up with completed ones
   continueWatching: StudentContinueWatchingItem[];
-  // 5 most recent transactions made by the student
+  // 5 most recent transactions made by the student, any paymentStatus
   recentTransactions: StudentRecentTransaction[];
   // 5 most recent reviews submitted by the student
   recentReviews: StudentRecentReview[];
 }
 
-// API: GET /api/v1/dashboard/student
+// API 3: GET /api/v1/dashboard/student
 // Response: { status, message, data: StudentDashboardData }
 export type GetStudentDashboardResponse =
   | SuccessApiResponse<

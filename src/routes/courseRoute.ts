@@ -43,6 +43,7 @@ const courseRouter = Router();
 // DIVIDER Admin Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/:id/verification
+// Api # 1
 courseRouter.patch(
   "/:id/verification",
   protect,
@@ -55,6 +56,7 @@ courseRouter.patch(
 // DIVIDER Instructor Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/upload-thumbnail
+// Api # 2
 courseRouter.post(
   "/upload-thumbnail",
   protect,
@@ -64,6 +66,7 @@ courseRouter.post(
 );
 
 // (root)/api/v1/courses/upload-video
+// Api # 3
 courseRouter.post(
   "/upload-video",
   protect,
@@ -73,6 +76,7 @@ courseRouter.post(
 );
 
 // (root)/api/v1/courses
+// Api # 4
 courseRouter.post(
   "/",
   protect,
@@ -83,6 +87,7 @@ courseRouter.post(
 );
 
 // (root)/api/v1/courses/:id
+// Api # 5
 courseRouter.patch(
   "/:id",
   protect,
@@ -93,6 +98,7 @@ courseRouter.patch(
 );
 
 // (root)/api/v1/courses/:id
+// Api # 6
 courseRouter.delete(
   "/:id",
   protect,
@@ -104,6 +110,7 @@ courseRouter.delete(
 // DIVIDER Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/:id/payment-intent
+// Api # 7
 courseRouter.post(
   "/:id/payment-intent",
   protect,
@@ -113,6 +120,7 @@ courseRouter.post(
 );
 
 // (root)/api/v1/courses/:id/refund
+// Api # 8
 courseRouter.post(
   "/:id/refund",
   protect,
@@ -122,6 +130,7 @@ courseRouter.post(
 );
 
 // (root)/api/v1/courses/:id/refund-eligibility
+// Api # 9
 courseRouter.get(
   "/:id/refund-eligibility",
   protect,
@@ -131,6 +140,7 @@ courseRouter.get(
 );
 
 // (root)/api/v1/courses/:id/completion-status
+// Api # 10
 courseRouter.get(
   "/:id/completion-status",
   protect,
@@ -140,6 +150,7 @@ courseRouter.get(
 );
 
 // (root)/api/v1/courses/:id/issue-certificate
+// Api # 11
 courseRouter.get(
   "/:id/issue-certificate",
   protect,
@@ -151,6 +162,7 @@ courseRouter.get(
 // DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses
+// Api # 12
 courseRouter.get(
   "/",
   protect,
@@ -161,6 +173,7 @@ courseRouter.get(
 // DIVIDER Admin + Instructor Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/student/:id
+// Api # 13
 courseRouter.get(
   "/student/:id",
   protect,
@@ -173,6 +186,7 @@ courseRouter.get(
 // DIVIDER Admin + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/instructor/:id
+// Api # 14
 courseRouter.get(
   "/instructor/:id",
   protect,
@@ -187,12 +201,15 @@ courseRouter.get(
 // DIVIDER Public Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/featured
+// Api # 15
 courseRouter.get("/featured", getFeaturedCourses);
 
 // (root)/api/v1/courses/trending
+// Api # 16
 courseRouter.get("/trending", getTrendingCourses);
 
 // (root)/api/v1/courses/public
+// Api # 17
 courseRouter.get(
   "/public",
   validation(getPublicCoursesQuerySchema, "query"),
@@ -200,6 +217,7 @@ courseRouter.get(
 );
 
 // (root)/api/v1/courses/:id/public
+// Api # 18
 courseRouter.get(
   "/:id/public",
   validation(courseIdParamsSchema, "params"),
@@ -209,6 +227,7 @@ courseRouter.get(
 // DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/courses/:id
+// Api # 19
 courseRouter.get(
   "/:id",
   protect,

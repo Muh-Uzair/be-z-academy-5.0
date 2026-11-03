@@ -1,12 +1,12 @@
 // This file is intentionally framework-independent. Copy it directly into a
 // frontend project; it has no backend imports and represents JSON values only.
 
-import { SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
+import { AuthUser, SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 import { Pagination } from "./userResponseTypes";
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 
-// Derived review status accepted by the `status` query param on API 7
+// Derived review status accepted by the `status` query param on API 12
 // (GET /api/v1/courses) — see the integration guide for the mapping to
 // isVerified/verificationRejectionReason.
 export type CourseStatus = "verified" | "rejected" | "pendingReview";
@@ -35,32 +35,31 @@ export interface Course {
   updatedAt: string;
 }
 
-export interface CourseInstructorSummary {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar: string | null;
-}
+// The joined instructor: the same public user fields as AuthUser
+// (stripeOnboardingComplete is never included here).
+export type CourseInstructorSummary = Omit<AuthUser, "stripeOnboardingComplete">;
 
 export interface CourseCategorySummary {
   _id: string;
   name: string;
   description: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Course shape returned by the list endpoint (API 7) and the details endpoint
-// (API 8), where instructor/category ids are replaced by joined *Details
-// summaries.
+// Course shape returned by the authenticated list/details endpoints (API 12,
+// 13, 14, 19), where instructor/category ids are replaced by joined *Details
+// objects.
 export interface CourseListItem extends Omit<Course, "instructor" | "category"> {
   instructorDetails: CourseInstructorSummary;
   categoryDetails: CourseCategorySummary;
 }
 
-// Course shape returned by the public list endpoint (API 12) — same as
-// CourseListItem but without videoUrl, since that route never signs one.
+// Course shape returned by the public endpoints (API 15, 16, 17, 18) — same
+// as CourseListItem but without videoUrl, since those routes never sign one.
 export type PublicCourseListItem = Omit<CourseListItem, "videoUrl">;
 
-// API 1: POST /api/v1/courses/upload-thumbnail
+// API 2: POST /api/v1/courses/upload-thumbnail
 // Response: { status, message, data: { uploadUrl, fields, key } }
 export interface UploadCourseThumbnailResponseData {
   uploadUrl: string;
@@ -75,7 +74,7 @@ export type UploadCourseThumbnailResponse =
     >
   | ApiErrorResponse;
 
-// API 2: POST /api/v1/courses/upload-video
+// API 3: POST /api/v1/courses/upload-video
 // Response: { status, message, data: { uploadUrl, fields, key } }
 export interface UploadCourseVideoResponseData {
   uploadUrl: string;
@@ -90,7 +89,7 @@ export type UploadCourseVideoResponse =
     >
   | ApiErrorResponse;
 
-// API 3: POST /api/v1/courses
+// API 4: POST /api/v1/courses
 // Response: { status, message, data: { course } }
 export interface CreateCourseResponseData {
   course: Course;
@@ -103,7 +102,7 @@ export type CreateCourseResponse =
     >
   | ApiErrorResponse;
 
-// API 4: PATCH /api/v1/courses/:id
+// API 5: PATCH /api/v1/courses/:id
 // Response: { status, message, data: { course } }
 export interface UpdateCourseResponseData {
   course: Course;
@@ -113,13 +112,13 @@ export type UpdateCourseResponse =
   | SuccessApiResponse<UpdateCourseResponseData, "Course updated successfully">
   | ApiErrorResponse;
 
-// API 5: DELETE /api/v1/courses/:id
+// API 6: DELETE /api/v1/courses/:id
 // Response: { status, message, data: null }
 export type DeleteCourseResponse =
   | SuccessApiResponse<null, "Course deleted successfully">
   | ApiErrorResponse;
 
-// API 6: PATCH /api/v1/courses/:id/verification
+// API 1: PATCH /api/v1/courses/:id/verification
 // Response: { status, message, data: { course } }
 export interface UpdateCourseVerificationResponseData {
   course: Course;
@@ -132,7 +131,7 @@ export type UpdateCourseVerificationResponse =
     >
   | ApiErrorResponse;
 
-// API 9: POST /api/v1/courses/:id/payment-intent
+// API 7: POST /api/v1/courses/:id/payment-intent
 // Response: { status, message, data: { clientSecret } }
 export interface CreateCoursePaymentIntentResponseData {
   clientSecret: string | null;
@@ -145,7 +144,7 @@ export type CreateCoursePaymentIntentResponse =
     >
   | ApiErrorResponse;
 
-// API 10: POST /api/v1/courses/:id/refund
+// API 8: POST /api/v1/courses/:id/refund
 // Response: { status, message, data: null }
 export type RequestCourseRefundResponse =
   | SuccessApiResponse<
@@ -154,7 +153,7 @@ export type RequestCourseRefundResponse =
     >
   | ApiErrorResponse;
 
-// API 10a: GET /api/v1/courses/:id/refund-eligibility
+// API 9: GET /api/v1/courses/:id/refund-eligibility
 // Response: { status, message, data: { eligibility } }
 export interface CourseRefundEligibility {
   eligible: boolean;
@@ -176,7 +175,7 @@ export type GetCourseRefundEligibilityResponse =
     >
   | ApiErrorResponse;
 
-// API 11: GET /api/v1/courses/:id/completion-status
+// API 10: GET /api/v1/courses/:id/completion-status
 // Response: { status, message, data: { completionPercentage, completed } }
 export interface GetCourseCompletionStatusResponseData {
   completionPercentage: number;
@@ -190,7 +189,7 @@ export type GetCourseCompletionStatusResponse =
     >
   | ApiErrorResponse;
 
-// API 16: GET /api/v1/courses/:id/issue-certificate
+// API 11: GET /api/v1/courses/:id/issue-certificate
 // Response: { status, message, data: IssueCourseCertificateResponseData }
 export interface IssueCourseCertificateResponseData {
   certificateId: string;
@@ -205,8 +204,8 @@ export interface IssueCourseCertificateResponseData {
   instructorName: string;
   categoryName: string | null;
   watchPercentage: number;
-  issuedAt: string | Date;
-  completedAt: string | Date;
+  issuedAt: string;
+  completedAt: string;
   platformName: string;
   issuer: string;
   student: {
@@ -239,7 +238,7 @@ export type IssueCourseCertificateResponse =
     >
   | ApiErrorResponse;
 
-// API 7: GET /api/v1/courses
+// API 12: GET /api/v1/courses
 // Response: { status, message, data: { courses, pagination } }
 export interface GetCoursesResponseData {
   courses: CourseListItem[];
@@ -250,7 +249,7 @@ export type GetCoursesResponse =
   | SuccessApiResponse<GetCoursesResponseData, "Courses fetched successfully">
   | ApiErrorResponse;
 
-// API 12: GET /api/v1/courses/public
+// API 17: GET /api/v1/courses/public
 // Response: { status, message, data: { courses, pagination } }
 export interface GetPublicCoursesResponseData {
   courses: PublicCourseListItem[];
@@ -264,7 +263,7 @@ export type GetPublicCoursesResponse =
     >
   | ApiErrorResponse;
 
-// API 16: GET /api/v1/courses/featured
+// API 15: GET /api/v1/courses/featured
 // Response: { status, message, data: { courses } }
 export interface GetFeaturedCoursesResponseData {
   courses: PublicCourseListItem[];
@@ -277,7 +276,7 @@ export type GetFeaturedCoursesResponse =
     >
   | ApiErrorResponse;
 
-// API 17: GET /api/v1/courses/trending
+// API 16: GET /api/v1/courses/trending
 // Response: { status, message, data: { courses } }
 export interface GetTrendingCoursesResponseData {
   courses: PublicCourseListItem[];
@@ -290,7 +289,7 @@ export type GetTrendingCoursesResponse =
     >
   | ApiErrorResponse;
 
-// API 8: GET /api/v1/courses/:id
+// API 19: GET /api/v1/courses/:id
 // Response: { status, message, data: { course } }
 // Always the joined shape (instructorDetails/categoryDetails, same as
 // CourseListItem) — see the integration guide for the per-role access rules.
@@ -305,7 +304,7 @@ export type GetCourseDetailsResponse =
     >
   | ApiErrorResponse;
 
-// API 13: GET /api/v1/courses/:id/public
+// API 18: GET /api/v1/courses/:id/public
 // Response: { status, message, data: { course } }
 export interface GetPublicCourseDetailsResponseData {
   course: PublicCourseListItem;
@@ -319,7 +318,7 @@ export type GetPublicCourseDetailsResponse =
   | ApiErrorResponse;
 
 // API 14: GET /api/v1/courses/instructor/:id
-// Admin or Student. Same response envelope as API 7 (GetCoursesResponse) — the
+// Admin or Student. Same response envelope as API 12 (GetCoursesResponse) — the
 // data shape is identical, only the success message differs.
 // Role-based visibility:
 //   Admin   → all courses of the instructor (verified + unverified + rejected)
@@ -334,10 +333,10 @@ export type GetInstructorCoursesResponse =
     >
   | ApiErrorResponse;
 
-// API 15: GET /api/v1/courses/student/:id
+// API 13: GET /api/v1/courses/student/:id
 // Admin or Instructor. Admins see all courses the student is enrolled in;
 // instructors see only that student's enrollments in their own courses.
-// Same response envelope as API 7 (GetCoursesResponse) — the data shape is
+// Same response envelope as API 12 (GetCoursesResponse) — the data shape is
 // identical, only the success message differs.
 // Response: { status, message, data: { courses, pagination } }
 export type GetStudentCoursesResponseData = GetCoursesResponseData;

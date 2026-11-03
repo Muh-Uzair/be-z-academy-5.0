@@ -1,15 +1,12 @@
 // This file is intentionally framework-independent. Copy it directly into a
 // frontend project; it has no backend imports and represents JSON values only.
 
-import { SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
+import { AuthUser, SuccessApiResponse, ApiErrorResponse } from "./authResponseTypes";
 import { Pagination } from "./userResponseTypes";
 
-export interface EnrollmentUserSummary {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar: string | null;
-}
+// The joined student/instructor: the same public user fields as AuthUser
+// (stripeOnboardingComplete is never included here).
+export type EnrollmentUserSummary = Omit<AuthUser, "stripeOnboardingComplete">;
 
 export interface EnrollmentCourseSummary {
   _id: string;
@@ -41,11 +38,13 @@ export interface EnrollmentTransactionSummary {
   currency: string;
   student: string;
   course: string;
+  isCourseDeleted: boolean;
+  courseDetails: null;
   instructor: string;
   totalPrice: number;
   amountPaid: number;
   amountPaidAt: string | null;
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  paymentStatus: "pending" | "paid" | "failed" | "refund_processing" | "refunded";
   adminCommissionPercentage: number;
   adminCommission: number;
   instructorRevenue: number;
@@ -71,8 +70,9 @@ export interface Enrollment {
   updatedAt: string;
 }
 
-// Query parameters for API 1. Set continueWatching to true to return only
-// started but incomplete courses for the authenticated student.
+// Query parameters for API 1. For a student, continueWatching=true returns
+// only started enrollments (watchPercentage > 0, completed ones included),
+// most recently seen first.
 export interface GetEnrollmentsQueryParams {
   student?: string;
   course?: string;

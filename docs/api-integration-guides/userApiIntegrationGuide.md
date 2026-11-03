@@ -6,11 +6,11 @@ Base path: `/api/v1/users`
 
 ## Integration rules
 
-- Every route in this guide requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
+- Every route in this guide except `GET /instructors/public` requires an authenticated session: send the `accessToken` cookie with credentials enabled (`fetch`: `credentials: "include"`; Axios: `withCredentials: true`).
 - Success, validation, and application-error responses use `{ status, message, data }`, the same envelope as the auth APIs. See [`authApiIntegrationGuide.md`](./authApiIntegrationGuide.md) for the full envelope and status-code reference — it applies here unchanged.
 - Strict validation is used: do not send fields that are not documented for that request. Query params and body fields are validated separately; an undocumented field in either causes `400 Validation failed`.
 - JSON request bodies are limited to 10 KB.
-- Requests under `/api` are limited to 100 per IP per hour.
+- Requests under `/api` are limited to 5000 per IP per hour.
 
 ## Roles and access
 
@@ -28,248 +28,7 @@ Base path: `/api/v1/users`
 
 A caller with the wrong role receives `403 You do not have permission to perform this action`. A missing/invalid/expired `accessToken` cookie receives the same `401` errors documented for `/auth/me`.
 
-## API 1 — List instructors
-
-`GET /api/v1/users/instructors`
-
-Admin or Student. Returns a paginated, filterable, searchable list of instructor accounts, scoped by the caller's role: an admin sees every instructor; a student sees only instructors whose course they have bought (distinct — an instructor whose several courses the student bought appears once).
-
-### Query parameters
-
-| Param        | Type                | Default     | Notes                                                           |
-| ------------ | ------------------- | ----------- | --------------------------------------------------------------- |
-| `isVerified` | `"true" \| "false"` | —           | Filter by verification status. Omit to return both.             |
-| `search`     | string              | —           | Case-insensitive search across `fullName` and `email`.          |
-| `projection` | string              | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
-| `page`       | number (≥1)         | `1`         |                                                                 |
-| `limit`      | number (≥1)         | `10`        |                                                                 |
-| `sortBy`     | string              | `createdAt` |                                                                 |
-| `sortOrder`  | `"asc" \| "desc"`   | `desc`      |                                                                 |
-
-All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Instructors fetched successfully",
-  "data": {
-    "instructors": [
-      {
-        "_id": "66d1a1b2c3d4e5f678901234",
-        "fullName": "Jane Smith",
-        "email": "jane@example.com",
-        "role": "instructor",
-        "isVerified": true
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "totalDocuments": 42,
-      "totalPages": 5,
-      "hasNextPage": true,
-      "hasPrevPage": false
-    }
-  }
-}
-```
-
-By default (no `projection` sent), each instructor object contains only the same public fields as `AuthUser`/`GetUserDetailsResponse` (`_id`, `fullName`, `email`, `role`, `avatar`, `bio`, `highestEducation`, `yearsOfExperience`, `isVerified`, `createdAt`, `updatedAt`) — sensitive/internal fields (`password`, `otp`, `otpExpires`, `stripeAccountId`, etc.) are never included. Sending `projection` narrows the result to a subset of those same public fields; it cannot be used to request excluded fields.
-
-### Possible errors
-
-| HTTP status | Message                                             | When                                                    |
-| ----------- | --------------------------------------------------- | ------------------------------------------------------- |
-| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.         |
-| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.            |
-| 403         | `You do not have permission to perform this action` | Caller is not an admin or student (e.g. an instructor). |
-
-## API 2 — List public instructors
-
-`GET /api/v1/users/instructors/public`
-
-Public (No auth required). Returns a paginated, filterable, searchable list of verified instructor accounts. This endpoint is open to the public.
-
-### Query parameters
-
-| Param        | Type                | Default     | Notes                                                           |
-| ------------ | ------------------- | ----------- | --------------------------------------------------------------- |
-| `search`     | string              | —           | Case-insensitive search across `fullName` and `email`.          |
-| `projection` | string              | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
-| `page`       | number (≥1)         | `1`         |                                                                 |
-| `limit`      | number (≥1)         | `10`        |                                                                 |
-| `sortBy`     | string              | `createdAt` |                                                                 |
-| `sortOrder`  | `"asc" \| "desc"`   | `desc`      |                                                                 |
-
-All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Public instructors fetched successfully",
-  "data": {
-    "instructors": [
-      {
-        "_id": "66d1a1b2c3d4e5f678901234",
-        "fullName": "Jane Smith",
-        "email": "jane@example.com",
-        "role": "instructor",
-        "isVerified": true
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "totalDocuments": 42,
-      "totalPages": 5,
-      "hasNextPage": true,
-      "hasPrevPage": false
-    }
-  }
-}
-```
-
-By default (no `projection` sent), each instructor object contains only public fields. Sensitive/internal fields are never included.
-
-### Possible errors
-
-| HTTP status | Message                                             | When                                                    |
-| ----------- | --------------------------------------------------- | ------------------------------------------------------- |
-| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.         |
-
-## API 3 — List students
-
-`GET /api/v1/users/students`
-
-Admin or Instructor. Returns a paginated, searchable list of student accounts, scoped by the caller's role:
-- **Admin**: Sees all registered student accounts on the platform (`role: "student"`), regardless of whether they have enrolled in any courses.
-- **Instructor**: Sees only students enrolled in at least one course taught by the requesting instructor (distinct — a student enrolled in several courses of this instructor appears once).
-
-### Query parameters
-
-| Param        | Type              | Default     | Notes                                                           |
-| ------------ | ----------------- | ----------- | --------------------------------------------------------------- |
-| `search`     | string            | —           | Case-insensitive search across `fullName` and `email`.          |
-| `projection` | string            | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
-| `page`       | number (≥1)       | `1`         |                                                                 |
-| `limit`      | number (≥1)       | `10`        |                                                                 |
-| `sortBy`     | string            | `createdAt` |                                                                 |
-| `sortOrder`  | `"asc" \| "desc"` | `desc`      |                                                                 |
-
-All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Students fetched successfully",
-  "data": {
-    "students": [
-      {
-        "_id": "66c0a1b2c3d4e5f678901111",
-        "fullName": "John Doe",
-        "email": "john@example.com",
-        "role": "student",
-        "isVerified": false
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "totalDocuments": 12,
-      "totalPages": 2,
-      "hasNextPage": true,
-      "hasPrevPage": false
-    }
-  }
-}
-```
-
-By default (no `projection` sent), each student object contains only the same public fields as `AuthUser`/`GetUserDetailsResponse` (`_id`, `fullName`, `email`, `role`, `avatar`, `bio`, `highestEducation`, `yearsOfExperience`, `isVerified`, `createdAt`, `updatedAt`) — sensitive/internal fields are never included. Sending `projection` narrows the result to a subset of those same public fields.
-
-### Possible errors
-
-| HTTP status | Message                                             | When                                                   |
-| ----------- | --------------------------------------------------- | ------------------------------------------------------ |
-| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.        |
-| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.           |
-| 403         | `You do not have permission to perform this action` | Caller is not an admin or instructor (e.g. a student). |
-
-## API 4 — Get user details
-
-`GET /api/v1/users/user/:id`
-
-Admin, Student, or Instructor. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"`. An instructor may view a student only when that student is enrolled in at least one course owned by the requesting instructor.
-
-When calling this endpoint as an instructor:
-
-- The requested `role` must be `"student"`.
-- The backend checks for an enrollment containing both the requested student ID and the authenticated instructor ID.
-- Enrollment in another instructor's course does not grant access.
-- If no matching enrollment exists, the API returns `403`.
-
-### URL params
-
-| Param | Rules                                     |
-| ----- | ----------------------------------------- |
-| `id`  | Required, non-empty string (Mongo `_id`). |
-
-### Query parameters
-
-| Param  | Type                                   | Default      | Notes                                          |
-| ------ | -------------------------------------- | ------------ | ---------------------------------------------- |
-| `role` | `"student" \| "instructor" \| "admin"` | `instructor` | The role the user at `id` is expected to have. |
-
-### Success response
-
-HTTP `200`
-
-```json
-{
-  "status": "success",
-  "message": "Instructor details fetched successfully",
-  "data": {
-    "user": {
-      "_id": "66d1a1b2c3d4e5f678901234",
-      "fullName": "Jane Smith",
-      "email": "jane@example.com",
-      "role": "instructor",
-      "avatar": null,
-      "bio": "Backend engineering instructor",
-      "highestEducation": "Master's degree",
-      "yearsOfExperience": 6,
-      "isVerified": true,
-      "stripeOnboardingComplete": true,
-      "createdAt": "2026-08-25T10:00:00.000Z",
-      "updatedAt": "2026-08-25T10:00:00.000Z"
-    }
-  }
-}
-```
-
-`message` reflects the requested `role`, capitalized (e.g. `Student details fetched successfully`).
-
-### Possible errors
-
-| HTTP status | Message                                             | When                                                        |
-| ----------- | --------------------------------------------------- | ----------------------------------------------------------- |
-| 400         | `Validation failed`                                 | `id` is missing or `role` is not one of the allowed values. |
-| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                |
-| 403         | `You do not have permission to perform this action`<br>`You do not have permission to view this student's details` | Caller is not an admin, student, or instructor, or an instructor requests a student who is not enrolled in one of the instructor's courses. |
-| 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.       |
-
-## API 5 — Approve or reject a user's verification
+## API 1 — Approve or reject a user's verification
 
 `PATCH /api/v1/users/user/:id/verification`
 
@@ -311,8 +70,8 @@ Admin only. Verifies or rejects a student or instructor account, and emails the 
 
 1. Looks up the user by `id` and `role`.
 2. Rejects the call if the user is already in the requested verification state.
-3. Updates `isVerified`; when rejecting, also stamps `lastVerificationRejectedAt`.
-4. Emails the user the approval/rejection outcome (rejection includes the reason).
+3. Updates `isVerified` (and `verificationRejectionReason`, when sent); when rejecting, also stamps `lastVerificationRejectedAt`.
+4. Emails the user the approval/rejection outcome (rejection includes the reason). If the email cannot be sent, the change from step 3 is already saved but the API responds `500`.
 
 ### Success response
 
@@ -327,20 +86,27 @@ HTTP `200`
       "_id": "66d1a1b2c3d4e5f678901234",
       "fullName": "Jane Smith",
       "email": "jane@example.com",
+      "bio": "Backend engineering instructor",
+      "highestEducation": "Master's degree",
+      "yearsOfExperience": 6,
+      "isVerified": true,
       "role": "instructor",
-      "isVerified": true
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "updatedAt": "2026-08-31T09:00:00.000Z",
+      "avatar": null
     }
   }
 }
 ```
 
-`message` is `"<Role> approved successfully"` or `"<Role> rejected successfully"` depending on `isVerified`.
+`message` is `"<Role> approved successfully"` or `"<Role> rejected successfully"` depending on `isVerified`. `user` has the public fields only: `stripeOnboardingComplete`, `verificationRejectionReason` and `lastVerificationRejectedAt` are not returned.
 
 ### Possible errors
 
 | HTTP status | Message                                             | When                                                                                                   |
 | ----------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | 400         | `Validation failed`                                 | Body is invalid, `role` param is invalid, or `verificationRejectionReason` is missing while rejecting. |
+| 400         | `Invalid value "<id>" for field "_id"`              | `id` is not a valid ObjectId.                                                                          |
 | 400         | `<role> is already verified`                        | `isVerified: true` sent for an already-verified user.                                                  |
 | 400         | `<role> is already unverified`                      | `isVerified: false` sent for an already-unverified user.                                               |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                                                           |
@@ -348,7 +114,7 @@ HTTP `200`
 | 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.                                                  |
 | 500         | `Something went wrong. Please try again later.`     | Unexpected server or email-delivery error.                                                             |
 
-## API 6 — Get instructor Stripe onboarding link
+## API 2 — Get instructor Stripe onboarding link
 
 `GET /api/v1/users/get-instructor-onboarding-link`
 
@@ -368,7 +134,13 @@ HTTP `200`
 }
 ```
 
-Redirect the instructor's browser to `data.url` to complete Stripe onboarding. The link is single-use/short-lived per Stripe's rules — request a new one each time rather than caching it.
+Redirect the instructor's browser to `data.url` to complete Stripe onboarding. The link is single-use/short-lived per Stripe's rules — request a new one each time rather than caching it. When the instructor finishes (or abandons) the flow, Stripe sends them back to the frontend's `/instructor/dashboard` page.
+
+### What happens after onboarding (Stripe webhook)
+
+Returning from Stripe does **not** by itself mark the instructor as onboarded. Stripe calls the backend's webhook (`POST /api/v1/stripe/webhook`, server-to-server) with an `account.updated` event, and once the connected account has payouts enabled, charges enabled, or its details submitted, the backend sets the instructor's `stripeOnboardingComplete` to `true`. It is never set back to `false` by later events.
+
+This flag is what unlocks course creation (`POST /api/v1/courses` returns `403 Please complete your Stripe onboarding before creating a course` until then) and lets students pay for the instructor's courses. After the redirect back, re-fetch `GET /api/v1/auth/me` (it returns `stripeOnboardingComplete` for instructors) — it may still be `false` for a few seconds until the webhook arrives.
 
 ### Possible errors
 
@@ -379,11 +151,78 @@ Redirect the instructor's browser to `data.url` to complete Stripe onboarding. T
 | 404         | `Instructor not found`                              | The signed-in instructor's account no longer exists. |
 | 500         | `Something went wrong. Please try again later.`     | Unexpected server or Stripe API error.               |
 
-## API 7 — Get own profile
+## API 3 — Get user details
+
+`GET /api/v1/users/user/:id`
+
+Admin, Student, or Instructor. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"`. An instructor may view a student only when that student is enrolled in at least one course owned by the requesting instructor.
+
+When an instructor requests `role=student`:
+
+- The backend checks for an enrollment containing both the requested student ID and the authenticated instructor ID.
+- Enrollment in another instructor's course does not grant access.
+- If no matching enrollment exists, the API returns `403`.
+
+No other combination is restricted beyond the route's role check: an instructor may fetch any instructor or admin, and students and admins may fetch any user of the requested role.
+
+For `role=instructor`, `user` additionally includes `stripeOnboardingComplete`; for other roles it is absent.
+
+### URL params
+
+| Param | Rules                                     |
+| ----- | ----------------------------------------- |
+| `id`  | Required, non-empty string (Mongo `_id`). |
+
+### Query parameters
+
+| Param  | Type                                   | Default      | Notes                                          |
+| ------ | -------------------------------------- | ------------ | ---------------------------------------------- |
+| `role` | `"student" \| "instructor" \| "admin"` | `instructor` | The role the user at `id` is expected to have. |
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Instructor details fetched successfully",
+  "data": {
+    "user": {
+      "_id": "66d1a1b2c3d4e5f678901234",
+      "fullName": "Jane Smith",
+      "email": "jane@example.com",
+      "bio": "Backend engineering instructor",
+      "highestEducation": "Master's degree",
+      "yearsOfExperience": 6,
+      "isVerified": true,
+      "role": "instructor",
+      "stripeOnboardingComplete": true,
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "updatedAt": "2026-08-25T10:00:00.000Z",
+      "avatar": null
+    }
+  }
+}
+```
+
+`message` reflects the requested `role`, capitalized (e.g. `Student details fetched successfully`).
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                                        |
+| ----------- | --------------------------------------------------- | ----------------------------------------------------------- |
+| 400         | `Validation failed`                                 | `id` is missing or `role` is not one of the allowed values. |
+| 400         | `Invalid value "<id>" for field "_id"`              | `id` is not a valid ObjectId. (An instructor requesting `role=student` with a malformed `id` currently gets `500` instead.) |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                |
+| 403         | `You do not have permission to perform this action`<br>`You do not have permission to view this student's details` | Caller is not an admin, student, or instructor, or an instructor requests a student who is not enrolled in one of the instructor's courses. |
+| 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.       |
+
+## API 4 — Get own profile
 
 `GET /api/v1/users/profile`
 
-Available to any authenticated user (student, instructor, or admin). Fetches the signed-in user's own profile details.
+Available to any authenticated user (student, instructor, or admin). Fetches the signed-in user's own profile details. Unlike `/auth/me`, the response never includes `stripeOnboardingComplete`, even for instructors.
 
 ### Success response
 
@@ -398,14 +237,14 @@ HTTP `200`
       "_id": "66d1a1b2c3d4e5f678901234",
       "fullName": "Jane Smith",
       "email": "jane@example.com",
-      "role": "instructor",
-      "avatar": "https://cdn.example.com/avatars/jane.png",
       "bio": "Backend engineering instructor",
       "highestEducation": "Master's degree",
       "yearsOfExperience": 6,
       "isVerified": true,
+      "role": "instructor",
       "createdAt": "2026-08-25T10:00:00.000Z",
-      "updatedAt": "2026-08-25T10:00:00.000Z"
+      "updatedAt": "2026-08-25T10:00:00.000Z",
+      "avatar": "https://s3.<region>.amazonaws.com/<bucket>/5.0/users/avatars/<uuid>-jane.jpeg"
     }
   }
 }
@@ -418,7 +257,7 @@ HTTP `200`
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.         |
 | 404         | `User not found`                                    | The signed-in user's account no longer exists.       |
 
-## API 8 — Update own profile
+## API 5 — Update own profile
 
 `PATCH /api/v1/users/profile`
 
@@ -444,7 +283,7 @@ Sending a field your role isn't allowed to change returns a `403`, not a validat
   "bio": "Senior backend engineering instructor",
   "highestEducation": "PhD",
   "yearsOfExperience": 7,
-  "avatarKey": "user-avatars/123-abc.png"
+  "avatarKey": "5.0/users/avatars/<uuid>-jane.jpeg"
 }
 ```
 
@@ -456,7 +295,7 @@ Sending a field your role isn't allowed to change returns a `403`, not a validat
 | `highestEducation`  | Non-empty string, trimmed, max 150 characters. |
 | `yearsOfExperience` | Number, 0–60.                                  |
 
-Send only the fields you intend to change; omitted fields are left as-is. An empty body (`{}`) is rejected by validation.
+Send only the fields you intend to change; omitted fields are left as-is. An empty body (`{}`) is rejected by validation. When `avatarKey` is set to a new key, the previous avatar file is deleted from S3 in the background; setting it to `null` clears the avatar without deleting the old file.
 
 ### Success response
 
@@ -471,14 +310,14 @@ HTTP `200`
       "_id": "66d1a1b2c3d4e5f678901234",
       "fullName": "Jane A. Smith",
       "email": "jane@example.com",
-      "role": "instructor",
-      "avatar": "https://cdn.example.com/avatars/jane.png",
       "bio": "Senior backend engineering instructor",
       "highestEducation": "PhD",
       "yearsOfExperience": 7,
       "isVerified": true,
+      "role": "instructor",
       "createdAt": "2026-08-25T10:00:00.000Z",
-      "updatedAt": "2026-08-31T09:00:00.000Z"
+      "updatedAt": "2026-08-31T09:00:00.000Z",
+      "avatar": "https://s3.<region>.amazonaws.com/<bucket>/5.0/users/avatars/<uuid>-jane.jpeg"
     }
   }
 }
@@ -493,7 +332,7 @@ HTTP `200`
 | 403         | `<role>s are not allowed to update: <fields>` | One or more sent fields are outside the caller's role's editable set. Lists every disallowed field, comma-separated. |
 | 404         | `User not found`                              | The signed-in user's account no longer exists.                                                                       |
 
-## API 9 — Get avatar S3 upload URL
+## API 6 — Get avatar S3 upload URL
 
 `POST /api/v1/users/profile/upload-avatar`
 
@@ -513,6 +352,8 @@ Available to any authenticated user (student, instructor, or admin). Generates a
 | `fileName` | Required, non-empty string.                              |
 | `fileType` | Required. Must be exactly `"image/jpeg"` or `"image/png"`. Any other value returns `400 Validation failed`. |
 
+The generated key is `5.0/users/avatars/<uuid>-<fileName without extension>.<jpeg|png>`; the extension always comes from `fileType`. The upload policy expires after 15 minutes, accepts files up to 5 MB, and requires the uploaded `Content-Type` to equal `fileType`.
+
 ### Success response
 
 HTTP `200`
@@ -522,17 +363,18 @@ HTTP `200`
   "status": "success",
   "message": "Avatar upload URL generated successfully",
   "data": {
-    "uploadUrl": "https://s3.amazonaws.com/your-bucket",
+    "uploadUrl": "https://s3.<region>.amazonaws.com/<bucket>",
     "fields": {
       "Content-Type": "image/jpeg",
-      "bucket": "your-bucket",
+      "bucket": "<bucket>",
       "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
       "X-Amz-Credential": "...",
       "X-Amz-Date": "20260825T100000Z",
+      "key": "5.0/users/avatars/<uuid>-my-photo.jpeg",
       "Policy": "...",
       "X-Amz-Signature": "..."
     },
-    "key": "5.0/users/avatars/{uuid}-my-photo.jpeg"
+    "key": "5.0/users/avatars/<uuid>-my-photo.jpeg"
   }
 }
 ```
@@ -547,8 +389,204 @@ After a successful `204 No Content` response from S3, send `data.key` as `avatar
 | ----------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
 | 400         | `Validation failed`                                 | Body is missing `fileName`/`fileType`, or `fileType` is not `image/jpeg` or `image/png`. |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                               |
-| 500         | `Failed to generate S3 upload URL`                  | AWS credentials/permissions are misconfigured.                             |
+| 500         | `Something went wrong. Please try again later.`     | Unexpected server error while signing the upload policy.                   |
+
+## API 7 — List students
+
+`GET /api/v1/users/students`
+
+Admin or Instructor. Returns a paginated, searchable list of student accounts, scoped by the caller's role:
+- **Admin**: Sees all registered student accounts on the platform (`role: "student"`), regardless of whether they have enrolled in any courses.
+- **Instructor**: Sees only students enrolled in at least one course taught by the requesting instructor (distinct — a student enrolled in several courses of this instructor appears once).
+
+### Query parameters
+
+| Param        | Type              | Default     | Notes                                                           |
+| ------------ | ----------------- | ----------- | --------------------------------------------------------------- |
+| `search`     | string            | —           | Case-insensitive search across `fullName` and `email`.          |
+| `projection` | string            | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
+| `page`       | number (≥1)       | `1`         |                                                                 |
+| `limit`      | number (≥1)       | `10`        |                                                                 |
+| `sortBy`     | string            | `createdAt` |                                                                 |
+| `sortOrder`  | `"asc" \| "desc"` | `desc`      |                                                                 |
+
+All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Students fetched successfully",
+  "data": {
+    "students": [
+      {
+        "_id": "66c0a1b2c3d4e5f678901111",
+        "fullName": "John Doe",
+        "email": "john@example.com",
+        "bio": "Computer science student",
+        "highestEducation": "Bachelor's degree",
+        "yearsOfExperience": 0,
+        "isVerified": false,
+        "role": "student",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z",
+        "avatar": null
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 12,
+      "totalPages": 2,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+By default (no `projection` sent), each student object contains only the same public fields as `AuthUser`/`GetUserDetailsResponse` (`_id`, `fullName`, `email`, `role`, `avatar`, `bio`, `highestEducation`, `yearsOfExperience`, `isVerified`, `createdAt`, `updatedAt`) — sensitive/internal fields are never included. Sending `projection` narrows the result to a subset of those same public fields, with the same `_id`/`avatar` behavior as API 8.
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                                   |
+| ----------- | --------------------------------------------------- | ------------------------------------------------------ |
+| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.        |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.           |
+| 403         | `You do not have permission to perform this action` | Caller is not an admin or instructor (e.g. a student). |
+
+## API 8 — List instructors
+
+`GET /api/v1/users/instructors`
+
+Admin or Student. Returns a paginated, filterable, searchable list of instructor accounts, scoped by the caller's role: an admin sees every instructor; a student sees only instructors whose course they have bought (distinct — an instructor whose several courses the student bought appears once).
+
+### Query parameters
+
+| Param        | Type                | Default     | Notes                                                           |
+| ------------ | ------------------- | ----------- | --------------------------------------------------------------- |
+| `isVerified` | `"true" \| "false"` | —           | Filter by verification status. Omit to return both.             |
+| `search`     | string              | —           | Case-insensitive search across `fullName` and `email`.          |
+| `projection` | string              | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
+| `page`       | number (≥1)         | `1`         |                                                                 |
+| `limit`      | number (≥1)         | `10`        |                                                                 |
+| `sortBy`     | string              | `createdAt` |                                                                 |
+| `sortOrder`  | `"asc" \| "desc"`   | `desc`      |                                                                 |
+
+All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Instructors fetched successfully",
+  "data": {
+    "instructors": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "fullName": "Jane Smith",
+        "email": "jane@example.com",
+        "bio": "Backend engineering instructor",
+        "highestEducation": "Master's degree",
+        "yearsOfExperience": 6,
+        "isVerified": true,
+        "role": "instructor",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z",
+        "avatar": "https://s3.<region>.amazonaws.com/<bucket>/5.0/users/avatars/<uuid>-jane.jpeg"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 42,
+      "totalPages": 5,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+By default (no `projection` sent), each instructor object contains only the same public fields as `AuthUser`/`GetUserDetailsResponse` (`_id`, `fullName`, `email`, `role`, `avatar`, `bio`, `highestEducation`, `yearsOfExperience`, `isVerified`, `createdAt`, `updatedAt`) — sensitive/internal fields (`password`, `otp`, `otpExpires`, `stripeAccountId`, etc.) are never included. Sending `projection` narrows the result to a subset of those same public fields; it cannot be used to request excluded fields. `_id` and `avatar` are always present in a projected item, but `avatar` is built from the stored `avatarKey`, so it is `null` unless `avatarKey` is included in `projection` (e.g. `fullName,avatarKey`).
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                                    |
+| ----------- | --------------------------------------------------- | ------------------------------------------------------- |
+| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.         |
+| 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.            |
+| 403         | `You do not have permission to perform this action` | Caller is not an admin or student (e.g. an instructor). |
+
+## API 9 — List public instructors
+
+`GET /api/v1/users/instructors/public`
+
+Public (No auth required). Returns a paginated, searchable list of verified instructor accounts. This endpoint is open to the public.
+
+### Query parameters
+
+| Param        | Type                | Default     | Notes                                                           |
+| ------------ | ------------------- | ----------- | --------------------------------------------------------------- |
+| `search`     | string              | —           | Case-insensitive search across `fullName` and `email`.          |
+| `projection` | string              | —           | Comma-separated Mongo field projection (e.g. `fullName,email`). |
+| `page`       | number (≥1)         | `1`         |                                                                 |
+| `limit`      | number (≥1)         | `10`        |                                                                 |
+| `sortBy`     | string              | `createdAt` |                                                                 |
+| `sortOrder`  | `"asc" \| "desc"`   | `desc`      |                                                                 |
+
+All params are optional and sent as query-string values (strings); `page`/`limit` are coerced to numbers server-side. `isVerified` is also accepted (it shares API 8's query validation) but is ignored: this endpoint always returns verified instructors only.
+
+### Success response
+
+HTTP `200`
+
+```json
+{
+  "status": "success",
+  "message": "Public instructors fetched successfully",
+  "data": {
+    "instructors": [
+      {
+        "_id": "66d1a1b2c3d4e5f678901234",
+        "fullName": "Jane Smith",
+        "email": "jane@example.com",
+        "bio": "Backend engineering instructor",
+        "highestEducation": "Master's degree",
+        "yearsOfExperience": 6,
+        "isVerified": true,
+        "role": "instructor",
+        "createdAt": "2026-08-25T10:00:00.000Z",
+        "updatedAt": "2026-08-25T10:00:00.000Z",
+        "avatar": null
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalDocuments": 42,
+      "totalPages": 5,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+By default (no `projection` sent), each instructor object contains only public fields. Sensitive/internal fields are never included. `projection` behaves exactly as in API 8.
+
+### Possible errors
+
+| HTTP status | Message                                             | When                                                    |
+| ----------- | --------------------------------------------------- | ------------------------------------------------------- |
+| 400         | `Validation failed`                                 | An invalid or undocumented query param is sent.         |
 
 ## Frontend types
 
-Copy [`src/response-types/userResponseTypes.ts`](../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetPublicInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, `UploadAvatarResponse`, and the shared `UserDetails`/`Pagination` types.
+Copy [`src/response-types/userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`, `SuccessApiResponse`, and `ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts)) and exports `GetInstructorsResponse`, `GetPublicInstructorsResponse`, `GetStudentsResponse`, `GetUserDetailsResponse`, `UpdateUserVerificationResponse`, `GetInstructorOnboardingLinkResponse`, `GetProfileResponse`, `UpdateProfileResponse`, `UploadAvatarResponse`, and the shared `UserDetails`/`Pagination` types.

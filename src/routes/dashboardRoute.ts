@@ -15,6 +15,7 @@ const dashboardRouter = Router();
 // DIVIDER Admin Routes ---------------------------------------------------------
 
 // (root)/api/v1/dashboard/admin
+// Api # 1
 dashboardRouter.get(
   "/admin",
   protect,
@@ -26,6 +27,7 @@ dashboardRouter.get(
 // DIVIDER Instructor Routes ---------------------------------------------------------
 
 // (root)/api/v1/dashboard/instructor
+// Api # 2
 dashboardRouter.get(
   "/instructor",
   protect,
@@ -37,6 +39,7 @@ dashboardRouter.get(
 // DIVIDER Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/dashboard/student
+// Api # 3
 dashboardRouter.get(
   "/student",
   protect,

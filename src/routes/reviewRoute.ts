@@ -29,6 +29,7 @@ const reviewRouter = Router();
 // DIVIDER Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/reviews
+// Api # 1
 reviewRouter.post(
   "/",
   protect,
@@ -38,6 +39,7 @@ reviewRouter.post(
 );
 
 // (root)/api/v1/reviews/:id
+// Api # 2
 reviewRouter.patch(
   "/:id",
   protect,
@@ -50,6 +52,7 @@ reviewRouter.patch(
 // DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
 // (root)/api/v1/reviews/course/:courseId
+// Api # 3
 reviewRouter.get(
   "/course/:courseId",
   protect,
@@ -65,6 +68,7 @@ reviewRouter.get(
 
 // Only a student (who owns the review) or an admin (for any review) may delete a review.
 // (root)/api/v1/reviews/:id
+// Api # 4
 reviewRouter.delete(
   "/:id",
   protect,
@@ -78,9 +82,11 @@ reviewRouter.delete(
 // DIVIDER Public Routes ---------------------------------------------------------
 
 // (root)/api/v1/reviews
+// Api # 5
 reviewRouter.get("/", validation(getReviewsQuerySchema, "query"), getReviews);
 
 // (root)/api/v1/reviews/:id
+// Api # 6
 reviewRouter.get(
   "/:id",
   validation(reviewIdParamsSchema, "params"),
