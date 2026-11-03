@@ -97,6 +97,7 @@ export const forgetPasswordSchema = z
 
 export const resetPasswordSchema = z
   .object({
+    email: z.email({ error: "Invalid email address" }),
     otp: z
       .union([z.string(), z.number()])
       .transform((val) => String(val))

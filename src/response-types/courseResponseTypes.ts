@@ -56,8 +56,16 @@ export interface CourseListItem extends Omit<Course, "instructor" | "category"> 
 }
 
 // Course shape returned by the public endpoints (API 15, 16, 17, 18) — same
-// as CourseListItem but without videoUrl, since those routes never sign one.
-export type PublicCourseListItem = Omit<CourseListItem, "videoUrl">;
+// as CourseListItem but without videoUrl (those routes never sign one) and
+// without the platform's financial totals or the admin's review notes.
+export type PublicCourseListItem = Omit<
+  CourseListItem,
+  | "videoUrl"
+  | "totalRevenueInstructor"
+  | "totalRevenueAdmin"
+  | "verificationRejectionReason"
+  | "lastVerificationRejectedAt"
+>;
 
 // API 2: POST /api/v1/courses/upload-thumbnail
 // Response: { status, message, data: { uploadUrl, fields, key } }

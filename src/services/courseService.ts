@@ -73,6 +73,16 @@ type CourseAggregateItem = Omit<
   categoryDetails: CourseCategoryDetails;
 };
 
+// Course item returned by the public endpoints: no signed videoUrl, and none
+// of the platform's financial totals or the admin's review notes.
+type PublicCourseAggregateItem = Omit<
+  CourseAggregateItem,
+  | "totalRevenueInstructor"
+  | "totalRevenueAdmin"
+  | "verificationRejectionReason"
+  | "lastVerificationRejectedAt"
+>;
+
 // Same as the API's IssueCourseCertificateResponseData, except the dates are
 // still Date objects here (res.json serializes them to ISO strings).
 type CourseCertificate = Omit<
@@ -123,6 +133,17 @@ const COURSE_LOOKUP_STAGES: PipelineStage[] = [
     },
   },
 ];
+
+// The public endpoints only list verified courses, so they must not expose
+// the platform's revenue totals or the admin's rejection notes.
+const PUBLIC_COURSE_EXCLUDE_STAGE: PipelineStage = {
+  $project: {
+    totalRevenueInstructor: 0,
+    totalRevenueAdmin: 0,
+    verificationRejectionReason: 0,
+    lastVerificationRejectedAt: 0,
+  },
+};
 
 // FUNCTION
 export const createCoursePaymentIntentService = async (
@@ -568,7 +589,7 @@ export const getInstructorCoursesService = async (
 export const getPublicCoursesService = async (
   query: GetPublicCoursesQuery,
 ): Promise<{
-  courses: Array<Omit<CourseAggregateItem, "videoKey">>;
+  courses: PublicCourseAggregateItem[];
   pagination: Pagination;
 }> => {
   const matchStage: Record<string, unknown> = {
@@ -611,7 +632,7 @@ export const getPublicCoursesService = async (
     .filter(["category", "level", "instructor"])
     .search(["title"])
     .sort()
-    .addStages(COURSE_LOOKUP_STAGES)
+    .addStages([...COURSE_LOOKUP_STAGES, PUBLIC_COURSE_EXCLUDE_STAGE])
     .paginate()
     .exec();
 
@@ -633,7 +654,7 @@ export const getPublicCoursesService = async (
 // Public, unauthenticated featured course listing — returns the top 3
 // highest-rated verified courses. Never signs/returns a videoUrl.
 export const getFeaturedCoursesService = async (): Promise<
-  Array<Omit<CourseAggregateItem, "videoKey">>
+  PublicCourseAggregateItem[]
 > => {
   const courses = await CourseModel.aggregate([
     {
@@ -653,6 +674,7 @@ export const getFeaturedCoursesService = async (): Promise<
       $limit: 3,
     },
     ...COURSE_LOOKUP_STAGES,
+    PUBLIC_COURSE_EXCLUDE_STAGE,
   ]);
 
   const formattedCourses = (courses as unknown as CourseAggregateItem[]).map(
@@ -677,7 +699,7 @@ export const getFeaturedCoursesService = async (): Promise<
 // Public, unauthenticated trending course listing — returns the top 3
 // verified courses with the highest totalStudentsEnrolled. Never signs/returns a videoUrl.
 export const getTrendingCoursesService = async (): Promise<
-  Array<Omit<CourseAggregateItem, "videoKey">>
+  PublicCourseAggregateItem[]
 > => {
   const courses = await CourseModel.aggregate([
     {
@@ -696,6 +718,7 @@ export const getTrendingCoursesService = async (): Promise<
       $limit: 3,
     },
     ...COURSE_LOOKUP_STAGES,
+    PUBLIC_COURSE_EXCLUDE_STAGE,
   ]);
 
   const formattedCourses = (courses as unknown as CourseAggregateItem[]).map(
@@ -721,10 +744,12 @@ export const getTrendingCoursesService = async (): Promise<
 // joined course (or undefined if nothing matched).
 const findCourseWithLookups = async (
   matchStage: Record<string, unknown>,
+  extraStages: PipelineStage[] = [],
 ): Promise<CourseAggregateItem | undefined> => {
   const [course] = await CourseModel.aggregate([
     { $match: matchStage },
     ...COURSE_LOOKUP_STAGES,
+    ...extraStages,
   ]);
 
   return course;
@@ -800,12 +825,15 @@ export const getCourseDetailsService = async (
 // only, and never signs/returns a videoUrl (mirrors getPublicCoursesService).
 export const getPublicCourseDetailsService = async (
   id: string,
-): Promise<Omit<CourseAggregateItem, "videoKey">> => {
-  const course = await findCourseWithLookups({
-    _id: new Types.ObjectId(id),
-    isVerified: true,
-    verificationRejectionReason: null,
-  });
+): Promise<PublicCourseAggregateItem> => {
+  const course = await findCourseWithLookups(
+    {
+      _id: new Types.ObjectId(id),
+      isVerified: true,
+      verificationRejectionReason: null,
+    },
+    [PUBLIC_COURSE_EXCLUDE_STAGE],
+  );
 
   if (!course) {
     throw new AppError(404, "Course not found");

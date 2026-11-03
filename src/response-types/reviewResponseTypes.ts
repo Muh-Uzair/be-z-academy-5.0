@@ -46,6 +46,22 @@ export interface Review {
   updatedAt: string;
 }
 
+// Review shape returned by the public endpoints (API 5 and 6): no email on
+// the reviewer or instructor, and none of the course's financial totals or
+// the admin's review notes.
+export interface PublicReview
+  extends Omit<Review, "reviewByDetails" | "courseDetails" | "instructorDetails"> {
+  reviewByDetails: Omit<ReviewUserSummary, "email">;
+  courseDetails: Omit<
+    ReviewCourseSummary,
+    | "totalRevenueInstructor"
+    | "totalRevenueAdmin"
+    | "verificationRejectionReason"
+    | "lastVerificationRejectedAt"
+  >;
+  instructorDetails: Omit<ReviewUserSummary, "email">;
+}
+
 // The create/update endpoints return the plain Mongoose document (no
 // lookups performed), so reviewBy/course/instructor come back as raw ids
 // rather than joined *Details summaries.
@@ -73,7 +89,7 @@ export type CreateReviewResponse =
 // API 5: GET /api/v1/reviews
 // Response: { status, message, data: { reviews, pagination } }
 export interface GetReviewsResponseData {
-  reviews: Review[];
+  reviews: PublicReview[];
   pagination: Pagination;
 }
 
@@ -111,7 +127,7 @@ export type GetReviewsByCourseIdResponse =
 // API 6: GET /api/v1/reviews/:id
 // Response: { status, message, data: { review } }
 export interface GetReviewDetailsResponseData {
-  review: Review;
+  review: PublicReview;
 }
 
 export type GetReviewDetailsResponse =

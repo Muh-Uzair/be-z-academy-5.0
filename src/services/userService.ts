@@ -2,6 +2,7 @@ import { HydratedDocument, PipelineStage } from "mongoose";
 import { randomUUID } from "crypto";
 import UserModel, { Role, UserType } from "../models/userModel";
 import AppError from "../utils/appError";
+import { verifyUserViewAccessOrThrow } from "../utils/userUtil";
 import { sendVerificationStatusEmail } from "../utils/email";
 import { PROFILE_UPDATABLE_FIELDS } from "../constants/userConstant";
 import APIFeatures from "../utils/apiFeatures";
@@ -246,6 +247,9 @@ export const getUserDetailsService = async (
   role: Role,
   requester: { id: string; role: Role },
 ): Promise<UserDetails> => {
+  // Step 0: Role rules (students: instructors only; instructors: no admins)
+  verifyUserViewAccessOrThrow(id, role, requester);
+
   if (requester.role === Role.Instructor && role === Role.Student) {
     const enrollment = await EnrollmentModel.exists({
       student: new Types.ObjectId(id),

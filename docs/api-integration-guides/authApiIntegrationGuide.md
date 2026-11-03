@@ -458,22 +458,29 @@ HTTP `200`
 
 `POST /api/v1/auth/reset-password`
 
-Sets a new password using the OTP sent by forget-password. No login cookie or email is needed; the user is identified by the OTP.
+Sets a new password using the OTP sent by forget-password (API 6). No login cookie is needed. The `email` must be sent together with the `otp` — keep the email the user entered on the forget-password step and send it here.
 
 ### Request body
 
 ```json
 {
+  "email": "john@example.com",
   "otp": "123456",
   "newPassword": "newsecurepass123"
 }
 ```
 
+| Field | Rules |
+| --- | --- |
+| `email` | Required, valid email address — the same one used for forget-password. |
+| `otp` | Required, exactly six digits. |
+| `newPassword` | Required, string with at least 8 characters. |
+
 `otp` may be sent as a six-digit string or number. It is converted to a string by the backend. Use a string on the frontend to preserve leading zeroes.
 
 ### Processing
 
-1. Finds the user whose stored OTP matches the submitted OTP.
+1. Finds the user by `email` and checks that the submitted OTP is the one stored on that account.
 2. Checks that the OTP has not expired.
 3. Hashes and saves the new password, then clears the OTP fields.
 
@@ -493,8 +500,8 @@ HTTP `200`
 
 | HTTP status | Message | When |
 | --- | --- | --- |
-| 400 | `Validation failed` | OTP is not exactly six digits, or `newPassword` is missing/too short, or an extra field is sent. |
-| 400 | `Invalid OTP` | No user has this OTP set. |
+| 400 | `Validation failed` | `email` is missing/invalid, OTP is not exactly six digits, `newPassword` is missing/too short, or an extra field is sent. |
+| 400 | `Invalid OTP` | The OTP does not match the one stored for this email, the account has no active OTP, or no account exists for the email (deliberately the same message, so the endpoint doesn't reveal which emails are registered). |
 | 400 | `OTP has expired` | OTP is older than 10 minutes. |
 
 ## API 8 — Sign out

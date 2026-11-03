@@ -75,7 +75,7 @@ The raw `thumbnailKey` and `videoKey` are never exposed in responses — only th
 
 ## Joined course shape
 
-Returned by every list/details endpoint: API 12, 13, 14 and 19 (with `videoUrl`) and API 15, 16, 17 and 18 (without `videoUrl`). `instructor` and `category` are replaced by joined `instructorDetails` and `categoryDetails` objects:
+Returned by every list/details endpoint: API 12, 13, 14 and 19 (with `videoUrl`) and API 15, 16, 17 and 18 (the public ones: without `videoUrl` and without the revenue/review-note fields, see the list below the example). `instructor` and `category` are replaced by joined `instructorDetails` and `categoryDetails` objects:
 
 ```json
 {
@@ -122,7 +122,8 @@ Returned by every list/details endpoint: API 12, 13, 14 and 19 (with `videoUrl`)
 ```
 
 - `instructorDetails` has the same public fields as the auth guide's `AuthUser` (no `stripeOnboardingComplete`); `categoryDetails` has every category field except the image (no `imageKey`/`imageUrl`).
-- Every course field is included, for every caller of these endpoints — the public ones included (`totalRevenueInstructor`, `totalRevenueAdmin`, `verificationRejectionReason`, `lastVerificationRejectedAt`).
+- The authenticated endpoints (API 12, 13, 14, 19) include every course field above.
+- The **public** endpoints (API 15, 16, 17, 18) return the same shape without `videoUrl` and **also without** `totalRevenueInstructor`, `totalRevenueAdmin`, `verificationRejectionReason` and `lastVerificationRejectedAt` — the financial totals and the admin's review notes are never exposed publicly. (They only list verified courses, so those two review fields would always be `null` anyway.)
 
 `averageRating`/`totalReviews` are recalculated from the course's reviews every time one is created, updated, or deleted (see the [review guide](./reviewApiIntegrationGuide.md)). `totalStudentsEnrolled` increments when a purchase completes and decrements when it's refunded. `totalRevenueInstructor`/`totalRevenueAdmin` accumulate on each completed purchase and are reduced on refund. `totalDurationInMinutes` is set directly from the value sent on create ([API 4](#api-4--create-course)) or update ([API 5](#api-5--update-course)) — the backend never inspects the video file itself, so this value is only as accurate as what the frontend computed and sent.
 
@@ -991,7 +992,7 @@ HTTP `200`
   "message": "Featured courses fetched successfully",
   "data": {
     "courses": [
-      { /* Joined course shape without videoUrl, see above */ }
+      { /* Public course shape (no videoUrl, revenue totals or review notes), see above */ }
     ]
   }
 }
@@ -1013,7 +1014,7 @@ HTTP `200`
   "message": "Trending courses fetched successfully",
   "data": {
     "courses": [
-      { /* Joined course shape without videoUrl, see above */ }
+      { /* Public course shape (no videoUrl, revenue totals or review notes), see above */ }
     ]
   }
 }
@@ -1055,7 +1056,7 @@ HTTP `200`
   "message": "Courses fetched successfully",
   "data": {
     "courses": [
-      { /* Joined course shape without videoUrl, see above */ }
+      { /* Public course shape (no videoUrl, revenue totals or review notes), see above */ }
     ],
     "pagination": {
       "page": 1,
@@ -1101,7 +1102,7 @@ HTTP `200`
   "status": "success",
   "message": "Course details fetched successfully",
   "data": {
-    "course": { /* Joined course shape without videoUrl, see above */ }
+    "course": { /* Public course shape (no videoUrl, revenue totals or review notes), see above */ }
   }
 }
 ```
@@ -1164,5 +1165,5 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/courseResponseTypes.ts`](../../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`/`SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts)) and exports `Course` (raw-id shape), `CourseListItem` (joined shape with `videoUrl`), `PublicCourseListItem` (joined shape without `videoUrl`), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `IssueCourseCertificateResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, `GetFeaturedCoursesResponse`, `GetTrendingCoursesResponse`, `GetInstructorCoursesResponse`, and `GetStudentCoursesResponse`.
+Copy [`src/response-types/courseResponseTypes.ts`](../../src/response-types/courseResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`/`SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts)) and exports `Course` (raw-id shape), `CourseListItem` (joined shape with `videoUrl`), `PublicCourseListItem` (public shape: no `videoUrl`, revenue totals or review notes), and one response type per API above: `UploadCourseThumbnailResponse`, `UploadCourseVideoResponse`, `CreateCourseResponse`, `UpdateCourseResponse`, `DeleteCourseResponse`, `UpdateCourseVerificationResponse`, `CreateCoursePaymentIntentResponse`, `RequestCourseRefundResponse`, `CourseRefundEligibility`, `GetCourseRefundEligibilityResponse`, `GetCourseCompletionStatusResponse`, `IssueCourseCertificateResponse`, `GetCoursesResponse`, `GetCourseDetailsResponse`, `GetPublicCoursesResponse`, `GetPublicCourseDetailsResponse`, `GetFeaturedCoursesResponse`, `GetTrendingCoursesResponse`, `GetInstructorCoursesResponse`, and `GetStudentCoursesResponse`.
 

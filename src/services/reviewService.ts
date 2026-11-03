@@ -40,6 +40,24 @@ export type ReviewListItem = Omit<
   instructorDetails: PublicUser;
 };
 
+// Review item returned by the public endpoints (GET /reviews, GET /reviews/:id):
+// no reviewer/instructor email, and none of the course's financial totals or
+// the admin's review notes.
+export type PublicReviewListItem = Omit<
+  ReviewListItem,
+  "reviewByDetails" | "courseDetails" | "instructorDetails"
+> & {
+  reviewByDetails: Omit<PublicUser, "email">;
+  courseDetails: Omit<
+    ReviewCourseSummary,
+    | "totalRevenueInstructor"
+    | "totalRevenueAdmin"
+    | "verificationRejectionReason"
+    | "lastVerificationRejectedAt"
+  >;
+  instructorDetails: Omit<PublicUser, "email">;
+};
+
 // Each reference is joined into a *Details field so the response shape is
 // already correct without any post-processing mapper.
 // The final $project drops the original ObjectId fields that are superseded
@@ -84,6 +102,19 @@ const REVIEW_LOOKUP_STAGES: PipelineStage[] = [
     },
   },
 ];
+
+// The public review endpoints need no login, so they must not expose emails,
+// the course's revenue totals or the admin's rejection notes.
+const PUBLIC_REVIEW_EXCLUDE_STAGE: PipelineStage = {
+  $project: {
+    "reviewByDetails.email": 0,
+    "instructorDetails.email": 0,
+    "courseDetails.totalRevenueInstructor": 0,
+    "courseDetails.totalRevenueAdmin": 0,
+    "courseDetails.verificationRejectionReason": 0,
+    "courseDetails.lastVerificationRejectedAt": 0,
+  },
+};
 
 // FUNCTION
 export const createReviewService = async (
@@ -135,7 +166,7 @@ export const createReviewService = async (
 // FUNCTION
 export const getReviewsService = async (
   query: GetReviewsQuery,
-): Promise<{ reviews: ReviewListItem[]; pagination: Pagination }> => {
+): Promise<{ reviews: PublicReviewListItem[]; pagination: Pagination }> => {
   // Step 1: Cast the reference id filters to ObjectId, targeting the raw
   // field names so MongoDB can use indexes before any lookups occur.
   const filterQuery = {
@@ -158,15 +189,15 @@ export const getReviewsService = async (
     .filter(["course", "instructor", "reviewBy", "rating"])
     .search(["feedback"])
     .sort()
-    .addStages(REVIEW_LOOKUP_STAGES)
+    .addStages([...REVIEW_LOOKUP_STAGES, PUBLIC_REVIEW_EXCLUDE_STAGE])
     .projection()
     .paginate()
     .exec();
 
   // The pipeline's $lookup/$project stages reshape each document into
-  // ReviewListItem, which APIFeatures' generic Model<ReviewType> can't
+  // PublicReviewListItem, which APIFeatures' generic Model<ReviewType> can't
   // express — cast once at this boundary.
-  const reviews = (data as unknown as ReviewListItem[]).map((r) => {
+  const reviews = (data as unknown as PublicReviewListItem[]).map((r) => {
     const formatted = { ...r };
     if (formatted.reviewByDetails) formatted.reviewByDetails = formatUserAvatarUrl(formatted.reviewByDetails) as any;
     if (formatted.instructorDetails) formatted.instructorDetails = formatUserAvatarUrl(formatted.instructorDetails) as any;
@@ -179,13 +210,16 @@ export const getReviewsService = async (
 // FUNCTION
 export const getReviewDetailsService = async (
   id: string,
-): Promise<ReviewListItem> => {
+): Promise<PublicReviewListItem> => {
   const pipeline: PipelineStage[] = [
     { $match: { _id: new Types.ObjectId(id) } },
     ...REVIEW_LOOKUP_STAGES,
+    PUBLIC_REVIEW_EXCLUDE_STAGE,
   ];
 
-  const [review] = (await ReviewModel.aggregate(pipeline)) as ReviewListItem[];
+  const [review] = (await ReviewModel.aggregate(
+    pipeline,
+  )) as PublicReviewListItem[];
 
   if (!review) {
     throw new AppError(404, "Review not found");

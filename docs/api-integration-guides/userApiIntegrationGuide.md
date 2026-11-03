@@ -19,7 +19,7 @@ Base path: `/api/v1/users`
 | `GET /instructors`                    | Admin or Student                                       |
 | `GET /instructors/public`             | Public (No auth required)                              |
 | `GET /students`                       | Admin or Instructor                                    |
-| `GET /user/:id`                       | Admin, Student, or Instructor                          |
+| `GET /user/:id`                       | Admin, Student, or Instructor (what each may view differs, see API 3) |
 | `PATCH /user/:id/verification`        | Admin only                                             |
 | `GET /get-instructor-onboarding-link` | Instructor only                                        |
 | `GET /profile`                        | Any authenticated user (student, instructor, or admin) |
@@ -155,7 +155,15 @@ This flag is what unlocks course creation (`POST /api/v1/courses` returns `403 P
 
 `GET /api/v1/users/user/:id`
 
-Admin, Student, or Instructor. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"`. An instructor may view a student only when that student is enrolled in at least one course owned by the requesting instructor.
+Admin, Student, or Instructor. Fetches a single user's public fields, scoped to an expected role. `role` accepts any of `"student" | "instructor" | "admin"`. What a caller may view depends on their own role:
+
+| Caller | May view | May **not** view (`403`) |
+| --- | --- | --- |
+| Admin | Anyone (any `role`) | – |
+| Instructor | Other instructors; students enrolled in one of their own courses | Students who are not enrolled in one of their courses; admins |
+| Student | Any instructor | Other students; admins |
+
+Everyone may always view their own record (same `id` and `role` as the signed-in user).
 
 When an instructor requests `role=student`:
 
@@ -163,7 +171,7 @@ When an instructor requests `role=student`:
 - Enrollment in another instructor's course does not grant access.
 - If no matching enrollment exists, the API returns `403`.
 
-No other combination is restricted beyond the route's role check: an instructor may fetch any instructor or admin, and students and admins may fetch any user of the requested role.
+The role rules are applied before the lookup, so a denied request returns `403` whether or not the user exists.
 
 For `role=instructor`, `user` additionally includes `stripeOnboardingComplete`; for other roles it is absent.
 
@@ -215,7 +223,8 @@ HTTP `200`
 | 400         | `Validation failed`                                 | `id` is missing or `role` is not one of the allowed values. |
 | 400         | `Invalid value "<id>" for field "_id"`              | `id` is not a valid ObjectId. (An instructor requesting `role=student` with a malformed `id` currently gets `500` instead.) |
 | 401         | _(see auth guide `/me` 401 rows)_                   | Access-token cookie missing/invalid/expired.                |
-| 403         | `You do not have permission to perform this action`<br>`You do not have permission to view this student's details` | Caller is not an admin, student, or instructor, or an instructor requests a student who is not enrolled in one of the instructor's courses. |
+| 403         | `You do not have permission to perform this action` | Caller is not an admin, student, or instructor. |
+| 403         | `You do not have permission to view this <role>'s details` | The role rules in the table above deny the request: a student requesting a student or admin, an instructor requesting an admin, or an instructor requesting a student who is not enrolled in one of their courses (`<role>` is the requested `role`, e.g. `student`, `admin`). |
 | 404         | `<role> not found`                                  | No user exists with that `id` and `role` combination.       |
 
 ## API 4 — Get own profile

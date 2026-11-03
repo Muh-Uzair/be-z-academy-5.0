@@ -29,7 +29,7 @@ A caller with the wrong role receives `403 You do not have permission to perform
 
 ## Review shapes
 
-`GET /`, `GET /:id` and `GET /course/:courseId` join the review's references and return:
+Only `GET /course/:courseId` (login required) returns the full joined shape below. The two public endpoints, `GET /` and `GET /:id`, return the same shape with some fields removed — see [Public review shape](#public-review-shape).
 
 ```json
 {
@@ -88,7 +88,16 @@ A caller with the wrong role receives `403 You do not have permission to perform
 }
 ```
 
-The raw `reviewBy`, `course`, and `instructor` id fields are never returned by these endpoints — they are always replaced by the joined `reviewByDetails`, `courseDetails`, and `instructorDetails` objects. `reviewByDetails`/`instructorDetails` hold the same public user fields as the auth guide's `AuthUser` (so the public endpoints expose the reviewer's email) and never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`. `courseDetails` does **not** include `thumbnailUrl`/`videoUrl` (only computed on the course endpoints) — fetch `GET /api/v1/courses/:id` separately if you need those.
+The raw `reviewBy`, `course`, and `instructor` id fields are never returned by these endpoints — they are always replaced by the joined `reviewByDetails`, `courseDetails`, and `instructorDetails` objects. `reviewByDetails`/`instructorDetails` hold the same public user fields as the auth guide's `AuthUser` and never include `password`, `otp`, `otpExpires`, `stripeAccountId`, `stripeOnboardingComplete`, `verificationRejectionReason`, or `lastVerificationRejectedAt`. `courseDetails` does **not** include `thumbnailUrl`/`videoUrl` (only computed on the course endpoints) — fetch `GET /api/v1/courses/:id` separately if you need those.
+
+### Public review shape
+
+`GET /` and `GET /:id` need no login, so they return the joined shape above **without**:
+
+- `reviewByDetails.email` and `instructorDetails.email` — reviewers' and instructors' emails are never exposed here;
+- `courseDetails.totalRevenueInstructor`, `courseDetails.totalRevenueAdmin`, `courseDetails.verificationRejectionReason` and `courseDetails.lastVerificationRejectedAt` — the course's financial totals and the admin's review notes.
+
+Everything else is unchanged (name, bio, education, avatar, the rest of `courseDetails`, etc.). `GET /course/:courseId` is not public and keeps the full shape.
 
 `POST /` and `PATCH /:id` do **not** perform this join — they return the plain review document, with `reviewBy`/`course`/`instructor` as raw ids:
 
@@ -333,7 +342,7 @@ HTTP `200`
 
 `GET /api/v1/reviews`
 
-Public. Returns a paginated, sortable, searchable, filterable list of reviews.
+Public. Returns a paginated, sortable, searchable, filterable list of reviews, in the [public review shape](#public-review-shape) (no emails, no course revenue/review-note fields).
 
 ### Query parameters
 
@@ -361,7 +370,7 @@ HTTP `200`
   "status": "success",
   "message": "Reviews fetched successfully",
   "data": {
-    "reviews": [ /* joined review shape, see above */ ],
+    "reviews": [ /* public review shape, see above */ ],
     "pagination": {
       "page": 1,
       "limit": 10,
@@ -385,7 +394,7 @@ HTTP `200`
 
 `GET /api/v1/reviews/:id`
 
-Public. Fetches a single review by id, with references joined.
+Public. Fetches a single review by id, with references joined, in the [public review shape](#public-review-shape) (no emails, no course revenue/review-note fields).
 
 ### URL params
 
@@ -402,7 +411,7 @@ HTTP `200`
   "status": "success",
   "message": "Review details fetched successfully",
   "data": {
-    "review": { /* joined review shape, see above */ }
+    "review": { /* public review shape, see above */ }
   }
 }
 ```
@@ -416,4 +425,4 @@ HTTP `200`
 
 ## Frontend types
 
-Copy [`src/response-types/reviewResponseTypes.ts`](../../src/response-types/reviewResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`/`SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts)) and exports `Review` (joined shape, for API 5/API 6/API 3), `ReviewDocument` (plain shape, for API 1/API 2), `ReviewUserSummary`, `ReviewCourseSummary`, `CreateReviewResponse`, `GetReviewsResponse`, `GetReviewsByCourseIdStudentResponse` (Student), `GetReviewsByCourseIdResponse` (Admin/Instructor), `GetReviewDetailsResponse`, `UpdateReviewResponse`, and `DeleteReviewResponse`.
+Copy [`src/response-types/reviewResponseTypes.ts`](../../src/response-types/reviewResponseTypes.ts) into the frontend project. It is a pure TypeScript file with no backend imports (it reuses `AuthUser`/`SuccessApiResponse`/`ApiErrorResponse` from [`authResponseTypes.ts`](../../src/response-types/authResponseTypes.ts) and `Pagination` from [`userResponseTypes.ts`](../../src/response-types/userResponseTypes.ts)) and exports `Review` (full joined shape, for API 3), `PublicReview` (public shape, for API 5/API 6), `ReviewDocument` (plain shape, for API 1/API 2), `ReviewUserSummary`, `ReviewCourseSummary`, `CreateReviewResponse`, `GetReviewsResponse`, `GetReviewsByCourseIdStudentResponse` (Student), `GetReviewsByCourseIdResponse` (Admin/Instructor), `GetReviewDetailsResponse`, `UpdateReviewResponse`, and `DeleteReviewResponse`.

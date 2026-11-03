@@ -232,9 +232,11 @@ export const forgetPasswordService = async (
 export const resetPasswordService = async (
   body: ResetPasswordBody,
 ): Promise<null> => {
-  // Step 1: Find user by OTP
-  const user = await UserModel.findOne({ otp: body.otp });
-  if (!user) {
+  // Step 1: Find the user by email and check the OTP belongs to them. An
+  // unknown email gets the same response as a wrong OTP, so this endpoint
+  // can't be used to probe which emails are registered.
+  const user = await UserModel.findOne({ email: body.email });
+  if (!user || !user.otp || user.otp !== body.otp) {
     throw new AppError(400, "Invalid OTP");
   }
 
