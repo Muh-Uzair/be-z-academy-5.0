@@ -14,6 +14,15 @@ import {
 
 const enrollmentRouter = Router();
 
+// DIVIDER Admin Routes ---------------------------------------------------------
+
+// DIVIDER Instructor Routes ---------------------------------------------------------
+
+// DIVIDER Student Routes ---------------------------------------------------------
+
+// DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
+
+// (root)/api/v1/enrollments
 enrollmentRouter.get(
   "/",
   protect,
@@ -21,6 +30,7 @@ enrollmentRouter.get(
   getEnrollments,
 );
 
+// (root)/api/v1/enrollments/:id
 enrollmentRouter.get(
   "/:id",
   protect,
@@ -28,6 +38,7 @@ enrollmentRouter.get(
   getEnrollmentDetails,
 );
 
+// (root)/api/v1/enrollments/:id/progress
 enrollmentRouter.patch(
   "/:id/progress",
   protect,
@@ -35,5 +46,13 @@ enrollmentRouter.patch(
   validation(updateEnrollmentProgressBodySchema, "body"),
   updateEnrollmentProgress,
 );
+
+// DIVIDER Admin + Instructor Routes ---------------------------------------------------------
+
+// DIVIDER Admin + Student Routes ---------------------------------------------------------
+
+// DIVIDER Instructor + Student Routes ---------------------------------------------------------
+
+// DIVIDER Public Routes ---------------------------------------------------------
 
 export default enrollmentRouter;

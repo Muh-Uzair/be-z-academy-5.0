@@ -22,6 +22,9 @@ import {
 
 const categoryRouter = Router();
 
+// DIVIDER Admin Routes ---------------------------------------------------------
+
+// (root)/api/v1/categories/upload-image
 categoryRouter.post(
   "/upload-image",
   protect,
@@ -30,6 +33,7 @@ categoryRouter.post(
   uploadCategoryImage,
 );
 
+// (root)/api/v1/categories
 categoryRouter.post(
   "/",
   protect,
@@ -38,20 +42,7 @@ categoryRouter.post(
   createCategory,
 );
 
-categoryRouter.get(
-  "/",
-  validation(getCategoriesQuerySchema, "query"),
-  getCategories,
-);
-
-categoryRouter.get("/top", getTopCategories);
-
-categoryRouter.get(
-  "/:id",
-  validation(categoryIdParamsSchema, "params"),
-  getCategoryDetails,
-);
-
+// (root)/api/v1/categories/:id
 categoryRouter.patch(
   "/:id",
   protect,
@@ -61,12 +52,44 @@ categoryRouter.patch(
   updateCategory,
 );
 
+// (root)/api/v1/categories/:id
 categoryRouter.delete(
   "/:id",
   protect,
   restrictTo(Role.Admin),
   validation(categoryIdParamsSchema, "params"),
   deleteCategory,
+);
+
+// DIVIDER Instructor Routes ---------------------------------------------------------
+
+// DIVIDER Student Routes ---------------------------------------------------------
+
+// DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
+
+// DIVIDER Admin + Instructor Routes ---------------------------------------------------------
+
+// DIVIDER Admin + Student Routes ---------------------------------------------------------
+
+// DIVIDER Instructor + Student Routes ---------------------------------------------------------
+
+// DIVIDER Public Routes ---------------------------------------------------------
+
+// (root)/api/v1/categories
+categoryRouter.get(
+  "/",
+  validation(getCategoriesQuerySchema, "query"),
+  getCategories,
+);
+
+// (root)/api/v1/categories/top
+categoryRouter.get("/top", getTopCategories);
+
+// (root)/api/v1/categories/:id
+categoryRouter.get(
+  "/:id",
+  validation(categoryIdParamsSchema, "params"),
+  getCategoryDetails,
 );
 
 export default categoryRouter;

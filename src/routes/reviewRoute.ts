@@ -22,6 +22,13 @@ import {
 
 const reviewRouter = Router();
 
+// DIVIDER Admin Routes ---------------------------------------------------------
+
+// DIVIDER Instructor Routes ---------------------------------------------------------
+
+// DIVIDER Student Routes ---------------------------------------------------------
+
+// (root)/api/v1/reviews
 reviewRouter.post(
   "/",
   protect,
@@ -30,23 +37,7 @@ reviewRouter.post(
   createReview,
 );
 
-reviewRouter.get("/", validation(getReviewsQuerySchema, "query"), getReviews);
-
-reviewRouter.get(
-  "/course/:courseId",
-  protect,
-  restrictTo(Role.Student, Role.Instructor, Role.Admin),
-  validation(reviewByCourseParamsSchema, "params"),
-  validation(getReviewsByCourseQuerySchema, "query"),
-  getReviewsByCourseId,
-);
-
-reviewRouter.get(
-  "/:id",
-  validation(reviewIdParamsSchema, "params"),
-  getReviewDetails,
-);
-
+// (root)/api/v1/reviews/:id
 reviewRouter.patch(
   "/:id",
   protect,
@@ -56,13 +47,44 @@ reviewRouter.patch(
   updateReview,
 );
 
+// DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
+
+// (root)/api/v1/reviews/course/:courseId
+reviewRouter.get(
+  "/course/:courseId",
+  protect,
+  restrictTo(Role.Student, Role.Instructor, Role.Admin),
+  validation(reviewByCourseParamsSchema, "params"),
+  validation(getReviewsByCourseQuerySchema, "query"),
+  getReviewsByCourseId,
+);
+
+// DIVIDER Admin + Instructor Routes ---------------------------------------------------------
+
+// DIVIDER Admin + Student Routes ---------------------------------------------------------
+
 // Only a student (who owns the review) or an admin (for any review) may delete a review.
+// (root)/api/v1/reviews/:id
 reviewRouter.delete(
   "/:id",
   protect,
   restrictTo(Role.Student, Role.Admin),
   validation(reviewIdParamsSchema, "params"),
   deleteReview,
+);
+
+// DIVIDER Instructor + Student Routes ---------------------------------------------------------
+
+// DIVIDER Public Routes ---------------------------------------------------------
+
+// (root)/api/v1/reviews
+reviewRouter.get("/", validation(getReviewsQuerySchema, "query"), getReviews);
+
+// (root)/api/v1/reviews/:id
+reviewRouter.get(
+  "/:id",
+  validation(reviewIdParamsSchema, "params"),
+  getReviewDetails,
 );
 
 export default reviewRouter;

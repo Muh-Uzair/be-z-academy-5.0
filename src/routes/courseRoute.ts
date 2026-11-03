@@ -40,7 +40,9 @@ import {
 
 const courseRouter = Router();
 
-// DIVIDER Admin
+// DIVIDER Admin Routes ---------------------------------------------------------
+
+// (root)/api/v1/courses/:id/verification
 courseRouter.patch(
   "/:id/verification",
   protect,
@@ -50,25 +52,9 @@ courseRouter.patch(
   updateCourseVerification,
 );
 
-courseRouter.get(
-  "/student/:id",
-  protect,
-  restrictTo(Role.Admin, Role.Instructor),
-  validation(studentIdParamsSchema, "params"),
-  validation(getCoursesQuerySchema, "query"),
-  getStudentCourses,
-);
+// DIVIDER Instructor Routes ---------------------------------------------------------
 
-courseRouter.get(
-  "/instructor/:id",
-  protect,
-  restrictTo(Role.Admin, Role.Student),
-  validation(instructorIdParamsSchema, "params"),
-  validation(getCoursesQuerySchema, "query"),
-  getInstructorCourses,
-);
-
-// DIVIDER Instructor
+// (root)/api/v1/courses/upload-thumbnail
 courseRouter.post(
   "/upload-thumbnail",
   protect,
@@ -77,6 +63,7 @@ courseRouter.post(
   uploadCourseThumbnail,
 );
 
+// (root)/api/v1/courses/upload-video
 courseRouter.post(
   "/upload-video",
   protect,
@@ -85,6 +72,7 @@ courseRouter.post(
   uploadCourseVideo,
 );
 
+// (root)/api/v1/courses
 courseRouter.post(
   "/",
   protect,
@@ -94,6 +82,7 @@ courseRouter.post(
   createCourse,
 );
 
+// (root)/api/v1/courses/:id
 courseRouter.patch(
   "/:id",
   protect,
@@ -103,6 +92,7 @@ courseRouter.patch(
   updateCourse,
 );
 
+// (root)/api/v1/courses/:id
 courseRouter.delete(
   "/:id",
   protect,
@@ -111,7 +101,9 @@ courseRouter.delete(
   deleteCourse,
 );
 
-// DIVIDER Student
+// DIVIDER Student Routes ---------------------------------------------------------
+
+// (root)/api/v1/courses/:id/payment-intent
 courseRouter.post(
   "/:id/payment-intent",
   protect,
@@ -120,6 +112,7 @@ courseRouter.post(
   createCoursePaymentIntent,
 );
 
+// (root)/api/v1/courses/:id/refund
 courseRouter.post(
   "/:id/refund",
   protect,
@@ -128,6 +121,7 @@ courseRouter.post(
   requestCourseRefund,
 );
 
+// (root)/api/v1/courses/:id/refund-eligibility
 courseRouter.get(
   "/:id/refund-eligibility",
   protect,
@@ -136,6 +130,7 @@ courseRouter.get(
   getCourseRefundEligibility,
 );
 
+// (root)/api/v1/courses/:id/completion-status
 courseRouter.get(
   "/:id/completion-status",
   protect,
@@ -144,6 +139,7 @@ courseRouter.get(
   getCourseCompletionStatus,
 );
 
+// (root)/api/v1/courses/:id/issue-certificate
 courseRouter.get(
   "/:id/issue-certificate",
   protect,
@@ -152,8 +148,9 @@ courseRouter.get(
   issueCourseCertificate,
 );
 
+// DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
 
-// DIVIDER Shared authenticated routes
+// (root)/api/v1/courses
 courseRouter.get(
   "/",
   protect,
@@ -161,23 +158,57 @@ courseRouter.get(
   getCourses,
 );
 
-// DIVIDER  Public routes
+// DIVIDER Admin + Instructor Routes ---------------------------------------------------------
+
+// (root)/api/v1/courses/student/:id
+courseRouter.get(
+  "/student/:id",
+  protect,
+  restrictTo(Role.Admin, Role.Instructor),
+  validation(studentIdParamsSchema, "params"),
+  validation(getCoursesQuerySchema, "query"),
+  getStudentCourses,
+);
+
+// DIVIDER Admin + Student Routes ---------------------------------------------------------
+
+// (root)/api/v1/courses/instructor/:id
+courseRouter.get(
+  "/instructor/:id",
+  protect,
+  restrictTo(Role.Admin, Role.Student),
+  validation(instructorIdParamsSchema, "params"),
+  validation(getCoursesQuerySchema, "query"),
+  getInstructorCourses,
+);
+
+// DIVIDER Instructor + Student Routes ---------------------------------------------------------
+
+// DIVIDER Public Routes ---------------------------------------------------------
+
+// (root)/api/v1/courses/featured
 courseRouter.get("/featured", getFeaturedCourses);
+
+// (root)/api/v1/courses/trending
 courseRouter.get("/trending", getTrendingCourses);
 
+// (root)/api/v1/courses/public
 courseRouter.get(
   "/public",
   validation(getPublicCoursesQuerySchema, "query"),
   getPublicCourses,
 );
 
+// (root)/api/v1/courses/:id/public
 courseRouter.get(
   "/:id/public",
   validation(courseIdParamsSchema, "params"),
   getPublicCourseDetails,
 );
 
-// DIVIDER Shared authenticated routes
+// DIVIDER Admin + Instructor + Student Routes ---------------------------------------------------------
+
+// (root)/api/v1/courses/:id
 courseRouter.get(
   "/:id",
   protect,
