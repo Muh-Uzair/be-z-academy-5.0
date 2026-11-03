@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { stripe } from "../config/stripe";
+import { stripe } from "../lib/stripe";
 import UserModel, { Role } from "../models/userModel";
 import AppError from "../utils/appError";
 import { SavedCard } from "../response-types/cardResponseTypes";

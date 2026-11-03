@@ -5,8 +5,8 @@ import CourseModel, { CourseType } from "../models/courseModel";
 import UserModel, { Role } from "../models/userModel";
 import EnrollmentModel from "../models/enrollmentModel";
 import TransactionModel, { TransactionType } from "../models/transactionModel";
-import { stripe } from "../config/stripe";
-import { env } from "../config/env";
+import { stripe } from "../lib/stripe";
+import { env } from "../lib/env";
 import AppError from "../utils/appError";
 import APIFeatures from "../utils/apiFeatures";
 import {

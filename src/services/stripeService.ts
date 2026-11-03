@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { stripe } from "../config/stripe";
+import { stripe } from "../lib/stripe";
 import UserModel, { Role } from "../models/userModel";
 import CourseModel from "../models/courseModel";
 import AppError from "../utils/appError";

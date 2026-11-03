@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { env } from "../config/env";
+import { env } from "../lib/env";
 import { Role } from "../models/userModel";
 
 interface TokenPayload {

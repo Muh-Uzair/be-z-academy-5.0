@@ -1,4 +1,4 @@
-import { env } from "../config/env";
+import { env } from "../lib/env";
 import { model, models, Schema, type InferSchemaType } from "mongoose";
 
 const transactionSchema = new Schema(

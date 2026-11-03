@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
-import { stripe } from "../config/stripe";
-import { env } from "../config/env";
+import { stripe } from "../lib/stripe";
+import { env } from "../lib/env";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
 import sendResponse from "../utils/sendResponse";

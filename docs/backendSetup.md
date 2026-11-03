@@ -78,7 +78,7 @@ To improve the development experience, we add `morgan` as an Express middleware 
 
 We also configure ESLint with the latest flat configuration format (`eslint.config.mjs`) specifically for TypeScript to catch unused imports and potential bugs in real-time. We integrate this into our `npm run dev` script to ensure we get immediate terminal warnings.
 
-For environment variables, we transition from reading `process.env` directly to using `zod` in `src/config/env.ts`. This allows us to define a strict schema. If variables (like `PORT` or `APP_NAME`) are missing or of incorrect types, Zod will throw an error and crash the server on startup, rather than using default values or silently failing later in the app's lifecycle. We then import this strictly typed `env` object across our application.
+For environment variables, we transition from reading `process.env` directly to using `zod` in `src/lib/env.ts`. This allows us to define a strict schema. If variables (like `PORT` or `APP_NAME`) are missing or of incorrect types, Zod will throw an error and crash the server on startup, rather than using default values or silently failing later in the app's lifecycle. We then import this strictly typed `env` object across our application.
 
 **Commands to run:**
 ```bash
@@ -93,7 +93,7 @@ npm install -D @types/morgan eslint @eslint/js typescript-eslint
 **Details:**
 We introduce MongoDB to our application by first installing `mongoose`, a popular Object Data Modeling (ODM) library for MongoDB and Node.js. 
 
-We added our MongoDB connection string and credentials into the `.env` file and strictly typed them in our Zod schema (`src/config/env.ts`). Then, we created a dedicated database configuration file `src/config/db.ts` which handles the connection logic to connect to the provided URI string.
+We added our MongoDB connection string and credentials into the `.env` file and strictly typed them in our Zod schema (`src/lib/env.ts`). Then, we created a dedicated database configuration file `src/lib/db.ts` which handles the connection logic to connect to the provided URI string.
 
 Finally, we updated `src/server.ts` to ensure the database connection is established successfully before starting the Express server to listen for incoming requests.
 

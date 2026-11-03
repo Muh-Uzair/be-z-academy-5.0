@@ -23,7 +23,7 @@ There is no ORM-style schema migration system, no job queue, and no OpenAPI/Swag
 
 ## 2. Bootstrap Flow
 
-- **`src/server.ts`** — entry point: loads env, connects to MongoDB (`src/config/db.ts`), then `app.listen(...)`. Registers `uncaughtException`/`unhandledRejection` handlers that log and `process.exit(1)`.
+- **`src/server.ts`** — entry point: loads env, connects to MongoDB (`src/lib/db.ts`), then `app.listen(...)`. Registers `uncaughtException`/`unhandledRejection` handlers that log and `process.exit(1)`.
 - **`src/app.ts`** — builds and exports the Express `app` only (no `.listen()`), so the app object is easily testable in isolation.
 
 ### `src/app.ts` middleware pipeline, in order
@@ -48,7 +48,7 @@ There is no ORM-style schema migration system, no job queue, and no OpenAPI/Swag
 src/
   app.ts                 Express app assembly (no listen())
   server.ts              Bootstrap: env, DB connect, listen(), process safety nets
-  config/                env.ts, db.ts, stripe.ts, s3.ts, mailer.ts
+  lib/                   env.ts, db.ts, stripe.ts, s3.ts, mailer.ts
   constants/              Per-domain constants (limits, S3 folders, MIME maps, URLs)
   routes/                 One *Routes.ts per domain
   controllers/            Thin request/response handlers, one per domain + errorController
@@ -181,9 +181,9 @@ No multipart/form-data is ever handled by the Express server itself:
 
 ## 10. Configuration
 
-- **`src/config/env.ts`** — validates the entire `process.env` against a strict `zod` schema at process startup, `process.exit(1)` on failure. Every other module imports the resulting typed `env` object rather than reading `process.env` directly.
-- **`src/config/db.ts`** — Mongoose connection setup.
-- **`src/config/stripe.ts`** / **`src/config/s3.ts`** / **`src/config/mailer.ts`** — typed SDK client instances (Stripe client, S3 client, Nodemailer transport) built from `env`.
+- **`src/lib/env.ts`** — validates the entire `process.env` against a strict `zod` schema at process startup, `process.exit(1)` on failure. Every other module imports the resulting typed `env` object rather than reading `process.env` directly.
+- **`src/lib/db.ts`** — Mongoose connection setup.
+- **`src/lib/stripe.ts`** / **`src/lib/s3.ts`** / **`src/lib/mailer.ts`** — typed SDK client instances (Stripe client, S3 client, Nodemailer transport) built from `env`.
 
 ## 11. Database Migrations
 

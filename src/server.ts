@@ -1,5 +1,5 @@
-import { env } from "./config/env";
-import { connectDB } from "./config/db";
+import { env } from "./lib/env";
+import { connectDB } from "./lib/db";
 import app from "./app";
 
 const PORT = env.PORT;

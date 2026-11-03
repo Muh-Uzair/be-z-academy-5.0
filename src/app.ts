@@ -20,7 +20,7 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import { clean as xssClean } from "xss-clean/lib/xss";
 import hpp from "hpp";
-import { connectDB } from "./config/db";
+import { connectDB } from "./lib/db";
 
 // ─── Process-level Safety Nets ────────────────────────────────────────────────
 
