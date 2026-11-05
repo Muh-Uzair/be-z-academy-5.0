@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import authRouter from "./routes/authRoute";
 import userRouter from "./routes/userRoute";
 import categoryRouter from "./routes/categoryRoute";
@@ -44,6 +45,10 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(morgan("dev"));
+
+// TEMPORARY: allow all origins (reflects the request origin so cookies still work).
+// Restrict to an allowlist before production.
+app.use(cors({ origin: true, credentials: true }));
 
 // Vercel invokes the exported app directly, so initialize MongoDB before handling requests.
 app.use((_req, _res, next) => {
