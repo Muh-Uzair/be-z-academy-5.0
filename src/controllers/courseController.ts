@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
+import redis from "../lib/redis";
 import {
   getCourseThumbnailUploadUrlService,
   getCourseVideoUploadUrlService,
@@ -135,8 +136,38 @@ export const getInstructorCourses = catchAsync(
 export const getPublicCourses = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const query = req.validatedQuery as GetPublicCoursesQuery;
+    const cacheKey = `courses:public:${JSON.stringify(query)}`;
 
+    // 1. Check Redis cache
+    try {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        const { courses, pagination } = JSON.parse(cachedData);
+        sendResponse(res, 200, {
+          status: "success",
+          message: "Courses fetched successfully",
+          data: { courses, pagination },
+        });
+        return;
+      }
+    } catch (cacheError) {
+      console.warn("Redis cache read error:", cacheError);
+    }
+
+    // 2. Fetch from DB if cache miss
     const { courses, pagination } = await getPublicCoursesService(query);
+
+    // 3. Update Redis cache (expires in 10 minutes = 600s)
+    try {
+      await redis.set(
+        cacheKey,
+        JSON.stringify({ courses, pagination }),
+        "EX",
+        600,
+      );
+    } catch (cacheError) {
+      console.warn("Redis cache write error:", cacheError);
+    }
 
     sendResponse(res, 200, {
       status: "success",
