@@ -1,4 +1,4 @@
-import { env } from "./src/lib/env";
+import { env } from "./env";
 
 const config = {
   mongodb: {
@@ -17,3 +17,4 @@ const config = {
 };
 
 export = config;
+

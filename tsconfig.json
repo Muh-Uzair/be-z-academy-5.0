@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/**/*", "migrate-mongo-config.ts", "migrations/**/*"]
+  "include": ["src/**/*", "migrations/**/*"]
 }
