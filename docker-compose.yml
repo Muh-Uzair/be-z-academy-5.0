@@ -3,14 +3,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: z-academy-api
+    image: z-academy-50-image
+    container_name: z-academy-50-container
     restart: unless-stopped
     ports:
       - "5000:5000"
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
     depends_on:
       - redis
 
